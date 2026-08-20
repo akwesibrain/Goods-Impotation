@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Request an Import — Mwinbarka Imports</title>
+<meta name="description" content="Tell Mwinbarka Imports what you'd like sourced from China or Turkey — we'll follow up on WhatsApp with a quote.">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="site-header">
+  <nav class="nav container">
+    <a href="index.html" class="nav-logo">
+      <img src="assets/logo.png" alt="Mwinbarka Imports logo">
+      Mwinbarka Imports
+    </a>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="how-it-works.html">How It Works</a></li>
+      <li><a href="categories.html">Categories</a></li>
+      <li><a href="about.html">About</a></li>
+      <li><a href="faq.html">FAQ</a></li>
+      <li><a href="contact.html">Contact</a></li>
+    </ul>
+    <a href="request.html" class="btn btn-gold nav-cta">Request an Import</a>
+    <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">☰</button>
+  </nav>
+</header>
+
+<section class="page-hero">
+  <div class="container">
+    <span class="eyebrow">MW–01 / Request Form</span>
+    <h1>What would you like us to bring in?</h1>
+    <p>Fill in as much as you know — even a rough description or a photo link is enough for us to start pricing it out.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <form id="request-form" class="form-card" novalidate>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="name">Your name</label>
+          <input type="text" id="name" name="name" required autocomplete="name">
+        </div>
+        <div class="field">
+          <label for="phone">Phone / WhatsApp number</label>
+          <input type="tel" id="phone" name="phone" required autocomplete="tel" placeholder="0XX XXX XXXX">
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="location">Your location in Ghana</label>
+          <input type="text" id="location" name="location" placeholder="e.g. Accra, East Legon">
+        </div>
+        <div class="field">
+          <label for="category">Category (optional)</label>
+          <select id="category" name="category">
+            <option value="">Select if it fits</option>
+            <option>Clothing & Fashion</option>
+            <option>Electronics</option>
+            <option>Shoes & Bags</option>
+            <option>Home & Kitchen</option>
+            <option>Beauty & Cosmetics</option>
+            <option>Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="request_details">What do you want imported?</label>
+        <textarea id="request_details" name="request_details" rows="4" required placeholder="e.g. A men's leather jacket, size L, similar to the photo I have. Need about 2 pieces."></textarea>
+      </div>
+
+      <div class="field">
+        <label for="reference_url">Reference link or photo (optional)</label>
+        <input type="text" id="reference_url" name="reference_url" placeholder="Paste a 1688 / Alibaba / Instagram link if you have one">
+        <div class="hint">No link? Skip this — you can also send a photo directly on WhatsApp after submitting.</div>
+      </div>
+
+      <div class="field">
+        <label for="budget_range">Budget range in GH₵ (optional)</label>
+        <input type="text" id="budget_range" name="budget_range" placeholder="e.g. 300 – 500">
+      </div>
+
+      <button type="submit" class="btn btn-gold">Send Request</button>
+      <p class="form-note">Submitting opens WhatsApp with your details prefilled, so you can send it straight to Mwinbarka Imports. We'll reply with a quote in GH₵ once we've checked pricing.</p>
+      <div id="form-status" class="form-status"></div>
+    </form>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand">Mwinbarka Imports</div>
+        <p>Sourcing and importing goods from China and Turkey, delivered across Ghana.</p>
+      </div>
+      <div>
+        <h4>Site</h4>
+        <ul>
+          <li><a href="how-it-works.html">How It Works</a></li>
+          <li><a href="categories.html">Categories</a></li>
+          <li><a href="about.html">About</a></li>
+          <li><a href="faq.html">FAQ</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Contact</h4>
+        <ul>
+          <li><a href="https://wa.me/233540309637" target="_blank" rel="noopener">WhatsApp: 054 030 9637</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Mwinbarka Imports. All rights reserved.</span>
+      <span>Accra, Ghana</span>
+    </div>
+  </div>
+</footer>
+
+<a href="https://wa.me/233540309637" class="wa-float" target="_blank" rel="noopener" aria-label="Chat on WhatsApp">💬</a>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-client.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
