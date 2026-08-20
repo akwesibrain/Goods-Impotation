@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Admin — Mwinbarka Imports</title>
+<meta name="description" content="Internal request desk for Mwinbarka Imports.">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="site-header">
+  <nav class="nav container">
+    <a href="index.html" class="nav-logo">
+      <img src="assets/logo.png" alt="Mwinbarka Imports logo">
+      Mwinbarka Imports
+    </a>
+    <ul class="nav-links">
+      <li><a href="index.html">Back to site</a></li>
+    </ul>
+    <button id="signout-btn" class="btn btn-gold nav-cta" style="display:none;">Sign out</button>
+    <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">☰</button>
+  </nav>
+</header>
+
+<section class="page-hero">
+  <div class="container">
+    <span class="eyebrow">MW · Request Desk</span>
+    <h1>Incoming import requests.</h1>
+    <p>Every request submitted through the site, newest first. Update a status as you work through the WhatsApp conversation.</p>
+  </div>
+</section>
+
+<!-- Shown when Supabase credentials haven't been added to supabase-client.js yet -->
+<section class="section" id="admin-unconfigured" style="display:none;">
+  <div class="container">
+    <div class="form-card">
+      <span class="eyebrow">MW · Setup needed</span>
+      <h2 style="margin: var(--space-2) 0;">Supabase isn't connected yet.</h2>
+      <p style="color: var(--ink-500);">Add your Project URL and anon key to <strong>supabase-client.js</strong>, and run <strong>supabase/schema.sql</strong> in the Supabase SQL editor. Until then, requests still reach you on WhatsApp — they just aren't stored here.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Login -->
+<section class="section" id="admin-login" style="display:none;">
+  <div class="container">
+    <form id="login-form" class="form-card" style="max-width: 420px;" novalidate>
+      <span class="eyebrow">MW · Staff only</span>
+      <h2 style="margin: var(--space-2) 0 var(--space-3);">Sign in</h2>
+
+      <div class="field">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" required autocomplete="username">
+      </div>
+
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required autocomplete="current-password">
+      </div>
+
+      <button type="submit" class="btn btn-gold">Sign in</button>
+      <div id="login-status" class="form-status"></div>
+    </form>
+  </div>
+</section>
+
+<!-- Dashboard -->
+<section class="admin-section" id="admin-dashboard" style="display:none;">
+  <div class="container">
+    <div class="admin-bar">
+      <div class="admin-filters" id="status-filters">
+        <button class="chip active" data-status="All">All</button>
+        <button class="chip" data-status="New">New</button>
+        <button class="chip" data-status="Contacted">Contacted</button>
+        <button class="chip" data-status="Quoted">Quoted</button>
+        <button class="chip" data-status="Confirmed">Confirmed</button>
+        <button class="chip" data-status="Closed">Closed</button>
+      </div>
+      <button class="chip" id="refresh-btn">Refresh</button>
+    </div>
+
+    <div class="table-wrap">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Received</th>
+            <th>Customer</th>
+            <th>Location</th>
+            <th>Request</th>
+            <th>Budget</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="requests-body"></tbody>
+      </table>
+    </div>
+
+    <p class="admin-note" id="admin-note"></p>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-bottom">
+      <span>© 2026 Mwinbarka Imports. All rights reserved.</span>
+      <span>Accra, Ghana</span>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-client.js"></script>
+<script src="script.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>
