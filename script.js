@@ -15,6 +15,12 @@ document.addEventListener("DOMContentLoaded", () => {
       const expanded = links.classList.contains("open");
       toggle.setAttribute("aria-expanded", expanded);
     });
+    links.querySelectorAll("a").forEach((link) => {
+      link.addEventListener("click", () => {
+        links.classList.remove("open");
+        toggle.setAttribute("aria-expanded", "false");
+      });
+    });
   }
 
   // ---- FAQ accordion ----
@@ -34,8 +40,23 @@ document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("request-form");
   if (form) {
     form.addEventListener("submit", handleRequestSubmit);
+    prefillCategoryFromQuery(form);
   }
 });
+
+/**
+ * Category tiles on /categories link here with ?category=..., so the
+ * matching option is already selected when someone arrives from the gallery.
+ */
+function prefillCategoryFromQuery(form) {
+  const params = new URLSearchParams(window.location.search);
+  const category = params.get("category");
+  if (!category) return;
+  const select = form.elements.category;
+  if (!select) return;
+  const match = Array.from(select.options).find((opt) => opt.value === category);
+  if (match) select.value = category;
+}
 
 /**
  * Builds a prefilled WhatsApp message from the request form and

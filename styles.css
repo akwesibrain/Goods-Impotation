@@ -149,6 +149,7 @@ textarea:focus-visible, select:focus-visible {
   align-items: center;
   justify-content: space-between;
   padding: 0.9rem 0;
+  position: relative;
 }
 .nav-logo {
   display: flex;
@@ -173,6 +174,7 @@ textarea:focus-visible, select:focus-visible {
 }
 .nav-links a { color: rgba(255,255,255,0.75); transition: color .15s; }
 .nav-links a:hover, .nav-links a.active { color: var(--gold-400); }
+.nav-request { display: none; }
 .nav-cta { display: none; }
 .nav-toggle {
   display: none;
@@ -198,9 +200,11 @@ textarea:focus-visible, select:focus-visible {
     transition: max-height .25s ease;
     border-bottom: 1px solid rgba(255,255,255,0.08);
   }
-  .nav-links.open { max-height: 420px; }
+  .nav-links.open { max-height: 480px; }
   .nav-links li { border-top: 1px solid rgba(255,255,255,0.08); }
   .nav-links a { display: block; padding: 1rem var(--space-2); }
+  .nav-request { display: list-item; }
+  .nav-request a { color: var(--gold-400); }
   .nav-toggle { display: block; }
 }
 
@@ -355,7 +359,9 @@ textarea:focus-visible, select:focus-visible {
   align-items: flex-end;
   padding: var(--space-2);
   color: var(--white);
+  transition: transform .15s ease;
 }
+.category-card:hover { transform: translateY(-2px); }
 .category-card::before {
   content: "";
   position: absolute; inset: 0;
@@ -371,6 +377,31 @@ textarea:focus-visible, select:focus-visible {
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
+
+/* Each tile gets a distinct fill so the gallery isn't a wall of
+   identical navy blocks. When a real photo is dropped in as an
+   <img>, it sits on top of this and the overlay still holds. */
+.category-card::after {
+  content: "";
+  position: absolute; inset: 0;
+  background-image:
+    radial-gradient(circle at 18% 22%, rgba(232, 199, 102, 0.18), transparent 32%),
+    repeating-linear-gradient(
+      135deg,
+      rgba(255,255,255,0.04) 0 1px,
+      transparent 1px 14px
+    );
+  pointer-events: none;
+}
+.category-card:nth-child(1) { background: radial-gradient(120% 90% at 10% 0%, #1E4076, var(--navy-900)); }
+.category-card:nth-child(2) { background: radial-gradient(120% 90% at 90% 10%, #13315F, var(--navy-900)); }
+.category-card:nth-child(3) { background: radial-gradient(120% 90% at 20% 80%, #1E4076, var(--navy-900)); }
+.category-card:nth-child(4) { background: radial-gradient(120% 90% at 80% 90%, #0A1F44, var(--navy-900)); }
+.category-card:nth-child(5) { background: radial-gradient(120% 90% at 50% 0%, #1E4076, var(--navy-900)); }
+.category-card:nth-child(6) { background: radial-gradient(120% 90% at 0% 50%, #13315F, var(--navy-900)); }
+.category-card:nth-child(7) { background: radial-gradient(120% 90% at 100% 40%, #1E4076, var(--navy-900)); }
+.category-card:nth-child(8) { background: radial-gradient(120% 90% at 40% 100%, #0A1F44, var(--navy-900)); }
+.category-card:nth-child(9) { background: radial-gradient(120% 90% at 50% 50%, #13315F, var(--navy-900)); }
 
 /* ---------------- CTA band ---------------- */
 .cta-band { background: var(--gold-500); color: var(--navy-900); padding: var(--space-5) 0; text-align: center; }
