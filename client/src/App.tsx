@@ -124,7 +124,7 @@ export default function App() {
 
       <section className="card">
         <h2>New import shipment</h2>
-        <form className="form" onSubmit={onSubmit}>
+        <form className="form" onSubmit={onSubmit} autoComplete="off">
           <label>
             Reference
             <input
