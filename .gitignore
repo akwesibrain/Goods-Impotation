@@ -1,0 +1,14 @@
+# Editors / OS
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/
+
+# Netlify
+.netlify/
+
+# Local env — Supabase keys live in supabase-client.js, but keep
+# stray env files out of the repo anyway.
+.env
+.env.*

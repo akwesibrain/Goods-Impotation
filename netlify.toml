@@ -1,0 +1,20 @@
+# Static site — no build step, Netlify serves the repo root as-is.
+# Netlify strips ".html" automatically, so /request, /how-it-works,
+# /faq etc. resolve to the matching files.
+
+[build]
+  publish = "."
+  command = ""
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# The admin desk should never show up in search results.
+[[headers]]
+  for = "/admin"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
