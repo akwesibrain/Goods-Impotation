@@ -51,6 +51,10 @@ window.saveRequestToSupabase = async function (data) {
       category: data.category || null,
       reference_url: data.reference_url || null,
       budget_range: data.budget_range || null,
+      quantity: data.quantity || null,
+      origin: data.origin || null,
+      shipping_method: data.shipping_method || null,
+      photo_url: data.photo_url || null,
     },
   ]);
   if (error) throw error;

@@ -721,7 +721,7 @@ textarea:focus-visible, select:focus-visible {
 .faq-q .icon { font-family: var(--font-mono); color: var(--gold-500); transition: transform .2s; }
 .faq-item.open .faq-q .icon { transform: rotate(45deg); }
 .faq-a { max-height: 0; overflow: hidden; transition: max-height .25s ease; color: var(--ink-500); }
-.faq-item.open .faq-a { max-height: 300px; }
+.faq-item.open .faq-a { max-height: 520px; }
 .faq-a p { padding-bottom: var(--space-3); margin: 0; }
 
 /* ---------------- Two column layout ---------------- */
@@ -895,4 +895,96 @@ textarea:focus-visible, select:focus-visible {
 }
 .product-body p { display: none; }
 .product-price { font-family: var(--font-mono); color: var(--gold-500); font-size: 1.05rem; margin-top: auto; }
-.product-body .btn { margin-top: 0.6rem; justify-content: center; padding: 0.7rem 1rem; font-size: 0.75rem; }
+.product-price small { font-family: var(--font-body); font-size: 0.7rem; color: var(--ink-500); text-transform: none; letter-spacing: 0; }
+.product-actions { display: grid; gap: 0.45rem; margin-top: 0.6rem; }
+.product-body .btn { margin-top: 0; justify-content: center; padding: 0.7rem 1rem; font-size: 0.75rem; }
+
+.quote-link {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--gold-400);
+  border: 1px solid rgba(201,162,39,0.45);
+  border-radius: var(--radius);
+  padding: 0.65rem 0.85rem;
+  white-space: nowrap;
+}
+.quote-count {
+  display: inline-flex;
+  min-width: 1.2rem;
+  justify-content: center;
+  background: var(--gold-500);
+  color: var(--navy-900);
+  border-radius: 99px;
+  padding: 0 0.35rem;
+  margin-left: 0.25rem;
+}
+#mw-toast {
+  position: fixed;
+  bottom: 5.5rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(12px);
+  background: var(--navy-900);
+  color: var(--white);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  padding: 0.8rem 1.1rem;
+  border-radius: var(--radius);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 80;
+  transition: opacity .2s ease, transform .2s ease;
+}
+#mw-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+.link-paste-band {
+  background: var(--navy-800);
+  color: var(--white);
+  padding: var(--space-5) 0;
+}
+.link-paste-band h2 { color: var(--white); margin: 0.4rem 0 0.6rem; }
+.link-paste-band p { color: rgba(255,255,255,0.75); max-width: 560px; margin: 0 0 var(--space-3); }
+.link-paste-form { display: flex; gap: 0; max-width: 720px; }
+.link-paste-form input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--gold-500);
+  border-right: 0;
+  border-radius: var(--radius) 0 0 var(--radius);
+  font-size: 1rem;
+}
+.link-paste-form .btn { border-radius: 0 var(--radius) var(--radius) 0; }
+@media (max-width: 640px) {
+  .link-paste-form { flex-direction: column; }
+  .link-paste-form input { border-right: 1px solid var(--gold-500); border-radius: var(--radius); margin-bottom: 0.6rem; }
+  .link-paste-form .btn { border-radius: var(--radius); width: 100%; justify-content: center; }
+}
+.section-note { color: var(--ink-500); max-width: 640px; margin: 0 0 var(--space-3); }
+
+.photo-preview img { width: 96px; height: 96px; object-fit: cover; border-radius: var(--radius); margin-top: 0.5rem; }
+.empty-note { color: var(--ink-500); margin-bottom: var(--space-3); }
+.quote-rows { list-style: none; margin: 0; padding: 0; }
+.quote-rows li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  align-items: center;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--line);
+}
+.quote-rows strong { display: block; }
+.quote-rows span { color: var(--ink-500); font-size: 0.85rem; }
+.qty-controls { display: flex; align-items: center; gap: 0.45rem; }
+.qty-controls button {
+  width: 2rem; height: 2rem;
+  border: 1px solid var(--line);
+  background: var(--white);
+  cursor: pointer;
+  border-radius: var(--radius);
+}
+.qty-controls .linkish { width: auto; border: 0; color: var(--gold-500); font-size: 0.8rem; }
+#shipping-advice { display: none; }
+#shipping-advice:not([hidden]) { display: block; }

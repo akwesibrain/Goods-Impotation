@@ -78,6 +78,21 @@
         </div>
       </div>
 
+      <div class="field-row">
+        <div class="field">
+          <label for="quantity">Quantity</label>
+          <input type="text" id="quantity" name="quantity" placeholder="e.g. 2 pieces, 1 carton">
+        </div>
+        <div class="field">
+          <label for="origin">Source (optional)</label>
+          <select id="origin" name="origin">
+            <option value="">Either is fine</option>
+            <option>China</option>
+            <option>Turkey</option>
+          </select>
+        </div>
+      </div>
+
       <div class="field">
         <label for="request_details">What do you want imported?</label>
         <textarea id="request_details" name="request_details" rows="4" required placeholder="e.g. A men's leather jacket, size L, similar to the photo I have. Need about 2 pieces."></textarea>
@@ -90,8 +105,25 @@
       </div>
 
       <div class="field">
-        <label for="budget_range">Budget range in GH₵ (optional)</label>
-        <input type="text" id="budget_range" name="budget_range" placeholder="e.g. 300 – 500">
+        <label for="photo">Photo of the item (optional)</label>
+        <input type="file" id="photo" name="photo" accept="image/*">
+        <div class="hint">JPG or PNG, under 5 MB. If upload fails, send the picture on WhatsApp after you submit.</div>
+        <div id="photo-preview" class="photo-preview"></div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="shipping_method">Shipping (optional)</label>
+          <select id="shipping_method" name="shipping_method">
+            <option value="">Not sure yet</option>
+            <option value="air">Air — faster</option>
+            <option value="sea">Sea — cheaper for bulky goods</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="budget_range">Budget range in GH₵ (optional)</label>
+          <input type="text" id="budget_range" name="budget_range" placeholder="e.g. 300 – 500">
+        </div>
       </div>
 
       <button type="submit" class="btn btn-gold">Send Request</button>

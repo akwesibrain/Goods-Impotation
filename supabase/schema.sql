@@ -12,6 +12,10 @@ create table if not exists public.requests (
   category        text,
   reference_url   text,
   budget_range    text,
+  quantity        text,
+  origin          text,
+  shipping_method text,
+  photo_url       text,
   status          text not null default 'New',
   created_at      timestamptz not null default now(),
   constraint requests_status_check
@@ -178,6 +182,16 @@ create policy "Signed-in staff can delete media"
   for delete
   to authenticated
   using (bucket_id = 'media');
+
+drop policy if exists "Anyone can upload request photos" on storage.objects;
+create policy "Anyone can upload request photos"
+  on storage.objects
+  for insert
+  to anon, authenticated
+  with check (
+    bucket_id = 'media'
+    and name like 'requests/%'
+  );
 
 -- ============================================================
 -- Creating the admin login
