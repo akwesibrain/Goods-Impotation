@@ -186,8 +186,35 @@ create policy "Signed-in staff can delete media"
 -- with "Auto Confirm User" ticked. That email and password are
 -- what admin.html asks for.
 --
--- Then turn OFF public sign-ups so nobody else can create an
--- account that would pass the policies above:
--- Authentication > Sign In / Providers > Email > disable
--- "Allow new users to sign up".
+-- ============================================================
+-- Public sign-up is off
+--
+-- The dashboard toggle (Authentication → Email → Allow new users
+-- to sign up) needs a Management API token we don't have here, so
+-- new accounts are blocked at the database instead. The existing
+-- admin user can still sign in. Anyone else who hits /signup gets
+-- "Public sign-up is disabled".
+-- ============================================================
+
+create schema if not exists private;
+
+create or replace function private.reject_extra_signups()
+returns trigger
+language plpgsql
+security definer
+set search_path = auth, private
+as $$
+begin
+  if exists (select 1 from auth.users) then
+    raise exception 'Public sign-up is disabled';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists reject_extra_signups on auth.users;
+create trigger reject_extra_signups
+before insert on auth.users
+for each row
+execute function private.reject_extra_signups();
 -- ============================================================
