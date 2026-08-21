@@ -8,7 +8,7 @@
 <meta name="description" content="Internal request desk for Mwinbarka Imports.">
 <link rel="stylesheet" href="styles.css">
 </head>
-<body>
+<body id="admin-page">
 
 <header class="site-header">
   <nav class="nav container">
@@ -26,9 +26,9 @@
 
 <section class="page-hero">
   <div class="container">
-    <span class="eyebrow">MW · Request Desk</span>
-    <h1>Incoming import requests.</h1>
-    <p>Every request submitted through the site, newest first. Update a status as you work through the WhatsApp conversation.</p>
+    <span class="eyebrow">MW · Admin</span>
+    <h1>Requests, products, and site settings.</h1>
+    <p>Add products, store incoming requests, and paste the WhatsApp channel plus social links that the public site uses.</p>
   </div>
 </section>
 
@@ -69,36 +69,148 @@
 <!-- Dashboard -->
 <section class="admin-section" id="admin-dashboard" style="display:none;">
   <div class="container">
-    <div class="admin-bar">
-      <div class="admin-filters" id="status-filters">
-        <button class="chip active" data-status="All">All</button>
-        <button class="chip" data-status="New">New</button>
-        <button class="chip" data-status="Contacted">Contacted</button>
-        <button class="chip" data-status="Quoted">Quoted</button>
-        <button class="chip" data-status="Confirmed">Confirmed</button>
-        <button class="chip" data-status="Closed">Closed</button>
+    <div class="admin-tabs" id="admin-tabs">
+      <button type="button" class="chip active" data-tab="requests">Requests</button>
+      <button type="button" class="chip" data-tab="products">Products</button>
+      <button type="button" class="chip" data-tab="settings">Settings</button>
+    </div>
+
+    <!-- Requests -->
+    <div class="admin-panel" id="tab-requests">
+      <div class="admin-bar">
+        <div class="admin-filters" id="status-filters">
+          <button class="chip active" data-status="All">All</button>
+          <button class="chip" data-status="New">New</button>
+          <button class="chip" data-status="Contacted">Contacted</button>
+          <button class="chip" data-status="Quoted">Quoted</button>
+          <button class="chip" data-status="Confirmed">Confirmed</button>
+          <button class="chip" data-status="Closed">Closed</button>
+        </div>
+        <button class="chip" id="refresh-btn">Refresh</button>
       </div>
-      <button class="chip" id="refresh-btn">Refresh</button>
+
+      <div class="table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Received</th>
+              <th>Customer</th>
+              <th>Location</th>
+              <th>Request</th>
+              <th>Budget</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="requests-body"></tbody>
+        </table>
+      </div>
+      <p class="admin-note" id="admin-note"></p>
     </div>
 
-    <div class="table-wrap">
-      <table class="admin-table">
-        <thead>
-          <tr>
-            <th>Received</th>
-            <th>Customer</th>
-            <th>Location</th>
-            <th>Request</th>
-            <th>Budget</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="requests-body"></tbody>
-      </table>
+    <!-- Products -->
+    <div class="admin-panel" id="tab-products" hidden>
+      <form id="product-form" class="form-card admin-form" novalidate>
+        <span class="eyebrow">MW · New product</span>
+        <h2 style="margin: var(--space-2) 0 var(--space-3);">Add a product</h2>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="product-name">Name</label>
+            <input type="text" id="product-name" name="name" required>
+          </div>
+          <div class="field">
+            <label for="product-price">Price in GH₵</label>
+            <input type="text" id="product-price" name="price" placeholder="e.g. 450">
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="product-category">Category</label>
+          <input type="text" id="product-category" name="category" placeholder="e.g. Clothing & Fashion">
+        </div>
+
+        <div class="field">
+          <label for="product-description">Description</label>
+          <textarea id="product-description" name="description" rows="3"></textarea>
+        </div>
+
+        <div class="field">
+          <label for="product-image">Photo</label>
+          <input type="file" id="product-image" name="image" accept="image/*">
+        </div>
+
+        <button type="submit" class="btn btn-gold">Save product</button>
+        <div id="product-status" class="form-status"></div>
+      </form>
+
+      <div class="table-wrap" style="margin-top: var(--space-4);">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Photo</th>
+              <th>Product</th>
+              <th>Category</th>
+              <th>Price</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="products-body"></tbody>
+        </table>
+      </div>
     </div>
 
-    <p class="admin-note" id="admin-note"></p>
+    <!-- Settings -->
+    <div class="admin-panel" id="tab-settings" hidden>
+      <form id="settings-form" class="form-card admin-form" novalidate>
+        <span class="eyebrow">MW · WhatsApp channel</span>
+        <h2 style="margin: var(--space-2) 0 var(--space-3);">Channel and social links</h2>
+        <p class="form-note" style="margin-top: 0; margin-bottom: var(--space-3);">Paste the WhatsApp channel invite here. The gold floating button on the website will open this link so visitors can join the channel.</p>
+
+        <div class="field">
+          <label for="whatsapp_channel_url">WhatsApp channel link</label>
+          <input type="url" id="whatsapp_channel_url" name="whatsapp_channel_url" placeholder="https://whatsapp.com/channel/...">
+          <div class="hint">Copy the channel link from WhatsApp and paste it here.</div>
+        </div>
+
+        <div class="field">
+          <label for="whatsapp_url">WhatsApp</label>
+          <input type="url" id="whatsapp_url" name="whatsapp_url" placeholder="https://wa.me/233540309637">
+        </div>
+
+        <div class="field">
+          <label for="facebook_url">Facebook URL</label>
+          <input type="url" id="facebook_url" name="facebook_url" placeholder="https://facebook.com/...">
+        </div>
+
+        <div class="field">
+          <label for="instagram_url">Instagram URL</label>
+          <input type="url" id="instagram_url" name="instagram_url" placeholder="https://instagram.com/...">
+        </div>
+
+        <div class="field">
+          <label for="tiktok_url">TikTok URL</label>
+          <input type="url" id="tiktok_url" name="tiktok_url" placeholder="https://tiktok.com/@...">
+        </div>
+
+        <span class="eyebrow" style="display:block; margin-top: var(--space-3);">MW · Advert video</span>
+        <h2 style="margin: var(--space-2) 0 var(--space-3);">Video before a request</h2>
+        <p class="form-note" style="margin-top: 0; margin-bottom: var(--space-3);">Visitors see this video first, then continue to the import request. Upload the video here when you have it, or paste a link.</p>
+
+        <div class="field">
+          <label for="advert_video_url">Video link (optional)</label>
+          <input type="url" id="advert_video_url" name="advert_video_url" placeholder="https://...">
+        </div>
+
+        <div class="field">
+          <label for="advert_video_file">Or upload a video file</label>
+          <input type="file" id="advert_video_file" name="advert_video_file" accept="video/*">
+        </div>
+
+        <button type="submit" class="btn btn-gold">Save settings</button>
+        <div id="settings-status" class="form-status"></div>
+      </form>
+    </div>
   </div>
 </section>
 

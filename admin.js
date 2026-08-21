@@ -30,6 +30,8 @@ document.addEventListener("DOMContentLoaded", () => {
     dashboard.style.display = "block";
     signOutBtn.style.display = "inline-flex";
     await loadRequests(client);
+    await loadProducts(client);
+    await loadSettings(client);
   };
 
   const showSignedOut = () => {
@@ -75,12 +77,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("status-filters").addEventListener("click", (e) => {
     const chip = e.target.closest(".chip");
-    if (!chip) return;
+    if (!chip || !chip.dataset.status) return;
     document.querySelectorAll("#status-filters .chip").forEach((c) => c.classList.remove("active"));
     chip.classList.add("active");
     activeFilter = chip.dataset.status;
     renderRequests(client);
   });
+
+  document.getElementById("admin-tabs").addEventListener("click", (e) => {
+    const chip = e.target.closest("[data-tab]");
+    if (!chip) return;
+    document.querySelectorAll("#admin-tabs .chip").forEach((c) => c.classList.remove("active"));
+    chip.classList.add("active");
+    document.querySelectorAll(".admin-panel").forEach((panel) => {
+      panel.hidden = panel.id !== "tab-" + chip.dataset.tab;
+    });
+  });
+
+  document.getElementById("product-form").addEventListener("submit", (e) => handleProductSubmit(e, client));
+  document.getElementById("settings-form").addEventListener("submit", (e) => handleSettingsSubmit(e, client));
 });
 
 async function loadRequests(client) {
@@ -238,4 +253,141 @@ function escapeHtml(value) {
 
 function escapeAttr(value) {
   return escapeHtml(value);
+}
+
+async function uploadMedia(client, file, folder) {
+  const safeName = file.name.replace(/[^\w.\-]+/g, "-");
+  const path = `${folder}/${Date.now()}-${safeName}`;
+  const { error } = await client.storage.from("media").upload(path, file, { upsert: false });
+  if (error) throw error;
+  const { data } = client.storage.from("media").getPublicUrl(path);
+  return data.publicUrl;
+}
+
+async function loadProducts(client) {
+  const body = document.getElementById("products-body");
+  body.innerHTML = `<tr><td colspan="5" class="admin-empty">Loading products...</td></tr>`;
+
+  const { data, error } = await client
+    .from("products")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    body.innerHTML = `<tr><td colspan="5" class="admin-empty">Couldn't load products: ${escapeHtml(error.message)}</td></tr>`;
+    return;
+  }
+
+  if (!data.length) {
+    body.innerHTML = `<tr><td colspan="5"><div class="admin-empty"><span class="code">MW · NO PRODUCTS</span>No products yet. Add one above.</div></td></tr>`;
+    return;
+  }
+
+  body.innerHTML = data.map((p) => `<tr>
+    <td>${p.image_url ? `<img src="${escapeAttr(p.image_url)}" alt="" class="admin-thumb">` : '<span class="muted">—</span>'}</td>
+    <td>
+      <strong>${escapeHtml(p.name)}</strong>
+      ${p.description ? `<br><span class="muted">${escapeHtml(p.description)}</span>` : ""}
+    </td>
+    <td>${escapeHtml(p.category) || '<span class="muted">—</span>'}</td>
+    <td>${p.price ? "GH₵" + escapeHtml(p.price) : '<span class="muted">—</span>'}</td>
+    <td>
+      <div class="row-actions">
+        <button type="button" class="chip" data-delete-product="${escapeAttr(p.id)}">Delete</button>
+      </div>
+    </td>
+  </tr>`).join("");
+
+  body.querySelectorAll("[data-delete-product]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      if (!confirm("Delete this product?")) return;
+      const { error } = await client.from("products").delete().eq("id", btn.dataset.deleteProduct);
+      if (error) {
+        alert(`Couldn't delete: ${error.message}`);
+        return;
+      }
+      await loadProducts(client);
+    });
+  });
+}
+
+async function handleProductSubmit(e, client) {
+  e.preventDefault();
+  const form = e.target;
+  const statusEl = document.getElementById("product-status");
+  const btn = form.querySelector('button[type="submit"]');
+  const name = form.elements.name.value.trim();
+  if (!name) {
+    statusEl.className = "form-status error";
+    statusEl.textContent = "Give the product a name.";
+    return;
+  }
+
+  btn.disabled = true;
+  try {
+    let imageUrl = null;
+    const file = form.elements.image.files[0];
+    if (file) imageUrl = await uploadMedia(client, file, "products");
+
+    const { error } = await client.from("products").insert([{
+      name,
+      description: form.elements.description.value.trim() || null,
+      price: form.elements.price.value.trim() || null,
+      category: form.elements.category.value.trim() || null,
+      image_url: imageUrl,
+    }]);
+    if (error) throw error;
+
+    form.reset();
+    statusEl.className = "form-status success";
+    statusEl.textContent = "Product saved.";
+    await loadProducts(client);
+  } catch (err) {
+    statusEl.className = "form-status error";
+    statusEl.textContent = err.message || "Couldn't save the product.";
+  }
+  btn.disabled = false;
+}
+
+async function loadSettings(client) {
+  const { data, error } = await client.from("site_settings").select("*").eq("id", 1).maybeSingle();
+  if (error || !data) return;
+  const form = document.getElementById("settings-form");
+  ["whatsapp_channel_url", "whatsapp_url", "facebook_url", "instagram_url", "tiktok_url", "advert_video_url"].forEach((key) => {
+    if (form.elements[key]) form.elements[key].value = data[key] || "";
+  });
+}
+
+async function handleSettingsSubmit(e, client) {
+  e.preventDefault();
+  const form = e.target;
+  const statusEl = document.getElementById("settings-status");
+  const btn = form.querySelector('button[type="submit"]');
+  btn.disabled = true;
+
+  try {
+    let videoUrl = form.elements.advert_video_url.value.trim() || null;
+    const file = form.elements.advert_video_file.files[0];
+    if (file) videoUrl = await uploadMedia(client, file, "adverts");
+
+    const { error } = await client.from("site_settings").update({
+      whatsapp_channel_url: form.elements.whatsapp_channel_url.value.trim() || null,
+      whatsapp_url: form.elements.whatsapp_url.value.trim() || null,
+      facebook_url: form.elements.facebook_url.value.trim() || null,
+      instagram_url: form.elements.instagram_url.value.trim() || null,
+      tiktok_url: form.elements.tiktok_url.value.trim() || null,
+      advert_video_url: videoUrl,
+      updated_at: new Date().toISOString(),
+    }).eq("id", 1);
+    if (error) throw error;
+
+    if (videoUrl) form.elements.advert_video_url.value = videoUrl;
+    form.elements.advert_video_file.value = "";
+    statusEl.className = "form-status success";
+    statusEl.textContent = "Settings saved. The website will use these links and this video.";
+  } catch (err) {
+    statusEl.className = "form-status error";
+    statusEl.textContent = err.message || "Couldn't save settings.";
+  }
+  btn.disabled = false;
 }

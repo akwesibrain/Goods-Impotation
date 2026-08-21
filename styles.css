@@ -414,7 +414,7 @@ textarea:focus-visible, select:focus-visible {
 .site-footer { background: var(--navy-900); color: rgba(255,255,255,0.6); padding: var(--space-5) 0 var(--space-3); }
 .footer-grid {
   display: grid;
-  grid-template-columns: 1.4fr 1fr 1fr;
+  grid-template-columns: 1.4fr 1fr 1fr 1fr;
   gap: var(--space-4);
   padding-bottom: var(--space-4);
   border-bottom: 1px solid rgba(255,255,255,0.08);
@@ -627,3 +627,62 @@ textarea:focus-visible, select:focus-visible {
   color: var(--ink-500);
   margin-top: var(--space-2);
 }
+
+.admin-tabs { display: flex; gap: var(--space-1); flex-wrap: wrap; margin-bottom: var(--space-4); }
+.admin-form { max-width: 640px; }
+.admin-thumb { width: 56px; height: 56px; object-fit: cover; border-radius: var(--radius); }
+
+/* ---------------- Advert video gate ---------------- */
+#advert-gate {
+  position: fixed;
+  inset: 0;
+  background: rgba(7, 20, 39, 0.94);
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2);
+}
+.advert-card {
+  background: var(--cream);
+  border-radius: var(--radius);
+  padding: var(--space-4);
+  max-width: 640px;
+  width: 100%;
+  text-align: center;
+}
+.advert-card h2 { margin: var(--space-2) 0; }
+.advert-card p { color: var(--ink-500); margin: 0 0 var(--space-3); }
+.advert-card video {
+  width: 100%;
+  max-height: 52vh;
+  background: var(--navy-900);
+  margin-bottom: var(--space-3);
+  border-radius: var(--radius);
+}
+.advert-card .btn { width: 100%; justify-content: center; }
+
+/* ---------------- Public products ---------------- */
+.product-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3); }
+@media (max-width: 760px) { .product-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 480px) { .product-grid { grid-template-columns: 1fr; } }
+.product-card {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.product-card img, .product-placeholder {
+  width: 100%;
+  aspect-ratio: 4/3;
+  object-fit: cover;
+  background: var(--navy-800);
+}
+.product-body { padding: var(--space-2); display: flex; flex-direction: column; gap: 0.4rem; flex: 1; }
+.product-body .code { font-family: var(--font-mono); font-size: 0.68rem; color: var(--gold-500); letter-spacing: 0.08em; text-transform: uppercase; }
+.product-body h3 { font-size: 1.1rem; }
+.product-body p { color: var(--ink-500); font-size: 0.9rem; margin: 0; }
+.product-price { font-family: var(--font-mono); color: var(--gold-500); margin-top: auto; }
+.product-body .btn { margin-top: var(--space-2); justify-content: center; }

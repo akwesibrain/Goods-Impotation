@@ -42,6 +42,8 @@ document.addEventListener("DOMContentLoaded", () => {
     form.addEventListener("submit", handleRequestSubmit);
     prefillCategoryFromQuery(form);
   }
+
+  applyPublicSite();
 });
 
 /**
@@ -148,4 +150,128 @@ function showStatus(el, type, msg, waUrl) {
     el.appendChild(document.createElement("br"));
     el.appendChild(link);
   }
+}
+
+async function applyPublicSite() {
+  if (document.body && document.body.id === "admin-page") return;
+  const client = window.getSupabaseClient && window.getSupabaseClient();
+  if (!client) return;
+
+  const { data: settings } = await client.from("site_settings").select("*").eq("id", 1).maybeSingle();
+  if (settings) {
+    applyChannelButton(settings);
+    applySocialLinks(settings);
+    showAdvertGate(settings);
+  }
+
+  await renderPublicProducts(client);
+}
+
+function applyChannelButton(settings) {
+  const btn = document.querySelector(".wa-float");
+  if (!btn) return;
+  const channel = (settings.whatsapp_channel_url || "").trim();
+  if (!channel) return;
+  btn.href = channel;
+  btn.setAttribute("aria-label", "Join our WhatsApp channel");
+  btn.title = "Join our WhatsApp channel";
+}
+
+function applySocialLinks(settings) {
+  const items = [
+    ["Facebook", settings.facebook_url],
+    ["Instagram", settings.instagram_url],
+    ["WhatsApp", settings.whatsapp_url || settings.whatsapp_channel_url],
+    ["TikTok", settings.tiktok_url],
+  ].filter(([, url]) => url && String(url).trim());
+
+  if (!items.length) return;
+
+  document.querySelectorAll(".footer-grid").forEach((grid) => {
+    let box = grid.querySelector(".social-links-box");
+    if (!box) {
+      box = document.createElement("div");
+      box.className = "social-links-box";
+      box.innerHTML = "<h4>Follow</h4><ul></ul>";
+      grid.appendChild(box);
+    }
+    const list = box.querySelector("ul");
+    list.innerHTML = items
+      .map(([label, url]) => `<li><a href="${escapeAttr(url)}" target="_blank" rel="noopener">${escapeHtml(label)}</a></li>`)
+      .join("");
+  });
+}
+
+function showAdvertGate(settings) {
+  const videoUrl = (settings.advert_video_url || "").trim();
+  if (!videoUrl) return;
+  if (sessionStorage.getItem("mwinbarka_advert_seen") === "1") return;
+  if (document.getElementById("advert-gate")) return;
+
+  const onRequestPage = Boolean(document.getElementById("request-form"));
+  const overlay = document.createElement("div");
+  overlay.id = "advert-gate";
+  overlay.innerHTML = `
+    <div class="advert-card">
+      <span class="eyebrow">MW · Advert</span>
+      <h2>Watch this first.</h2>
+      <p>Then continue to request an import.</p>
+      <video id="advert-video" src="${escapeAttr(videoUrl)}" controls playsinline></video>
+      <a class="btn btn-gold" id="advert-continue" href="request.html">Continue to request an import</a>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  overlay.querySelector("#advert-continue").addEventListener("click", (e) => {
+    sessionStorage.setItem("mwinbarka_advert_seen", "1");
+    if (onRequestPage) {
+      e.preventDefault();
+      overlay.remove();
+    }
+  });
+}
+
+async function renderPublicProducts(client) {
+  const grids = document.querySelectorAll("#product-grid");
+  if (!grids.length) return;
+
+  const { data, error } = await client
+    .from("products")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error || !data || !data.length) {
+    document.querySelectorAll("#products-section").forEach((section) => { section.hidden = true; });
+    return;
+  }
+
+  const html = data.map((p) => `
+    <article class="product-card">
+      ${p.image_url ? `<img src="${escapeAttr(p.image_url)}" alt="${escapeAttr(p.name)}">` : `<div class="product-placeholder"></div>`}
+      <div class="product-body">
+        <span class="code">${escapeHtml(p.category || "Product")}</span>
+        <h3>${escapeHtml(p.name)}</h3>
+        ${p.description ? `<p>${escapeHtml(p.description)}</p>` : ""}
+        ${p.price ? `<div class="product-price">GH₵${escapeHtml(p.price)}</div>` : ""}
+        <a class="btn btn-gold" href="request.html">Request this</a>
+      </div>
+    </article>
+  `).join("");
+
+  grids.forEach((grid) => { grid.innerHTML = html; });
+  document.querySelectorAll("#products-section").forEach((section) => { section.hidden = false; });
+}
+
+function escapeHtml(value) {
+  if (value === null || value === undefined) return "";
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function escapeAttr(value) {
+  return escapeHtml(value);
 }
