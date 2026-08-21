@@ -22,15 +22,17 @@
 //    load the Supabase library and this file before script.js.
 // ============================================================
 
-const SUPABASE_URL = "YOUR_SUPABASE_PROJECT_URL"; // e.g. https://xxxx.supabase.co
-const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+const SUPABASE_URL = "https://kajtwabmwbncfgvehqmm.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_OthsZo5O7gJ_w23GJVdmuQ_EBsh6gsn";
 
 let supabaseClient = null;
 
 if (
   typeof window.supabase !== "undefined" &&
-  SUPABASE_URL !== "YOUR_SUPABASE_PROJECT_URL" &&
-  SUPABASE_ANON_KEY !== "YOUR_SUPABASE_ANON_KEY"
+  SUPABASE_URL &&
+  SUPABASE_ANON_KEY &&
+  !SUPABASE_URL.includes("YOUR_SUPABASE") &&
+  !SUPABASE_ANON_KEY.includes("YOUR_SUPABASE")
 ) {
   supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 }
