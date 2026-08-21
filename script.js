@@ -44,6 +44,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   applyPublicSite();
+  mountAnnounceBar();
+  mountSiteSearch();
 });
 
 /**
@@ -53,11 +55,27 @@ document.addEventListener("DOMContentLoaded", () => {
 function prefillCategoryFromQuery(form) {
   const params = new URLSearchParams(window.location.search);
   const category = params.get("category");
-  if (!category) return;
-  const select = form.elements.category;
-  if (!select) return;
-  const match = Array.from(select.options).find((opt) => opt.value === category);
-  if (match) select.value = category;
+  if (category) {
+    const select = form.elements.category;
+    if (select) {
+      const match = Array.from(select.options).find((opt) => opt.value === category);
+      if (match) select.value = category;
+    }
+  }
+  const q = (params.get("q") || "").trim();
+  if (!q) return;
+
+  if (looksLikeUrl(q) && form.elements.reference_url && !form.elements.reference_url.value) {
+    form.elements.reference_url.value = q.startsWith("http") ? q : `https://${q}`;
+    if (form.elements.request_details && !form.elements.request_details.value) {
+      form.elements.request_details.value = "Please quote this item from the link I pasted.";
+    }
+    return;
+  }
+
+  if (form.elements.request_details && !form.elements.request_details.value) {
+    form.elements.request_details.value = q;
+  }
 }
 
 /**
@@ -152,19 +170,49 @@ function showStatus(el, type, msg, waUrl) {
   }
 }
 
-async function applyPublicSite() {
+function mountAnnounceBar() {
   if (document.body && document.body.id === "admin-page") return;
-  const client = window.getSupabaseClient && window.getSupabaseClient();
-  if (!client) return;
+  if (document.querySelector(".announce-bar")) return;
+  const bar = document.createElement("div");
+  bar.className = "announce-bar";
+  bar.textContent = "Quotes in GH₵ · Typical WhatsApp reply within 24 hours · China & Turkey → Ghana";
+  const header = document.querySelector(".site-header");
+  if (header) header.insertBefore(bar, header.firstChild);
+  else document.body.insertBefore(bar, document.body.firstChild);
+}
 
-  const { data: settings } = await client.from("site_settings").select("*").eq("id", 1).maybeSingle();
-  if (settings) {
-    applyChannelButton(settings);
-    applySocialLinks(settings);
-    showAdvertGate(settings);
-  }
+function looksLikeUrl(value) {
+  return /^(https?:\/\/|www\.)/i.test(String(value || "").trim());
+}
 
-  await renderPublicProducts(client);
+function mountSiteSearch() {
+  if (document.body && document.body.id === "admin-page") return;
+  if (document.querySelector(".site-search")) return;
+  const header = document.querySelector(".site-header");
+  const nav = header && header.querySelector(".nav");
+  const logo = header && header.querySelector(".nav-logo");
+  if (!header || !nav || !logo) return;
+
+  const main = document.createElement("div");
+  main.className = "header-main container";
+
+  const form = document.createElement("form");
+  form.className = "site-search";
+  form.action = "request.html";
+  form.method = "get";
+  form.setAttribute("role", "search");
+  form.innerHTML = `
+    <input type="search" name="q" placeholder="Describe an item or paste a 1688 / Alibaba link" aria-label="Search what to import">
+    <button type="submit" class="btn btn-gold">Search</button>
+  `;
+
+  const cta = header.querySelector(".nav-cta");
+  const toggle = header.querySelector(".nav-toggle");
+  main.appendChild(logo);
+  main.appendChild(form);
+  if (cta) main.appendChild(cta);
+  if (toggle) main.appendChild(toggle);
+  header.insertBefore(main, nav);
 }
 
 function applyChannelButton(settings) {
@@ -231,6 +279,25 @@ function showAdvertGate(settings) {
   });
 }
 
+async function applyPublicSite() {
+  const client = window.getSupabaseClient && window.getSupabaseClient();
+  if (!client) return;
+
+  const { data } = await client
+    .from("site_settings")
+    .select("*")
+    .eq("id", 1)
+    .maybeSingle();
+
+  if (data) {
+    applyChannelButton(data);
+    applySocialLinks(data);
+    showAdvertGate(data);
+  }
+
+  await renderPublicProducts(client);
+}
+
 async function renderPublicProducts(client) {
   const grids = document.querySelectorAll("#product-grid");
   if (!grids.length) return;
@@ -253,7 +320,7 @@ async function renderPublicProducts(client) {
         <h3>${escapeHtml(p.name)}</h3>
         ${p.description ? `<p>${escapeHtml(p.description)}</p>` : ""}
         ${p.price ? `<div class="product-price">GH₵${escapeHtml(p.price)}</div>` : ""}
-        <a class="btn btn-gold" href="request.html">Request this</a>
+        <a class="btn btn-gold" href="request.html?q=${encodeURIComponent(p.name)}${p.category ? `&category=${encodeURIComponent(p.category)}` : ""}">Request this</a>
       </div>
     </article>
   `).join("");
