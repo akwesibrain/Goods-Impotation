@@ -48,10 +48,14 @@ document.addEventListener("DOMContentLoaded", () => {
   mountAnnounceBar();
   mountSiteSearch();
   mountFeatureNav();
+  enhanceSearch();
+  mountMobileChrome();
   renderPopularSourcing();
   renderQuoteListPage();
   setupShippingAdvisor();
   bindQuoteButtons();
+  renderItemPage();
+  restoreSearchPhoto();
 });
 
 /**
@@ -144,15 +148,21 @@ async function handleRequestSubmit(e) {
   submitBtn.textContent = "SENDING...";
 
   const photoInput = form.querySelector("#photo");
-  if (photoInput && photoInput.files && photoInput.files[0]) {
+  let photoFile = photoInput && photoInput.files && photoInput.files[0];
+  if (!photoFile && sessionStorage.getItem("mwinbarka_search_photo")) {
     try {
-      data.photo_url = await uploadRequestPhoto(photoInput.files[0]);
+      photoFile = await dataUrlToFile(sessionStorage.getItem("mwinbarka_search_photo"));
+    } catch (err) {
+      console.error("Could not read the search photo:", err);
+    }
+  }
+  if (photoFile) {
+    try {
+      data.photo_url = await uploadRequestPhoto(photoFile);
+      sessionStorage.removeItem("mwinbarka_search_photo");
     } catch (err) {
       console.error("Photo upload failed:", err);
       showStatus(statusEl, "error", "Couldn't upload the photo. You can still send the request — attach the picture on WhatsApp.");
-      submitBtn.disabled = false;
-      submitBtn.textContent = "SEND REQUEST";
-      // Continue without the photo rather than blocking the lead.
     }
   }
 
@@ -269,14 +279,14 @@ function mountSiteSearch() {
 const QUOTE_KEY = "mwinbarka_quote_list";
 
 const POPULAR_SOURCING = [
-  { id: "pop-fufu", name: "Fufu / cassava pounding machine", category: "Home & Kitchen", from: "450" },
-  { id: "pop-sneakers", name: "Men's sneakers (wholesale pairs)", category: "Shoes & Bags", from: "180" },
-  { id: "pop-phones", name: "Phone accessories carton", category: "Electronics", from: "120" },
-  { id: "pop-dryer", name: "Salon hair dryer", category: "Beauty & Cosmetics", from: "260" },
-  { id: "pop-fashion", name: "Women's fashion lot (mixed styles)", category: "Clothing & Fashion", from: "150" },
-  { id: "pop-blender", name: "Heavy-duty kitchen mill / blender", category: "Home & Kitchen", from: "320" },
-  { id: "pop-solar", name: "Solar street / compound lights", category: "Electronics", from: "200" },
-  { id: "pop-kids", name: "Kids toys mixed carton", category: "Other", from: "90" },
+  { id: "pop-fufu", name: "Fufu / cassava pounding machine", category: "Home & Kitchen", from: "450", itemNo: "MW-HK-01", material: "Stainless steel bowl, copper motor", origin: "China", notes: "Tell us capacity and 220V if it is for a chop bar." },
+  { id: "pop-sneakers", name: "Men's sneakers (wholesale pairs)", category: "Shoes & Bags", from: "180", itemNo: "MW-SH-02", material: "PU / mesh (varies by style)", origin: "China", notes: "Send a photo or 1688 link for the exact model and sizes." },
+  { id: "pop-phones", name: "Phone accessories carton", category: "Electronics", from: "120", itemNo: "MW-EL-03", material: "Mixed — cables, cases, earbuds", origin: "China", notes: "Good for market stall restock. Say how many pieces." },
+  { id: "pop-dryer", name: "Salon hair dryer", category: "Beauty & Cosmetics", from: "260", itemNo: "MW-BE-04", material: "ABS housing, AC motor", origin: "China", notes: "Professional salon dryers. Confirm plug type for Ghana." },
+  { id: "pop-fashion", name: "Women's fashion lot (mixed styles)", category: "Clothing & Fashion", from: "150", itemNo: "MW-CL-05", material: "Varies by lot", origin: "China or Turkey", notes: "Share sizes, colours, and whether you want Turkey or China." },
+  { id: "pop-blender", name: "Heavy-duty kitchen mill / blender", category: "Home & Kitchen", from: "320", itemNo: "MW-HK-06", material: "Stainless mill, copper motor", origin: "China", notes: "Popular for pepper, tom brown, and fufu shops." },
+  { id: "pop-solar", name: "Solar street / compound lights", category: "Electronics", from: "200", itemNo: "MW-EL-07", material: "ABS + polycrystalline panel", origin: "China", notes: "Tell us wattage and whether you need a pole." },
+  { id: "pop-kids", name: "Kids toys mixed carton", category: "Other", from: "90", itemNo: "MW-OT-08", material: "Plastic / mixed", origin: "China", notes: "Wholesale mixed carton. Age range helps us pick safer lots." },
 ];
 
 function getQuoteList() {
@@ -369,31 +379,23 @@ function tileDataUri(label) {
 
 function productCardHtml(p, opts = {}) {
   const id = p.id || p.name;
-    const priceRaw = p.price || "";
-    const price = priceRaw
-      ? (String(priceRaw).includes("GH") ? priceRaw : `GH₵${priceRaw}`)
-      : (p.from ? `from GH₵${p.from}` : "");
+  const priceRaw = p.price || "";
+  const price = priceRaw
+    ? (String(priceRaw).includes("GH") ? priceRaw : `GH₵${priceRaw}`)
+    : (p.from ? `from GH₵${p.from}` : "");
   const img = p.image_url
     ? `<img src="${escapeAttr(p.image_url)}" alt="${escapeAttr(p.name)}">`
     : `<img src="${tileDataUri((p.category || "MW").split(" ")[0])}" alt="">`;
-  const requestHref = `request.html?q=${encodeURIComponent(p.name)}${p.category ? `&category=${encodeURIComponent(p.category)}` : ""}`;
+  const href = `item.html?id=${encodeURIComponent(id)}`;
   return `
-    <article class="product-card" data-quote-item
-      data-id="${escapeAttr(id)}"
-      data-name="${escapeAttr(p.name)}"
-      data-category="${escapeAttr(p.category || "")}"
-      data-from="${escapeAttr(p.from || p.price || "")}">
+    <a class="product-card" href="${href}">
       ${img}
       <div class="product-body">
         <span class="code">${escapeHtml(p.category || "Product")}</span>
         <h3>${escapeHtml(p.name)}</h3>
         ${price ? `<div class="product-price">${escapeHtml(price)}${opts.indicative ? " <small>indicative</small>" : ""}</div>` : ""}
-        <div class="product-actions">
-          <button type="button" class="btn btn-outline-dark add-quote">Add to quote list</button>
-          <a class="btn btn-gold" href="${requestHref}">Request this</a>
-        </div>
       </div>
-    </article>
+    </a>
   `;
 }
 
@@ -537,6 +539,209 @@ async function uploadRequestPhoto(file) {
   return data.publicUrl || "";
 }
 
+function pageFile() {
+  return (location.pathname.split("/").pop() || "index.html") || "index.html";
+}
+
+function enhanceSearch() {
+  if (document.body && document.body.id === "admin-page") return;
+  document.querySelectorAll(".site-search").forEach((form) => {
+    if (form.querySelector(".search-cam")) return;
+    const label = document.createElement("label");
+    label.className = "search-cam";
+    label.title = "Search by photo";
+    label.innerHTML = `<input type="file" accept="image/*" capture="environment" aria-label="Search by photo"><span aria-hidden="true">📷</span>`;
+    form.insertBefore(label, form.firstElementChild);
+    const input = label.querySelector("input");
+    input.addEventListener("change", async () => {
+      const file = input.files && input.files[0];
+      if (!file) return;
+      try {
+        const dataUrl = await compressToDataUrl(file);
+        sessionStorage.setItem("mwinbarka_search_photo", dataUrl);
+        window.location.href = "request.html?from=photo";
+      } catch (err) {
+        console.error(err);
+        showToast("Couldn't read that photo. Try a smaller image.");
+      }
+    });
+  });
+}
+
+function mountMobileChrome() {
+  if (document.body && document.body.id === "admin-page") return;
+  document.body.classList.add("has-tabbar");
+
+  if (!document.querySelector(".header-phone")) {
+    const main = document.querySelector(".header-main");
+    const phone = document.createElement("a");
+    phone.className = "header-phone";
+    phone.href = `https://wa.me/${WA_NUMBER}`;
+    phone.target = "_blank";
+    phone.rel = "noopener";
+    phone.setAttribute("aria-label", "Call or chat on WhatsApp");
+    phone.textContent = "☎";
+    const toggle = main && main.querySelector(".nav-toggle");
+    if (toggle) main.insertBefore(phone, toggle);
+    else if (main) main.appendChild(phone);
+  }
+
+  if (document.querySelector(".tabbar")) return;
+  const here = pageFile();
+  const tab = (href, label, extra) => {
+    const file = href.split("/").pop();
+    const on = here === file || (file === "index.html" && (here === "" || here === "/"));
+    return `<a href="${href}" class="${on ? "active" : ""}">${label}${extra || ""}</a>`;
+  };
+  const nav = document.createElement("nav");
+  nav.className = "tabbar";
+  nav.setAttribute("aria-label", "Primary");
+  nav.innerHTML = `
+    ${tab("index.html", "Home")}
+    ${tab("categories.html", "Categories")}
+    ${tab("quote-list.html", "Quote", ` <span data-quote-count>0</span>`)}
+    ${tab("request.html", "Request")}
+  `;
+  document.body.appendChild(nav);
+  updateQuoteBadge();
+}
+
+async function compressToDataUrl(file) {
+  const blobUrl = URL.createObjectURL(file);
+  const img = await new Promise((resolve, reject) => {
+    const el = new Image();
+    el.onload = () => resolve(el);
+    el.onerror = reject;
+    el.src = blobUrl;
+  });
+  const max = 1280;
+  let w = img.width;
+  let h = img.height;
+  if (w > max) {
+    h = Math.round((h * max) / w);
+    w = max;
+  }
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+  URL.revokeObjectURL(blobUrl);
+  return canvas.toDataURL("image/jpeg", 0.72);
+}
+
+async function dataUrlToFile(dataUrl) {
+  const res = await fetch(dataUrl);
+  const blob = await res.blob();
+  return new File([blob], "search.jpg", { type: blob.type || "image/jpeg" });
+}
+
+function restoreSearchPhoto() {
+  const preview = document.getElementById("photo-preview");
+  const stored = sessionStorage.getItem("mwinbarka_search_photo");
+  if (!preview || !stored) return;
+  preview.innerHTML = "";
+  const img = document.createElement("img");
+  img.src = stored;
+  img.alt = "Photo from search";
+  preview.appendChild(img);
+  const details = document.getElementById("request_details");
+  if (details && !details.value) details.value = "Please quote this item from the photo I uploaded.";
+}
+
+async function renderItemPage(client) {
+  const root = document.getElementById("item-root");
+  if (!root) return;
+  const id = new URLSearchParams(location.search).get("id");
+  if (!id) {
+    root.innerHTML = `<p class="empty-note">No item selected.</p><a class="btn btn-gold" href="index.html">Back to home</a>`;
+    return;
+  }
+
+  let item = POPULAR_SOURCING.find((row) => row.id === id);
+  const db = client || (window.getSupabaseClient && window.getSupabaseClient());
+  if (!item && db) {
+    const { data } = await db.from("products").select("*").eq("id", id).maybeSingle();
+    if (data) {
+      item = {
+        id: data.id,
+        name: data.name,
+        category: data.category,
+        from: data.price,
+        price: data.price,
+        image_url: data.image_url,
+        notes: data.description,
+        origin: "China or Turkey",
+        itemNo: String(data.id).slice(0, 8),
+        material: "See description",
+      };
+    }
+  }
+  if (!item) {
+    root.innerHTML = `<p class="empty-note">We couldn't find that item. Describe it on the request form instead.</p>
+      <a class="btn btn-gold" href="request.html">Request an Import</a>`;
+    return;
+  }
+
+  const price = item.price
+    ? (String(item.price).includes("GH") ? item.price : `GH₵${item.price}`)
+    : (item.from ? `from GH₵${item.from}` : "");
+  const img = item.image_url
+    ? `<img src="${escapeAttr(item.image_url)}" alt="${escapeAttr(item.name)}">`
+    : `<img src="${tileDataUri((item.category || "MW").split(" ")[0])}" alt="">`;
+  const requestHref = `request.html?q=${encodeURIComponent(item.name)}${item.category ? `&category=${encodeURIComponent(item.category)}` : ""}`;
+  const wa = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent("Hi Mwinbarka Imports, I'd like a GH₵ quote for: " + item.name)}`;
+
+  document.title = `${item.name} — Mwinbarka Imports`;
+  const titleEl = document.getElementById("item-header-title");
+  if (titleEl) titleEl.textContent = item.name;
+
+  root.innerHTML = `
+    <div class="item-hero">${img}</div>
+    <div class="item-info">
+      <h1>${escapeHtml(item.name)}</h1>
+      ${price ? `<div class="product-price">${escapeHtml(price)} <small>indicative landed start — WhatsApp quote is final</small></div>` : ""}
+    </div>
+    <section class="item-block">
+      <h2>How to request this</h2>
+      <ol class="process-list">
+        <li>Send a request — or add it to your quote list.</li>
+        <li>We quote the goods in GH₵ (supplier price + China pickup).</li>
+        <li>You choose sea or air. See the <a href="shipping.html">freight estimate</a>, then we ship to Ghana.</li>
+      </ol>
+      <p class="muted">Packages can be consolidated. Chat on WhatsApp if you already have other items waiting.</p>
+    </section>
+    <section class="item-block">
+      <h2>Sourcing agent</h2>
+      <p><strong>Mwinbarka Imports</strong> — Accra, Ghana</p>
+      <p class="muted">Direct source from China and Turkey. Quotes and payment terms stay on WhatsApp.</p>
+      <a class="btn btn-outline-dark" href="https://wa.me/${WA_NUMBER}" target="_blank" rel="noopener">Chat on WhatsApp</a>
+    </section>
+    <section class="item-block">
+      <h2>Product attributes</h2>
+      <dl class="attr-list">
+        <div><dt>Item no.</dt><dd>${escapeHtml(item.itemNo || "—")}</dd></div>
+        <div><dt>Category</dt><dd>${escapeHtml(item.category || "—")}</dd></div>
+        <div><dt>Material</dt><dd>${escapeHtml(item.material || "—")}</dd></div>
+        <div><dt>Origin</dt><dd>${escapeHtml(item.origin || "China or Turkey")}</dd></div>
+      </dl>
+      ${item.notes ? `<p class="muted">${escapeHtml(item.notes)}</p>` : ""}
+    </section>
+  `;
+
+  const bar = document.getElementById("item-sticky");
+  if (bar) {
+    bar.hidden = false;
+    bar.dataset.id = item.id;
+    bar.dataset.name = item.name;
+    bar.dataset.category = item.category || "";
+    bar.dataset.from = item.from || item.price || "";
+    const chat = bar.querySelector("[data-chat]");
+    const request = bar.querySelector("[data-request]");
+    if (chat) chat.href = wa;
+    if (request) request.href = requestHref;
+  }
+}
+
 function applyChannelButton(settings) {
   const btn = document.querySelector(".wa-float");
   if (!btn) return;
@@ -618,6 +823,7 @@ async function applyPublicSite() {
   }
 
   await renderPublicProducts(client);
+  await renderItemPage(client);
 }
 
 async function renderPublicProducts(client) {
