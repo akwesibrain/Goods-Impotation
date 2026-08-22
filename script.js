@@ -790,7 +790,7 @@ let cachedAdvertUrl = "";
 // GitHack / GitHub raw cannot serve this MP4 (403 or octet-stream).
 // Always play from public HTTPS hosts that return video/mp4.
 const HOSTED_ADVERT_MP4 =
-  "https://kajtwabmwbncfgvehqmm.supabase.co/storage/v1/object/public/media/adverts/advert.mp4?v=20260822";
+  "https://kajtwabmwbncfgvehqmm.supabase.co/storage/v1/object/public/media/adverts/advert.mp4?v=phone1";
 const FALLBACK_ADVERT_MP4 =
   "https://cdn.jsdelivr.net/gh/akwesibrain/Goods-Impotation@cursor/mwinbarka-imports-site-5d47/assets/advert.mp4";
 const ADVERT_WATCH_KEY = "mwinbarka_advert_finished_v2";
