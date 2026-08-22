@@ -1008,36 +1008,31 @@ textarea:focus-visible, select:focus-visible {
 #advert-gate {
   position: fixed;
   inset: 0;
-  background: rgba(7, 20, 39, 0.96);
+  background: #000;
   z-index: 400;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-2);
-  overflow: auto;
+  overflow: hidden;
 }
 body.advert-locked { overflow: hidden; }
 body.advert-locked .tabbar,
 body.advert-locked .sticky-cta,
 body.advert-locked .wa-float { display: none !important; }
-.advert-card {
-  background: var(--cream);
-  border-radius: var(--radius);
-  padding: var(--space-4);
-  max-width: 420px;
-  width: 100%;
-  text-align: center;
-}
-.advert-card h2 { margin: var(--space-2) 0; }
-.advert-card p { color: var(--ink-500); margin: 0 0 var(--space-3); }
-.advert-player {
+.advert-stage {
   position: relative;
-  width: min(100%, 320px);
-  margin: 0 auto var(--space-3);
-  aspect-ratio: 9 / 16;
-  max-height: 58vh;
-  background: var(--navy-900);
-  border-radius: var(--radius);
+  width: 100%;
+  height: 100%;
+  background: #000;
+}
+.advert-player {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  max-width: none;
+  max-height: none;
+  aspect-ratio: auto;
+  background: #000;
   overflow: hidden;
 }
 .advert-player video,
@@ -1049,29 +1044,48 @@ body.advert-locked .wa-float { display: none !important; }
   border: 0;
   display: block;
   background: #000;
+  object-fit: cover;
 }
-.advert-loading, .advert-progress {
+.advert-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--gold-400);
+}
+.advert-hud {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  z-index: 3;
+  padding: 1.1rem 1rem calc(1.1rem + env(safe-area-inset-bottom));
+  background: linear-gradient(transparent, rgba(7, 20, 39, 0.88));
+  text-align: center;
+}
+.advert-progress {
   font-family: var(--font-mono);
   font-size: 0.75rem;
   letter-spacing: 0.04em;
-  color: var(--gold-500);
-  margin-bottom: var(--space-2);
+  color: var(--gold-400);
+  margin-bottom: 0.7rem;
 }
 .advert-play {
   position: absolute;
   inset: 0;
   border: 0;
-  background: rgba(7, 20, 39, 0.45);
+  background: rgba(7, 20, 39, 0.35);
   color: var(--white);
   font-family: var(--font-mono);
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   cursor: pointer;
   z-index: 2;
 }
-.advert-card .btn { width: 100%; justify-content: center; }
-.advert-card .btn[disabled] { opacity: 0.45; cursor: not-allowed; transform: none; }
+.advert-hud .btn { width: min(100%, 420px); justify-content: center; }
+.advert-hud .btn[disabled] { opacity: 0.5; cursor: not-allowed; transform: none; }
 
 /* ---------------- Public products ---------------- */
 .product-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-2); }

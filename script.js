@@ -829,7 +829,7 @@ async function resolveTikTokId(url) {
 }
 
 function isDirectVideoUrl(url) {
-  return /\.(mp4|webm|ogg|mov|m4v)(\?|$)/i.test(url) || /\/storage\/v1\/object\/public\//i.test(url);
+  return /^(assets\/|\.\/|\/)/.test(url) || /\.(mp4|webm|ogg|mov|m4v)(\?|$)/i.test(url) || /\/storage\/v1\/object\/public\//i.test(url);
 }
 
 function advertPlayerHtml(kind, src) {
@@ -843,9 +843,9 @@ function advertPlayerHtml(kind, src) {
 }
 
 async function showAdvertGate(settings) {
-  const videoUrl = (settings.advert_video_url || "").trim();
+  const remote = ((settings && settings.advert_video_url) || "").trim();
+  const videoUrl = isDirectVideoUrl(remote) ? remote : "assets/advert.mp4";
   cachedAdvertUrl = videoUrl;
-  if (!videoUrl) return;
   if (hasWatchedAdvert()) return;
   if (document.getElementById("advert-gate")) return;
   if (document.body && document.body.id === "admin-page") return;
@@ -853,15 +853,14 @@ async function showAdvertGate(settings) {
   const overlay = document.createElement("div");
   overlay.id = "advert-gate";
   overlay.innerHTML = `
-    <div class="advert-card">
-      <span class="eyebrow">MW · Advert</span>
-      <h2>Watch this first.</h2>
-      <p>The full advert must play to the end before you can continue. Skipping is turned off.</p>
+    <div class="advert-stage">
       <div class="advert-player" id="advert-player">
         <div class="advert-loading">Loading advert…</div>
       </div>
-      <div class="advert-progress" id="advert-progress">Press play, then watch to the end.</div>
-      <button type="button" class="btn btn-gold" id="advert-continue" disabled>Watch the full video to continue</button>
+      <div class="advert-hud">
+        <div class="advert-progress" id="advert-progress">Press play, then watch to the end.</div>
+        <button type="button" class="btn btn-gold" id="advert-continue" disabled>Watch the full video to continue</button>
+      </div>
     </div>
   `;
   document.body.appendChild(overlay);
@@ -896,34 +895,11 @@ async function showAdvertGate(settings) {
     document.body.classList.remove("advert-locked");
   });
 
-  const ytId = youtubeIdFromUrl(videoUrl);
-  const tiktokId = await resolveTikTokId(videoUrl);
-  const fileUrl = isDirectVideoUrl(videoUrl) ? videoUrl : null;
-
-  if (fileUrl) {
-    playerBox.innerHTML = advertPlayerHtml("file");
-    const video = playerBox.querySelector("video");
-    video.src = fileUrl;
-    video.setAttribute("playsinline", "");
-    mountFileAdvert(video, unlock, updateProgress);
-    return;
-  }
-
-  if (ytId) {
-    playerBox.innerHTML = advertPlayerHtml("youtube");
-    mountYouTubeAdvert(ytId, unlock, updateProgress, progressEl);
-    return;
-  }
-
-  if (tiktokId) {
-    const src = `https://www.tiktok.com/player/v1/${tiktokId}?autoplay=0&loop=0&controls=0&progress_bar=0&rel=0&music_info=0&description=0&native_context_menu=0`;
-    playerBox.innerHTML = advertPlayerHtml("tiktok", src);
-    mountTikTokAdvert(playerBox.querySelector("iframe"), unlock, updateProgress, progressEl);
-    return;
-  }
-
-  playerBox.innerHTML = `<p class="muted">This advert link can't play in the page. In Admin, paste a TikTok video link, a YouTube link, or upload an MP4.</p>`;
-  progressEl.textContent = "Ask Mwinbarka Imports to re-save the advert video.";
+  playerBox.innerHTML = advertPlayerHtml("file");
+  const video = playerBox.querySelector("video");
+  video.src = videoUrl;
+  video.setAttribute("playsinline", "");
+  mountFileAdvert(video, unlock, updateProgress);
 }
 
 function addPlayOverlay(box, onPlay) {
@@ -960,7 +936,10 @@ function mountFileAdvert(video, unlock, updateProgress) {
 
 function mountTikTokAdvert(iframe, unlock, updateProgress, progressEl) {
   addPlayOverlay(iframe.parentElement, () => {
-    iframe.contentWindow.postMessage({ type: "play", "x-tiktok-player": true }, "*");
+    const ping = () => iframe.contentWindow.postMessage({ type: "play", "x-tiktok-player": true }, "*");
+    ping();
+    setTimeout(ping, 350);
+    setTimeout(ping, 900);
   });
   window.addEventListener("message", (event) => {
     if (!document.getElementById("advert-gate")) return;
@@ -1004,7 +983,7 @@ function mountYouTubeAdvert(id, unlock, updateProgress, progressEl) {
       },
     });
     const tick = () => {
-      if (hasWatchedAdvert()) return;
+      if (!document.getElementById("advert-gate") || hasWatchedAdvert()) return;
       try {
         if (player && typeof player.getCurrentTime === "function") {
           updateProgress(player.getCurrentTime(), player.getDuration());
