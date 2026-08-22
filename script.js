@@ -45,6 +45,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   applyPublicSite();
+  showAdvertGate({});
   mountAnnounceBar();
   mountSiteSearch();
   mountFeatureNav();
