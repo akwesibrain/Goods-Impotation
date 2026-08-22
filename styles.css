@@ -1060,9 +1060,10 @@ body.advert-locked .wa-float { display: none !important; }
   position: absolute;
   left: 0; right: 0; bottom: 0;
   z-index: 3;
-  padding: 1.1rem 1rem calc(1.1rem + env(safe-area-inset-bottom));
+  padding: 1.1rem 1rem calc(5.2rem + env(safe-area-inset-bottom));
   background: linear-gradient(transparent, rgba(7, 20, 39, 0.88));
   text-align: center;
+  pointer-events: none;
 }
 .advert-progress {
   font-family: var(--font-mono);
@@ -1070,22 +1071,52 @@ body.advert-locked .wa-float { display: none !important; }
   letter-spacing: 0.04em;
   color: var(--gold-400);
   margin-bottom: 0.7rem;
+  pointer-events: none;
 }
 .advert-play {
   position: absolute;
-  inset: 0;
+  left: 50%;
+  top: 46%;
+  transform: translate(-50%, -50%);
+  width: 92px;
+  height: 92px;
   border: 0;
-  background: rgba(7, 20, 39, 0.35);
-  color: var(--white);
-  font-family: var(--font-mono);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  font-size: 1.05rem;
+  border-radius: 50%;
+  background: var(--gold-500);
+  color: var(--navy-900, #071427);
+  font-size: 1.8rem;
+  line-height: 1;
   cursor: pointer;
-  z-index: 2;
+  z-index: 4;
+  pointer-events: auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
 }
-.advert-hud .btn { width: min(100%, 420px); justify-content: center; }
+.advert-play[hidden],
+.advert-unmute[hidden] { display: none !important; }
+.advert-unmute {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 4;
+  border: 0;
+  border-radius: 999px;
+  padding: 0.55rem 0.9rem;
+  background: rgba(250, 248, 243, 0.94);
+  color: #071427;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.advert-hud .btn {
+  width: min(100%, 420px);
+  justify-content: center;
+  pointer-events: auto;
+}
 .advert-hud .btn[disabled] { opacity: 0.5; cursor: not-allowed; transform: none; }
+.advert-player video { pointer-events: auto; }
 
 /* ---------------- Public products ---------------- */
 .product-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-2); }

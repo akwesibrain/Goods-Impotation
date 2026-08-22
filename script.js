@@ -787,12 +787,20 @@ function applySocialLinks(settings) {
 
 let cachedAdvertUrl = "";
 
+// GitHack / GitHub raw cannot serve this MP4 (403 or octet-stream).
+// Always play from public HTTPS hosts that return video/mp4.
+const HOSTED_ADVERT_MP4 =
+  "https://kajtwabmwbncfgvehqmm.supabase.co/storage/v1/object/public/media/adverts/advert.mp4?v=20260822";
+const FALLBACK_ADVERT_MP4 =
+  "https://cdn.jsdelivr.net/gh/akwesibrain/Goods-Impotation@cursor/mwinbarka-imports-site-5d47/assets/advert.mp4";
+const ADVERT_WATCH_KEY = "mwinbarka_advert_finished_v2";
+
 function hasWatchedAdvert() {
-  return sessionStorage.getItem("mwinbarka_advert_finished") === "1";
+  return sessionStorage.getItem(ADVERT_WATCH_KEY) === "1";
 }
 
 function markAdvertWatched() {
-  sessionStorage.setItem("mwinbarka_advert_finished", "1");
+  sessionStorage.setItem(ADVERT_WATCH_KEY, "1");
 }
 
 function youtubeIdFromUrl(url) {
@@ -830,12 +838,34 @@ async function resolveTikTokId(url) {
 }
 
 function isDirectVideoUrl(url) {
-  return /^(assets\/|\.\/|\/)/.test(url) || /\.(mp4|webm|ogg|mov|m4v)(\?|$)/i.test(url) || /\/storage\/v1\/object\/public\//i.test(url);
+  return /\.(mp4|webm|ogg|mov|m4v)(\?|$)/i.test(url) || /\/storage\/v1\/object\/public\//i.test(url);
+}
+
+function isPlayableHostedUrl(url) {
+  return (
+    /^https?:\/\//i.test(url) &&
+    isDirectVideoUrl(url) &&
+    !/raw\.githack|githubusercontent\.com/i.test(url)
+  );
+}
+
+function advertCandidates(remote) {
+  const urls = [];
+  const value = String(remote || "").trim();
+  if (isPlayableHostedUrl(value)) urls.push(value);
+  urls.push(HOSTED_ADVERT_MP4, FALLBACK_ADVERT_MP4);
+  return [...new Set(urls)];
 }
 
 function advertPlayerHtml(kind, src) {
   if (kind === "file") {
-    return `<video id="advert-video" playsinline webkit-playsinline preload="auto" controlslist="nodownload noplaybackrate noremoteplayback" disablepictureinpicture></video>`;
+    return `
+      <video id="advert-video" playsinline webkit-playsinline muted autoplay preload="auto" controls controlslist="nodownload noplaybackrate noremoteplayback" disablepictureinpicture>
+        <source type="video/mp4">
+      </video>
+      <button type="button" class="advert-play" id="advert-play" aria-label="Play advert">▶</button>
+      <button type="button" class="advert-unmute" id="advert-unmute" hidden>Tap to unmute</button>
+    `;
   }
   if (kind === "youtube") {
     return `<div id="advert-yt"></div>`;
@@ -845,21 +875,28 @@ function advertPlayerHtml(kind, src) {
 
 async function showAdvertGate(settings) {
   const remote = ((settings && settings.advert_video_url) || "").trim();
-  const videoUrl = isDirectVideoUrl(remote) ? remote : "assets/advert.mp4";
+  const sources = advertCandidates(remote);
+  const videoUrl = sources[0];
   cachedAdvertUrl = videoUrl;
   if (hasWatchedAdvert()) return;
-  if (document.getElementById("advert-gate")) return;
   if (document.body && document.body.id === "admin-page") return;
+
+  const existing = document.getElementById("advert-gate");
+  if (existing) {
+    const video = existing.querySelector("#advert-video");
+    if (video && video.dataset.activeSrc !== videoUrl) {
+      loadAdvertSources(video, sources, existing.querySelector("#advert-progress"));
+    }
+    return;
+  }
 
   const overlay = document.createElement("div");
   overlay.id = "advert-gate";
   overlay.innerHTML = `
     <div class="advert-stage">
-      <div class="advert-player" id="advert-player">
-        <div class="advert-loading">Loading advert…</div>
-      </div>
+      <div class="advert-player" id="advert-player"></div>
       <div class="advert-hud">
-        <div class="advert-progress" id="advert-progress">Press play, then watch to the end.</div>
+        <div class="advert-progress" id="advert-progress">Starting advert…</div>
         <button type="button" class="btn btn-gold" id="advert-continue" disabled>Watch the full video to continue</button>
       </div>
     </div>
@@ -898,31 +935,101 @@ async function showAdvertGate(settings) {
 
   playerBox.innerHTML = advertPlayerHtml("file");
   const video = playerBox.querySelector("video");
-  video.src = videoUrl;
-  video.setAttribute("playsinline", "");
-  mountFileAdvert(video, unlock, updateProgress);
+  mountFileAdvert(video, sources, unlock, updateProgress, progressEl);
 }
 
 function addPlayOverlay(box, onPlay) {
-  const btn = document.createElement("button");
-  btn.type = "button";
-  btn.className = "advert-play";
-  btn.textContent = "▶ Play advert";
-  box.appendChild(btn);
-  btn.addEventListener("click", () => {
-    btn.remove();
-    onPlay();
-  });
+  let btn = box.querySelector("#advert-play") || box.querySelector(".advert-play");
+  if (!btn) {
+    btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "advert-play";
+    btn.id = "advert-play";
+    btn.textContent = "▶";
+    box.appendChild(btn);
+  }
+  btn.hidden = false;
+  btn.onclick = () => onPlay();
 }
 
-function mountFileAdvert(video, unlock, updateProgress) {
+function loadAdvertSources(video, sources, progressEl) {
+  let index = 0;
+  const sourceEl = video.querySelector("source");
+
+  const apply = (url) => {
+    video.dataset.activeSrc = url;
+    if (sourceEl) {
+      sourceEl.src = url;
+      sourceEl.type = "video/mp4";
+    }
+    video.src = url;
+    video.load();
+  };
+
+  video.onerror = () => {
+    index += 1;
+    if (index < sources.length) {
+      if (progressEl) progressEl.textContent = "Trying another video host…";
+      apply(sources[index]);
+      video.play().catch(() => {});
+      return;
+    }
+    if (progressEl) {
+      progressEl.textContent = "Video could not load. Check your connection, then tap Play.";
+    }
+  };
+
+  apply(sources[0]);
+}
+
+function mountFileAdvert(video, sources, unlock, updateProgress, progressEl) {
   let maxTime = 0;
-  addPlayOverlay(video.parentElement, () => {
-    video.muted = false;
-    video.play().catch(() => {
-      video.muted = true;
-      video.play();
+  const box = video.parentElement;
+  const playBtn = box.querySelector("#advert-play");
+  const unmuteBtn = box.querySelector("#advert-unmute");
+
+  const tryPlay = (withSound) => {
+    video.muted = !withSound;
+    const start = video.play();
+    if (start && typeof start.catch === "function") {
+      start.catch(() => {
+        video.muted = true;
+        video.play().catch(() => {
+          if (progressEl) progressEl.textContent = "Tap the play button to start the advert.";
+          if (playBtn) playBtn.hidden = false;
+        });
+      });
+    }
+  };
+
+  loadAdvertSources(video, sources, progressEl);
+  video.setAttribute("playsinline", "");
+  video.setAttribute("webkit-playsinline", "");
+  video.muted = true;
+  tryPlay(false);
+
+  addPlayOverlay(box, () => tryPlay(true));
+
+  if (unmuteBtn) {
+    unmuteBtn.hidden = false;
+    unmuteBtn.addEventListener("click", () => {
+      video.muted = false;
+      unmuteBtn.hidden = true;
+      tryPlay(true);
     });
+  }
+
+  video.addEventListener("playing", () => {
+    if (playBtn) playBtn.hidden = true;
+    if (progressEl && !progressEl.textContent.includes("%") && !progressEl.textContent.includes("complete")) {
+      progressEl.textContent = "Keep watching…";
+    }
+  });
+  video.addEventListener("pause", () => {
+    if (!video.ended && playBtn) playBtn.hidden = false;
+  });
+  video.addEventListener("volumechange", () => {
+    if (unmuteBtn) unmuteBtn.hidden = !video.muted;
   });
   video.addEventListener("timeupdate", () => {
     if (video.currentTime > maxTime + 0.35 && video.seeking) return;
