@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Order Now — Mwinbarka Imports</title>
 <meta name="description" content="Tell Mwinbarka Imports what you'd like sourced from China or Turkey — we'll follow up on WhatsApp with a quote.">
-<link rel="stylesheet" href="styles.css?v=brand4">
+<link rel="stylesheet" href="styles.css?v=brand5">
 </head>
 <body>
 <script>
@@ -74,16 +74,16 @@
   <div class="container">
     <span class="eyebrow">MW–01 · New file</span>
     <h1>Order Now. We’ll price the lane.</h1>
-    <p>A sentence is enough. A photo or a 1688 / Alibaba link is better. We reply on WhatsApp with one landed figure in GH₵.</p>
+    <p>Fill the form, add a photo if you have one, and send. You’ll see a confirmation first — then WhatsApp opens so our agent can confirm price and payment.</p>
   </div>
 </section>
 
 <section class="section section-alt" style="padding-bottom: 0;">
   <div class="container" style="max-width: 760px;">
     <ol class="process-list">
-      <li>Tell us the item (text, photo, or 1688 / Alibaba link).</li>
-      <li>We quote goods + China pickup in GH₵ on WhatsApp.</li>
-      <li>We ship by sea to Ghana after you confirm the GH₵ quote on WhatsApp.</li>
+      <li>Tell us the product — name, category, photo, and quantity.</li>
+      <li>You’ll see “Order received” first. Then WhatsApp opens.</li>
+      <li>Our agent confirms the GH₵ price and payment details on WhatsApp.</li>
     </ol>
   </div>
 </section>
@@ -92,70 +92,70 @@
   <div class="container desk-form">
     <form id="request-form" class="form-card" novalidate>
 
-      <div class="field-row">
-        <div class="field">
-          <label for="name">Your name</label>
-          <input type="text" id="name" name="name" required autocomplete="name">
-        </div>
-        <div class="field">
-          <label for="phone">Phone / WhatsApp number</label>
-          <input type="tel" id="phone" name="phone" required autocomplete="tel" placeholder="0XX XXX XXXX">
-        </div>
+      <div class="field">
+        <label for="name">Name</label>
+        <input type="text" id="name" name="name" required autocomplete="name">
       </div>
 
-      <div class="field-row">
-        <div class="field">
-          <label for="location">Your location in Ghana</label>
-          <input type="text" id="location" name="location" placeholder="e.g. Accra, East Legon">
-        </div>
-        <div class="field">
-          <label for="category">Category (optional)</label>
-          <select id="category" name="category">
-            <option value="">Select if it fits</option>
-            <option>Kitchen & Home</option>
-            <option>Clothing & Fashion</option>
-            <option>Electronics</option>
-            <option>Shoes & Bags</option>
-            <option>Beauty & Cosmetics</option>
-            <option>Auto Parts</option>
-            <option>Baby & Kids</option>
-            <option>Other</option>
-          </select>
-        </div>
+      <div class="field">
+        <label for="phone">Phone number / WhatsApp number</label>
+        <input type="tel" id="phone" name="phone" required autocomplete="tel" placeholder="0XX XXX XXXX">
+      </div>
+
+      <div class="field">
+        <label for="email">Email address</label>
+        <input type="email" id="email" name="email" required autocomplete="email" placeholder="you@email.com">
+      </div>
+
+      <div class="field">
+        <label for="product">Product</label>
+        <textarea id="product" name="product" rows="3" required placeholder="e.g. Men’s leather jacket, size L"></textarea>
+      </div>
+
+      <div class="field">
+        <label for="category">Category</label>
+        <select id="category" name="category" required>
+          <option value="">Select a category</option>
+          <option>Kitchen & Home</option>
+          <option>Clothing & Fashion</option>
+          <option>Electronics</option>
+          <option>Shoes & Bags</option>
+          <option>Beauty & Cosmetics</option>
+          <option>Auto Parts</option>
+          <option>Baby & Kids</option>
+          <option>Other</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="photo">Photo of the product</label>
+        <label class="photo-drop" for="photo">
+          <input type="file" id="photo" name="photo" accept="image/*">
+          <span class="photo-drop-copy">Tap to add a photo from your gallery or camera</span>
+        </label>
+        <div class="hint">JPG or PNG, under 5 MB. This helps us quote the exact item.</div>
+        <div id="photo-preview" class="photo-preview"></div>
+      </div>
+
+      <div class="field">
+        <label for="location">Location</label>
+        <input type="text" id="location" name="location" required placeholder="e.g. Accra, East Legon">
       </div>
 
       <div class="field">
         <label for="quantity">Quantity</label>
-        <input type="text" id="quantity" name="quantity" placeholder="e.g. 2 pieces, 1 carton">
-      </div>
-
-      <div class="field">
-        <label for="request_details">What do you want imported?</label>
-        <textarea id="request_details" name="request_details" rows="4" required placeholder="e.g. A men's leather jacket, size L, similar to the photo I have. Need about 2 pieces."></textarea>
-      </div>
-
-      <div class="field">
-        <label for="reference_url">Reference link or photo (optional)</label>
-        <input type="text" id="reference_url" name="reference_url" placeholder="Paste a 1688 / Alibaba / Instagram link if you have one">
-        <div class="hint">No link? Skip this — you can also send a photo directly on WhatsApp after submitting.</div>
-      </div>
-
-      <div class="field">
-        <label for="photo">Photo of the item (optional)</label>
-        <input type="file" id="photo" name="photo" accept="image/*">
-        <div class="hint">JPG or PNG, under 5 MB. If upload fails, send the picture on WhatsApp after you submit.</div>
-        <div id="photo-preview" class="photo-preview"></div>
+        <input type="text" id="quantity" name="quantity" required placeholder="e.g. 2 pieces, 1 carton">
       </div>
 
       <button type="submit" class="btn btn-gold">Order Now</button>
-      <p class="form-note">Submitting opens WhatsApp with your details prefilled, so you can send it straight to Mwinbarka Imports. We'll reply with a quote in GH₵ once we've checked pricing.</p>
+      <p class="form-note">You’ll get an “Order received” message first. Then WhatsApp opens so our agent can confirm price and payment. Nothing is charged on this website.</p>
       <div id="form-status" class="form-status"></div>
     </form>
     <aside class="desk-aside">
       <span class="eyebrow">After you send</span>
       <h3>This is not checkout.</h3>
       <ol>
-        <li>WhatsApp opens with your order already written.</li>
+        <li>You see “Order received”, then WhatsApp opens with your order written.</li>
         <li>We check China or Turkey pricing.</li>
         <li>You get one GH₵ landed quote — goods, pickup, sea freight, clearing.</li>
         <li>Nothing is paid on this website. Terms are agreed on the official line only: 054 030 9637.</li>
@@ -205,8 +205,16 @@
 
 <a href="https://wa.me/233540309637" class="wa-float" target="_blank" rel="noopener" aria-label="Join our WhatsApp channel">💬</a>
 
+<div id="order-received" class="order-modal" hidden>
+  <div class="order-modal-card" role="dialog" aria-labelledby="order-received-title" aria-modal="true">
+    <h2 id="order-received-title">Order received! 🎉</h2>
+    <p>Your importation request has been received. Our agent will contact you on WhatsApp to confirm the price and payment details.</p>
+    <button type="button" class="btn btn-gold" id="order-received-continue">Continue to WhatsApp</button>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-client.js"></script>
-<script src="script.js?v=brand4"></script>
+<script src="script.js?v=brand5"></script>
 </body>
 </html>

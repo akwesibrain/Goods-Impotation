@@ -46,6 +46,7 @@ window.saveRequestToSupabase = async function (data) {
     {
       name: data.name,
       phone: data.phone,
+      email: data.email || null,
       location: data.location || null,
       request_details: data.request_details,
       category: data.category || null,

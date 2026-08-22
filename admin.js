@@ -174,6 +174,7 @@ function rowHtml(r) {
     <td>
       <strong>${escapeHtml(r.name)}</strong><br>
       <span class="cell-when">${escapeHtml(r.phone || "")}</span>
+      ${r.email ? `<br><span class="cell-when">${escapeHtml(r.email)}</span>` : ""}
     </td>
     <td>${escapeHtml(r.location) || '<span class="muted">—</span>'}</td>
     <td class="cell-details">
@@ -181,7 +182,7 @@ function rowHtml(r) {
       ${escapeHtml(r.request_details)}
       ${referenceHtml(r.reference_url)}
     </td>
-    <td>${r.budget_range ? "GH₵" + escapeHtml(r.budget_range) : '<span class="muted">—</span>'}</td>
+    <td>${r.quantity ? escapeHtml(r.quantity) : (r.budget_range ? "GH₵" + escapeHtml(r.budget_range) : '<span class="muted">—</span>')}</td>
     <td>
       <span class="status-pill ${status.toLowerCase()}">${escapeHtml(status)}</span>
       <select data-id="${escapeAttr(r.id)}" data-current="${escapeAttr(status)}">${options}</select>

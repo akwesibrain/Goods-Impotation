@@ -107,31 +107,25 @@ function prefillCategoryFromQuery(form) {
 
   if (qty && form.elements.quantity) form.elements.quantity.value = qty;
 
+  const productField = form.elements.product || form.elements.request_details;
+
   if (params.get("from") === "list") {
     const items = getQuoteList();
-    if (items.length && form.elements.request_details && !form.elements.request_details.value) {
-      form.elements.request_details.value = items
+    if (items.length && productField && !productField.value) {
+      productField.value = items
         .map((item) => `${item.qty || 1}× ${item.name}`)
         .join("\n");
     }
   }
 
-  if (kg && form.elements.request_details && !form.elements.request_details.value) {
-    form.elements.request_details.value = `Please quote sea freight to Ghana for about ${kg} kg.`;
+  if (kg && productField && !productField.value) {
+    productField.value = `Please quote sea freight to Ghana for about ${kg} kg.`;
   }
 
   if (!q) return;
 
-  if (looksLikeUrl(q) && form.elements.reference_url && !form.elements.reference_url.value) {
-    form.elements.reference_url.value = q.startsWith("http") ? q : `https://${q}`;
-    if (form.elements.request_details && !form.elements.request_details.value) {
-      form.elements.request_details.value = "Please quote this item from the link I pasted.";
-    }
-    return;
-  }
-
-  if (form.elements.request_details && !form.elements.request_details.value) {
-    form.elements.request_details.value = q;
+  if (productField && !productField.value) {
+    productField.value = looksLikeUrl(q) && !q.startsWith("http") ? `https://${q}` : q;
   }
 }
 
@@ -149,19 +143,24 @@ async function handleRequestSubmit(e) {
   const statusEl = document.getElementById("form-status");
   const submitBtn = form.querySelector('button[type="submit"]');
 
+  const product = (fields.product || fields.request_details).value.trim();
   const data = {
     name: fields.name.value.trim(),
     phone: fields.phone.value.trim(),
+    email: fields.email ? fields.email.value.trim() : "",
     location: fields.location.value.trim(),
     category: fields.category.value,
-    request_details: fields.request_details.value.trim(),
-    reference_url: fields.reference_url.value.trim(),
+    request_details: product,
     quantity: fields.quantity ? fields.quantity.value.trim() : "",
     photo_url: "",
   };
 
-  if (!data.name || !data.phone || !data.request_details) {
-    showStatus(statusEl, "error", "Please fill in your name, phone number, and what you'd like imported.");
+  if (!data.name || !data.phone || !data.email || !data.request_details || !data.location || !data.quantity || !data.category) {
+    showStatus(statusEl, "error", "Please fill in name, WhatsApp number, email, product, category, location, and quantity.");
+    return;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+    showStatus(statusEl, "error", "Please enter a valid email address.");
     return;
   }
 
@@ -209,35 +208,44 @@ async function handleRequestSubmit(e) {
     `Hi Mwinbarka Imports, I'd like to place an order:`,
     `Name: ${data.name}`,
     `Phone: ${data.phone}`,
-    data.location ? `Location: ${data.location}` : null,
+    data.email ? `Email: ${data.email}` : null,
+    `Product: ${data.request_details}`,
     data.category ? `Category: ${data.category}` : null,
+    data.location ? `Location: ${data.location}` : null,
     data.quantity ? `Quantity: ${data.quantity}` : null,
-    `Details: ${data.request_details}`,
-    data.reference_url ? `Reference: ${data.reference_url}` : null,
     data.photo_url ? `Photo: ${data.photo_url}` : null,
   ].filter(Boolean);
 
   const message = encodeURIComponent(lines.join("\n"));
   const waUrl = `https://wa.me/${WA_NUMBER}?text=${message}`;
 
-  showStatus(
-    statusEl,
-    "success",
-    "Order sent — opening WhatsApp to send it to Mwinbarka Imports...",
-    waUrl
-  );
   form.reset();
+  const preview = form.querySelector("#photo-preview");
+  if (preview) preview.innerHTML = "";
   if (new URLSearchParams(window.location.search).get("from") === "list") saveQuoteList([]);
   submitBtn.disabled = false;
   submitBtn.textContent = "ORDER NOW";
 
-  // The Supabase save above means this runs outside the original click,
-  // so a blocked popup would silently swallow the lead. Fall back to a
-  // same-tab redirect, and the status message keeps a manual link too.
-  const opened = window.open(waUrl, "_blank");
-  if (!opened) {
+  showOrderReceived(waUrl);
+}
+
+function showOrderReceived(waUrl) {
+  const modal = document.getElementById("order-received");
+  const go = document.getElementById("order-received-continue");
+  if (!modal || !go) {
     window.location.href = waUrl;
+    return;
   }
+  modal.hidden = false;
+  document.body.classList.add("order-modal-open");
+  const openWhatsApp = () => {
+    modal.hidden = true;
+    document.body.classList.remove("order-modal-open");
+    const opened = window.open(waUrl, "_blank");
+    if (!opened) window.location.href = waUrl;
+  };
+  go.onclick = openWhatsApp;
+  go.focus();
 }
 
 function showStatus(el, type, msg, waUrl) {
