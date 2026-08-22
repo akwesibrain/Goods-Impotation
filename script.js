@@ -608,7 +608,7 @@ function mountMobileChrome() {
     ${tab("index.html", "Home")}
     ${tab("categories.html", "Categories")}
     ${tab("quote-list.html", "Quote", ` <span data-quote-count>0</span>`)}
-    ${tab("request.html", "Request")}
+    ${tab("request.html", "Order")}
   `;
   document.body.appendChild(nav);
   updateQuoteBadge();
@@ -686,7 +686,7 @@ async function renderItemPage(client) {
   }
   if (!item) {
     root.innerHTML = `<p class="empty-note">We couldn't find that item. Describe it on the request form instead.</p>
-      <a class="btn btn-gold" href="request.html">Request an Import</a>`;
+      <a class="btn btn-gold" href="request.html">Order Now</a>`;
     return;
   }
 
@@ -712,7 +712,7 @@ async function renderItemPage(client) {
     <section class="item-block">
       <h2>How to request this</h2>
       <ol class="process-list">
-        <li>Send a request — or add it to your quote list.</li>
+        <li>Order now — or add it to your quote list.</li>
         <li>We quote the goods in GH₵ (supplier price + China pickup).</li>
         <li>You choose sea or air. See the <a href="shipping.html">freight estimate</a>, then we ship to Ghana.</li>
       </ol>
@@ -769,6 +769,12 @@ function applySocialLinks(settings) {
   ].filter(([, url]) => url && String(url).trim());
 
   if (!items.length) return;
+
+  document.querySelectorAll(".tf-socials").forEach((box) => {
+    box.innerHTML = items
+      .map(([label, url]) => `<a href="${escapeAttr(url)}" target="_blank" rel="noopener">${escapeHtml(label)}</a>`)
+      .join("");
+  });
 
   document.querySelectorAll(".footer-grid").forEach((grid) => {
     let box = grid.querySelector(".social-links-box");
