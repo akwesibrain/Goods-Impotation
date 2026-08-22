@@ -2,7 +2,10 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
 const ORIGIN = "https://kajtwabmwbncfgvehqmm.supabase.co";
 const STORAGE = `${ORIGIN}/storage/v1/object/public/media/site`;
-const BASE = `${ORIGIN}/functions/v1/website/`;
+// Supabase rewrites HTML from functions/storage to text/plain + a sandbox CSP,
+// so browsers show source instead of the site. Send HTML to a renderer.
+const HTML_HOST =
+  "https://raw.githack.com/akwesibrain/Goods-Impotation/cursor/mwinbarka-imports-site-5d47/";
 
 const TYPES: Record<string, string> = {
   html: "text/html; charset=utf-8",
@@ -48,6 +51,12 @@ Deno.serve(async (req) => {
 
   const url = new URL(req.url);
   const rel = resolvePath(url.pathname);
+  const type = mime(rel);
+
+  if (type.startsWith("text/html")) {
+    return Response.redirect(`${HTML_HOST}${rel}`, 302);
+  }
+
   const upstream = await fetch(`${STORAGE}/${rel}`);
   if (!upstream.ok) {
     return new Response("Not found", {
@@ -56,21 +65,12 @@ Deno.serve(async (req) => {
     });
   }
 
-  const type = mime(rel);
   const headers = new Headers();
   headers.set("content-type", type);
   headers.set("content-disposition", "inline");
   headers.set("x-content-type-options", "nosniff");
   headers.set("cache-control", "public, max-age=60");
   headers.set("access-control-allow-origin", "*");
-
-  if (type.startsWith("text/html")) {
-    let html = await upstream.text();
-    if (!/<base /i.test(html)) {
-      html = html.replace(/<head([^>]*)>/i, `<head$1><base href="${BASE}">`);
-    }
-    return new Response(html, { status: 200, headers });
-  }
 
   const body = req.method === "HEAD" ? null : await upstream.arrayBuffer();
   return new Response(body, { status: 200, headers });
