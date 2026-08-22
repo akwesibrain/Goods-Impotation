@@ -103,11 +103,9 @@ function prefillCategoryFromQuery(form) {
   }
   const q = (params.get("q") || "").trim();
   const qty = (params.get("qty") || "").trim();
-  const origin = (params.get("origin") || "").trim();
   const kg = (params.get("kg") || "").trim();
 
   if (qty && form.elements.quantity) form.elements.quantity.value = qty;
-  if (origin && form.elements.origin) form.elements.origin.value = origin;
 
   if (params.get("from") === "list") {
     const items = getQuoteList();
@@ -159,7 +157,6 @@ async function handleRequestSubmit(e) {
     request_details: fields.request_details.value.trim(),
     reference_url: fields.reference_url.value.trim(),
     quantity: fields.quantity ? fields.quantity.value.trim() : "",
-    origin: fields.origin ? fields.origin.value : "",
     photo_url: "",
   };
 
@@ -215,7 +212,6 @@ async function handleRequestSubmit(e) {
     data.location ? `Location: ${data.location}` : null,
     data.category ? `Category: ${data.category}` : null,
     data.quantity ? `Quantity: ${data.quantity}` : null,
-    data.origin ? `Source: ${data.origin}` : null,
     `Details: ${data.request_details}`,
     data.reference_url ? `Reference: ${data.reference_url}` : null,
     data.photo_url ? `Photo: ${data.photo_url}` : null,
@@ -276,7 +272,7 @@ function looksLikeUrl(value) {
 
 function mountSiteSearch() {
   if (document.body && document.body.id === "admin-page") return;
-  if (document.querySelector(".site-search")) return;
+  if (document.querySelector(".site-search") || document.querySelector(".tf-head")) return;
   const header = document.querySelector(".site-header");
   const nav = header && header.querySelector(".nav");
   const logo = header && header.querySelector(".nav-logo");
@@ -291,7 +287,7 @@ function mountSiteSearch() {
   form.method = "get";
   form.setAttribute("role", "search");
   form.innerHTML = `
-    <input type="search" name="q" placeholder="Describe an item or paste a 1688 / Alibaba link" aria-label="Search what to import">
+    <input type="search" name="q" placeholder="What do you want imported?" aria-label="Search what to import">
     <button type="submit" class="btn btn-gold">Search</button>
   `;
 
