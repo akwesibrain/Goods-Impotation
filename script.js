@@ -864,7 +864,7 @@ function advertPlayerHtml(kind, src) {
         <source type="video/mp4">
       </video>
       <button type="button" class="advert-play" id="advert-play" aria-label="Play advert">▶</button>
-      <button type="button" class="advert-unmute" id="advert-unmute" hidden>Tap to unmute</button>
+      <button type="button" class="advert-unmute" id="advert-unmute" hidden>Unmute</button>
     `;
   }
   if (kind === "youtube") {
@@ -1013,7 +1013,7 @@ function mountFileAdvert(video, sources, unlock, updateProgress, progressEl) {
       start.catch(() => {
         video.muted = true;
         video.play().catch(() => {
-          if (progressEl) progressEl.textContent = "Tap the play button to start the advert.";
+          if (progressEl) progressEl.textContent = "Click Play to start the advert.";
           if (playBtn) playBtn.hidden = false;
         });
       });
@@ -1027,6 +1027,9 @@ function mountFileAdvert(video, sources, unlock, updateProgress, progressEl) {
   tryPlay(false);
 
   addPlayOverlay(box, () => tryPlay(true));
+  video.addEventListener("click", () => {
+    if (video.paused) tryPlay(true);
+  });
 
   if (unmuteBtn) {
     unmuteBtn.hidden = false;

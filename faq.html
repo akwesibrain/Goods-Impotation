@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FAQ — Mwinbarka Imports</title>
 <meta name="description" content="Common questions about pricing, timelines, deposits, and customs when importing through Mwinbarka Imports.">
-<link rel="stylesheet" href="styles.css?v=20260822">
+<link rel="stylesheet" href="styles.css?v=desktop1">
 </head>
 <body>
 <script>
@@ -17,14 +17,24 @@
   gate.id = "advert-gate";
   gate.innerHTML = '<div class="advert-stage"><div class="advert-player" id="advert-player">'
     + '<video id="advert-video" playsinline webkit-playsinline muted autoplay preload="auto" controls>'
-    + '<source src="' + src + '" type="video/mp4"></video></div>'
+    + '<source src="' + src + '" type="video/mp4"></video>'
+    + '<button type="button" class="advert-play" id="advert-play">▶</button></div>'
     + '<div class="advert-hud"><div class="advert-progress" id="advert-progress">Starting advert…</div>'
     + '<button type="button" class="btn btn-gold" id="advert-continue" disabled>Watch the full video to continue</button></div></div>';
   function mount() {
     document.body.appendChild(gate);
     document.body.classList.add("advert-locked");
     var v = gate.querySelector("video");
-    if (v) { v.src = src; v.muted = true; v.play().catch(function () {}); }
+    if (v) {
+      v.src = src;
+      v.muted = true;
+      v.play().catch(function () {});
+      var play = gate.querySelector("#advert-play");
+      if (play) play.onclick = function () {
+        v.muted = false;
+        v.play().catch(function () { v.muted = true; v.play(); });
+      };
+    }
   }
   if (document.body) mount();
   else document.addEventListener("DOMContentLoaded", mount);
@@ -164,6 +174,6 @@
 <a href="https://wa.me/233540309637" class="wa-float" target="_blank" rel="noopener" aria-label="Join our WhatsApp channel">💬</a>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-client.js"></script>
-<script src="script.js?v=20260822"></script>
+<script src="script.js?v=desktop1"></script>
 </body>
 </html>
