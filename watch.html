@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mwinbarka Imports advert</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; }
+  video { width: 100%; height: 100%; object-fit: cover; background: #000; display: block; }
+  .bar {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+    text-align: center;
+    background: linear-gradient(transparent, rgba(7,20,39,.88));
+  }
+  a {
+    display: inline-block;
+    background: #C9A227;
+    color: #071427;
+    font-family: sans-serif;
+    font-weight: 700;
+    text-decoration: none;
+    padding: 12px 28px;
+    border-radius: 8px;
+  }
+</style>
+</head>
+<body>
+<video id="advert-video" autoplay muted playsinline webkit-playsinline controls
+  src="https://kajtwabmwbncfgvehqmm.supabase.co/storage/v1/object/public/media/adverts/advert.mp4?v=20260822">
+  <source src="https://kajtwabmwbncfgvehqmm.supabase.co/storage/v1/object/public/media/adverts/advert.mp4?v=20260822" type="video/mp4">
+</video>
+<div class="bar"><a href="index.html">Continue to site</a></div>
+<script>
+  var v = document.getElementById("advert-video");
+  v.play().catch(function () {});
+</script>
+</body>
+</html>

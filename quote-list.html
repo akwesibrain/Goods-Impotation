@@ -8,6 +8,29 @@
 <link rel="stylesheet" href="styles.css?v=20260822">
 </head>
 <body>
+<script>
+(function () {
+  try { if (sessionStorage.getItem("mwinbarka_advert_finished_v2") === "1") return; } catch (e) {}
+  if (document.getElementById("advert-gate")) return;
+  var src = "https://kajtwabmwbncfgvehqmm.supabase.co/storage/v1/object/public/media/adverts/advert.mp4?v=20260822";
+  var gate = document.createElement("div");
+  gate.id = "advert-gate";
+  gate.innerHTML = '<div class="advert-stage"><div class="advert-player" id="advert-player">'
+    + '<video id="advert-video" playsinline webkit-playsinline muted autoplay preload="auto" controls>'
+    + '<source src="' + src + '" type="video/mp4"></video></div>'
+    + '<div class="advert-hud"><div class="advert-progress" id="advert-progress">Starting advert…</div>'
+    + '<button type="button" class="btn btn-gold" id="advert-continue" disabled>Watch the full video to continue</button></div></div>';
+  function mount() {
+    document.body.appendChild(gate);
+    document.body.classList.add("advert-locked");
+    var v = gate.querySelector("video");
+    if (v) { v.src = src; v.muted = true; v.play().catch(function () {}); }
+  }
+  if (document.body) mount();
+  else document.addEventListener("DOMContentLoaded", mount);
+})();
+</script>
+
 
 <header class="site-header">
   <div class="announce-bar">Quotes in GH₵ · Typical WhatsApp reply within 24 hours · China &amp; Turkey → Ghana</div>

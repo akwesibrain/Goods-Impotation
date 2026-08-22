@@ -59,6 +59,8 @@ Deno.serve(async (req) => {
   const type = mime(rel);
   const headers = new Headers();
   headers.set("content-type", type);
+  headers.set("content-disposition", "inline");
+  headers.set("x-content-type-options", "nosniff");
   headers.set("cache-control", "public, max-age=60");
   headers.set("access-control-allow-origin", "*");
 

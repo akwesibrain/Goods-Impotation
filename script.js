@@ -878,21 +878,29 @@ async function showAdvertGate(settings) {
   const sources = advertCandidates(remote);
   const videoUrl = sources[0];
   cachedAdvertUrl = videoUrl;
-  if (hasWatchedAdvert()) return;
+  if (hasWatchedAdvert()) {
+    const stale = document.getElementById("advert-gate");
+    if (stale) {
+      stale.remove();
+      document.body.classList.remove("advert-locked");
+    }
+    return;
+  }
   if (document.body && document.body.id === "admin-page") return;
 
-  const existing = document.getElementById("advert-gate");
-  if (existing) {
-    const video = existing.querySelector("#advert-video");
+  let overlay = document.getElementById("advert-gate");
+  if (overlay && overlay.dataset.mounted === "1") {
+    const video = overlay.querySelector("#advert-video");
     if (video && video.dataset.activeSrc !== videoUrl) {
-      loadAdvertSources(video, sources, existing.querySelector("#advert-progress"));
+      loadAdvertSources(video, sources, overlay.querySelector("#advert-progress"));
     }
     return;
   }
 
-  const overlay = document.createElement("div");
-  overlay.id = "advert-gate";
-  overlay.innerHTML = `
+  if (!overlay) {
+    overlay = document.createElement("div");
+    overlay.id = "advert-gate";
+    overlay.innerHTML = `
     <div class="advert-stage">
       <div class="advert-player" id="advert-player"></div>
       <div class="advert-hud">
@@ -901,7 +909,9 @@ async function showAdvertGate(settings) {
       </div>
     </div>
   `;
-  document.body.appendChild(overlay);
+    document.body.appendChild(overlay);
+  }
+  overlay.dataset.mounted = "1";
   document.body.classList.add("advert-locked");
 
   const playerBox = overlay.querySelector("#advert-player");
@@ -914,9 +924,11 @@ async function showAdvertGate(settings) {
     if (unlocked) return;
     unlocked = true;
     markAdvertWatched();
-    continueBtn.disabled = false;
-    continueBtn.textContent = "Continue";
-    progressEl.textContent = "Advert complete.";
+    if (continueBtn) {
+      continueBtn.disabled = false;
+      continueBtn.textContent = "Continue";
+    }
+    if (progressEl) progressEl.textContent = "Advert complete.";
   };
 
   const updateProgress = (current, duration) => {
@@ -927,14 +939,20 @@ async function showAdvertGate(settings) {
     if (maxSeen / duration >= 0.92) unlock();
   };
 
-  continueBtn.addEventListener("click", () => {
-    if (!unlocked) return;
-    overlay.remove();
-    document.body.classList.remove("advert-locked");
-  });
+  if (continueBtn) {
+    continueBtn.addEventListener("click", () => {
+      if (!unlocked) return;
+      overlay.remove();
+      document.body.classList.remove("advert-locked");
+    });
+  }
 
-  playerBox.innerHTML = advertPlayerHtml("file");
-  const video = playerBox.querySelector("video");
+  overlay.dataset.mounted = "1";
+  const existingVideo = overlay.querySelector("#advert-video");
+  if (!existingVideo) {
+    playerBox.innerHTML = advertPlayerHtml("file");
+  }
+  const video = overlay.querySelector("video");
   mountFileAdvert(video, sources, unlock, updateProgress, progressEl);
 }
 
