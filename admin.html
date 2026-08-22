@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Admin — Mwinbarka Imports</title>
 <meta name="description" content="Internal request desk for Mwinbarka Imports.">
-<link rel="stylesheet" href="styles.css?v=desktop1">
+<link rel="stylesheet" href="styles.css?v=order3">
 </head>
 <body id="admin-page">
 
@@ -28,7 +28,7 @@
   <div class="container">
     <span class="eyebrow">MW · Admin</span>
     <h1>Requests, products, and site settings.</h1>
-    <p>Add products, store incoming requests, and paste the WhatsApp channel plus social links that the public site uses.</p>
+    <p>Add products by category (Kitchen &amp; Home, fashion, electronics…). They appear on the homepage so customers can Order Now.</p>
   </div>
 </section>
 
@@ -127,7 +127,18 @@
 
         <div class="field">
           <label for="product-category">Category</label>
-          <input type="text" id="product-category" name="category" placeholder="e.g. Clothing & Fashion">
+          <select id="product-category" name="category" required>
+            <option value="">Select a category</option>
+            <option>Kitchen & Home</option>
+            <option>Clothing & Fashion</option>
+            <option>Electronics</option>
+            <option>Shoes & Bags</option>
+            <option>Beauty & Cosmetics</option>
+            <option>Auto Parts</option>
+            <option>Baby & Kids</option>
+            <option>Other</option>
+          </select>
+          <div class="hint">Products in these categories appear on the homepage and Categories page so customers can Order Now.</div>
         </div>
 
         <div class="field">
@@ -225,7 +236,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-client.js"></script>
-<script src="script.js?v=desktop1"></script>
+<script src="script.js?v=order3"></script>
 <script src="admin.js"></script>
 </body>
 </html>

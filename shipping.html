@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Shipping Rates — Mwinbarka Imports</title>
-<meta name="description" content="Sea vs air freight from China and Turkey to Ghana. Get a GH₵ shipping quote from Mwinbarka Imports on WhatsApp.">
-<link rel="stylesheet" href="styles.css?v=flow2">
+<title>Sea freight — Mwinbarka Imports</title>
+<meta name="description" content="Sea freight from China and Turkey to Ghana. Get a GH₵ shipping quote from Mwinbarka Imports on WhatsApp.">
+<link rel="stylesheet" href="styles.css?v=order3">
 </head>
 <body>
 <script>
@@ -73,8 +73,8 @@
 <section class="page-hero">
   <div class="container">
     <span class="eyebrow">MW–FREIGHT</span>
-    <h1>Sea holds the weight. Air holds the clock.</h1>
-    <p>No frozen GH₵/kg table — fuel and season move the number. Give us the kilos. We send today’s rate on WhatsApp.</p>
+    <h1>Sea freight to Tema. Then we deliver in Ghana.</h1>
+    <p>We ship by sea only. No frozen GH₵/kg table — fuel and season move the number. Give us the kilos. We send today’s rate on WhatsApp.</p>
   </div>
 </section>
 
@@ -82,22 +82,22 @@
   <div class="container">
     <div class="ticket-grid">
       <div class="ticket">
-        <span class="code">AIR / FAST</span>
-        <h3>Air freight</h3>
-        <p>Best for smaller or urgent goods. Typical 5–12 days after the supplier ships. Higher cost per kg, quicker in your hands.</p>
-        <div class="stub"><span>Speed</span><span>5–12 days</span></div>
-      </div>
-      <div class="ticket">
-        <span class="code">SEA / SAVE</span>
+        <span class="code">SEA / LANE</span>
         <h3>Sea freight</h3>
-        <p>Best for bulky or non-urgent loads. Typical 4–8 weeks after the supplier ships. We consolidate so you aren't paying for half-empty space.</p>
-        <div class="stub"><span>Value</span><span>4–8 weeks</span></div>
+        <p>Consolidated ocean freight for regular and bulky loads. Typical 4–8 weeks after the supplier ships.</p>
+        <div class="stub"><span>Transit</span><span>4–8 weeks</span></div>
       </div>
       <div class="ticket">
         <span class="code">MW / CLEAR</span>
         <h3>Clearing included</h3>
         <p>Customs clearing is part of the landed GH₵ quote. You don't need to visit the port yourself.</p>
         <div class="stub"><span>Ghana</span><span>Nationwide</span></div>
+      </div>
+      <div class="ticket">
+        <span class="code">MW / DOOR</span>
+        <h3>Last-mile delivery</h3>
+        <p>After Tema clearance we deliver to Accra, Kumasi, and further inland.</p>
+        <div class="stub"><span>Door</span><span>Quoted in GH₵</span></div>
       </div>
     </div>
   </div>
@@ -106,8 +106,8 @@
 <section class="section section-alt">
   <div class="container" style="max-width: 720px;">
     <div class="section-head">
-      <span class="eyebrow">MW–05 / Advisor</span>
-      <h2>Which method fits this shipment?</h2>
+      <span class="eyebrow">MW–05 / Weight</span>
+      <h2>Get a sea-freight quote.</h2>
     </div>
     <form id="shipping-advisor" class="form-card" novalidate>
       <div class="field-row">
@@ -116,18 +116,11 @@
           <input type="number" id="kg" name="kg" min="0.1" step="0.1" placeholder="e.g. 8">
         </div>
         <div class="field">
-          <label for="speed">How soon do you need it?</label>
-          <select id="speed" name="speed">
-            <option value="normal">Normal — cheaper is fine</option>
-            <option value="urgent">Urgent — this month</option>
-          </select>
+          <label for="city">Delivery city in Ghana</label>
+          <input type="text" id="city" name="city" placeholder="e.g. Accra, Kumasi">
         </div>
       </div>
-      <div class="field">
-        <label for="city">Delivery city in Ghana</label>
-        <input type="text" id="city" name="city" placeholder="e.g. Accra, Kumasi">
-      </div>
-      <button type="submit" class="btn btn-gold">Recommend a method</button>
+      <button type="submit" class="btn btn-gold">Get a sea quote</button>
       <div id="shipping-advice" class="form-status success" hidden></div>
     </form>
   </div>
@@ -136,8 +129,8 @@
 <section class="cta-band">
   <div class="container">
     <h2>Ready for today's GH₵ figure?</h2>
-    <p>Send the weight and we'll quote sea or air on WhatsApp.</p>
-    <a href="request.html?q=Please%20quote%20shipping%20to%20Ghana" class="btn btn-outline-dark">Get a shipping quote →</a>
+    <p>Send the weight and we'll quote sea freight on WhatsApp.</p>
+    <a href="request.html?q=Please%20quote%20sea%20freight%20to%20Ghana" class="btn btn-outline-dark">Order Now →</a>
   </div>
 </section>
 
@@ -178,6 +171,6 @@
 <a href="https://wa.me/233540309637" class="wa-float" target="_blank" rel="noopener" aria-label="Join our WhatsApp channel">💬</a>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-client.js"></script>
-<script src="script.js?v=flow2"></script>
+<script src="script.js?v=order3"></script>
 </body>
 </html>

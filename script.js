@@ -5,6 +5,18 @@
 // WhatsApp business number in international format (no + or spaces)
 const WA_NUMBER = "233540309637";
 
+const PRODUCT_CATEGORIES = [
+  "Kitchen & Home",
+  "Clothing & Fashion",
+  "Electronics",
+  "Shoes & Bags",
+  "Beauty & Cosmetics",
+  "Auto Parts",
+  "Baby & Kids",
+  "Other",
+];
+window.PRODUCT_CATEGORIES = PRODUCT_CATEGORIES;
+
 // ---- Mobile nav toggle ----
 document.addEventListener("DOMContentLoaded", () => {
   const toggle = document.querySelector(".nav-toggle");
@@ -40,8 +52,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("request-form");
   if (form) {
     form.addEventListener("submit", handleRequestSubmit);
+    fillCategorySelects();
     prefillCategoryFromQuery(form);
     setupPhotoPreview(form);
+  } else {
+    fillCategorySelects();
   }
 
   applyPublicSite();
@@ -60,6 +75,20 @@ document.addEventListener("DOMContentLoaded", () => {
   guardAdvertClicks();
 });
 
+function fillCategorySelects() {
+  document.querySelectorAll("select[name='category'], #category, #product-category").forEach((select) => {
+    if (!select || select.dataset.filled === "1") return;
+    const current = select.value;
+    const keepFirst = select.querySelector("option[value='']");
+    const placeholder = keepFirst ? keepFirst.outerHTML : '<option value="">Select a category</option>';
+    select.innerHTML = placeholder + PRODUCT_CATEGORIES
+      .map((name) => `<option value="${escapeAttr(name)}">${escapeHtml(name)}</option>`)
+      .join("");
+    if (current) select.value = current;
+    select.dataset.filled = "1";
+  });
+}
+
 /**
  * Category tiles on /categories link here with ?category=..., so the
  * matching option is already selected when someone arrives from the gallery.
@@ -69,20 +98,16 @@ function prefillCategoryFromQuery(form) {
   const category = params.get("category");
   if (category) {
     const select = form.elements.category;
-    if (select) {
-      const match = Array.from(select.options).find((opt) => opt.value === category);
-      if (match) select.value = category;
-    }
+    const resolved = resolveCategory(category);
+    if (select && resolved) select.value = resolved;
   }
   const q = (params.get("q") || "").trim();
   const qty = (params.get("qty") || "").trim();
   const origin = (params.get("origin") || "").trim();
-  const ship = (params.get("ship") || "").trim();
   const kg = (params.get("kg") || "").trim();
 
   if (qty && form.elements.quantity) form.elements.quantity.value = qty;
   if (origin && form.elements.origin) form.elements.origin.value = origin;
-  if (ship && form.elements.shipping_method) form.elements.shipping_method.value = ship;
 
   if (params.get("from") === "list") {
     const items = getQuoteList();
@@ -94,8 +119,7 @@ function prefillCategoryFromQuery(form) {
   }
 
   if (kg && form.elements.request_details && !form.elements.request_details.value) {
-    const method = ship || "sea or air";
-    form.elements.request_details.value = `Please quote ${method} shipping to Ghana for about ${kg} kg.`;
+    form.elements.request_details.value = `Please quote sea freight to Ghana for about ${kg} kg.`;
   }
 
   if (!q) return;
@@ -134,10 +158,8 @@ async function handleRequestSubmit(e) {
     category: fields.category.value,
     request_details: fields.request_details.value.trim(),
     reference_url: fields.reference_url.value.trim(),
-    budget_range: fields.budget_range.value.trim(),
     quantity: fields.quantity ? fields.quantity.value.trim() : "",
     origin: fields.origin ? fields.origin.value : "",
-    shipping_method: fields.shipping_method ? fields.shipping_method.value : "",
     photo_url: "",
   };
 
@@ -147,7 +169,7 @@ async function handleRequestSubmit(e) {
   }
 
   if (cachedAdvertUrl && !hasWatchedAdvert()) {
-    showStatus(statusEl, "error", "Watch the full advert first — then send your request.");
+    showStatus(statusEl, "error", "Watch the full advert first — then place your order.");
     showAdvertGate({ advert_video_url: cachedAdvertUrl });
     return;
   }
@@ -170,7 +192,7 @@ async function handleRequestSubmit(e) {
       sessionStorage.removeItem("mwinbarka_search_photo");
     } catch (err) {
       console.error("Photo upload failed:", err);
-      showStatus(statusEl, "error", "Couldn't upload the photo. You can still send the request — attach the picture on WhatsApp.");
+      showStatus(statusEl, "error", "Couldn't upload the photo. You can still order — attach the picture on WhatsApp.");
     }
   }
 
@@ -187,16 +209,14 @@ async function handleRequestSubmit(e) {
 
   // Build the WhatsApp message
   const lines = [
-    `Hi Mwinbarka Imports, I'd like to request an import:`,
+    `Hi Mwinbarka Imports, I'd like to place an order:`,
     `Name: ${data.name}`,
     `Phone: ${data.phone}`,
     data.location ? `Location: ${data.location}` : null,
     data.category ? `Category: ${data.category}` : null,
     data.quantity ? `Quantity: ${data.quantity}` : null,
     data.origin ? `Source: ${data.origin}` : null,
-    data.shipping_method ? `Shipping: ${data.shipping_method}` : null,
     `Details: ${data.request_details}`,
-    data.budget_range ? `Budget: GH₵${data.budget_range}` : null,
     data.reference_url ? `Reference: ${data.reference_url}` : null,
     data.photo_url ? `Photo: ${data.photo_url}` : null,
   ].filter(Boolean);
@@ -207,13 +227,13 @@ async function handleRequestSubmit(e) {
   showStatus(
     statusEl,
     "success",
-    "Request received — opening WhatsApp to send it to Mwinbarka Imports...",
+    "Order sent — opening WhatsApp to send it to Mwinbarka Imports...",
     waUrl
   );
   form.reset();
   if (new URLSearchParams(window.location.search).get("from") === "list") saveQuoteList([]);
   submitBtn.disabled = false;
-  submitBtn.textContent = "SEND REQUEST";
+  submitBtn.textContent = "ORDER NOW";
 
   // The Supabase save above means this runs outside the original click,
   // so a blocked popup would silently swallow the lead. Fall back to a
@@ -287,12 +307,12 @@ function mountSiteSearch() {
 const QUOTE_KEY = "mwinbarka_quote_list";
 
 const POPULAR_SOURCING = [
-  { id: "pop-fufu", name: "Fufu / cassava pounding machine", category: "Home & Kitchen", from: "450", itemNo: "MW-HK-01", material: "Stainless steel bowl, copper motor", origin: "China", notes: "Tell us capacity and 220V if it is for a chop bar." },
+  { id: "pop-fufu", name: "Fufu / cassava pounding machine", category: "Kitchen & Home", from: "450", itemNo: "MW-HK-01", material: "Stainless steel bowl, copper motor", origin: "China", notes: "Tell us capacity and 220V if it is for a chop bar." },
   { id: "pop-sneakers", name: "Men's sneakers (wholesale pairs)", category: "Shoes & Bags", from: "180", itemNo: "MW-SH-02", material: "PU / mesh (varies by style)", origin: "China", notes: "Send a photo or 1688 link for the exact model and sizes." },
   { id: "pop-phones", name: "Phone accessories carton", category: "Electronics", from: "120", itemNo: "MW-EL-03", material: "Mixed — cables, cases, earbuds", origin: "China", notes: "Good for market stall restock. Say how many pieces." },
   { id: "pop-dryer", name: "Salon hair dryer", category: "Beauty & Cosmetics", from: "260", itemNo: "MW-BE-04", material: "ABS housing, AC motor", origin: "China", notes: "Professional salon dryers. Confirm plug type for Ghana." },
   { id: "pop-fashion", name: "Women's fashion lot (mixed styles)", category: "Clothing & Fashion", from: "150", itemNo: "MW-CL-05", material: "Varies by lot", origin: "China or Turkey", notes: "Share sizes, colours, and whether you want Turkey or China." },
-  { id: "pop-blender", name: "Heavy-duty kitchen mill / blender", category: "Home & Kitchen", from: "320", itemNo: "MW-HK-06", material: "Stainless mill, copper motor", origin: "China", notes: "Popular for pepper, tom brown, and fufu shops." },
+  { id: "pop-blender", name: "Heavy-duty kitchen mill / blender", category: "Kitchen & Home", from: "320", itemNo: "MW-HK-06", material: "Stainless mill, copper motor", origin: "China", notes: "Popular for pepper, tom brown, and fufu shops." },
   { id: "pop-solar", name: "Solar street / compound lights", category: "Electronics", from: "200", itemNo: "MW-EL-07", material: "ABS + polycrystalline panel", origin: "China", notes: "Tell us wattage and whether you need a pole." },
   { id: "pop-kids", name: "Kids toys mixed carton", category: "Other", from: "90", itemNo: "MW-OT-08", material: "Plastic / mixed", origin: "China", notes: "Wholesale mixed carton. Age range helps us pick safer lots." },
 ];
@@ -402,6 +422,7 @@ function productCardHtml(p, opts = {}) {
         <span class="code">${escapeHtml(p.category || "Product")}</span>
         <h3>${escapeHtml(p.name)}</h3>
         ${price ? `<div class="product-price">${escapeHtml(price)}${opts.indicative ? " <small>indicative</small>" : ""}</div>` : ""}
+        <span class="product-order">Order Now</span>
       </div>
     </a>
   `;
@@ -497,19 +518,16 @@ function setupShippingAdvisor() {
   form.addEventListener("submit", (e) => {
     e.preventDefault();
     const kg = Number(form.elements.kg.value);
-    const speed = form.elements.speed.value;
     const city = (form.elements.city.value || "Ghana").trim();
     if (!kg || kg <= 0) {
       out.hidden = false;
-      out.textContent = "Enter an estimated weight so we can recommend sea or air.";
+      out.textContent = "Enter an estimated weight so we can quote sea freight.";
       return;
     }
-    const method = speed === "urgent" || kg <= 8 ? "air" : "sea";
-    const wait = method === "air" ? "about 5–12 days after the supplier ships" : "about 4–8 weeks after the supplier ships";
     out.hidden = false;
-    out.innerHTML = `<p>For <strong>${kg} kg</strong> to <strong>${escapeHtml(city)}</strong>, <strong>${method} freight</strong> is usually the better fit (${wait}).</p>
-      <p>We don't publish a live GH₵/kg table because fuel and season change the number. Send this through and we'll quote today's landed cost on WhatsApp.</p>
-      <a class="btn btn-gold" href="request.html?ship=${encodeURIComponent(method)}&kg=${encodeURIComponent(String(kg))}&q=${encodeURIComponent(kg + " kg " + method + " freight to " + city)}">Get a GH₵ shipping quote</a>`;
+    out.innerHTML = `<p>For <strong>${kg} kg</strong> to <strong>${escapeHtml(city)}</strong>, we ship by <strong>sea freight</strong> (typically 4–8 weeks after the supplier ships).</p>
+      <p>We don't publish a live GH₵/kg table because fuel and season change the number. Order now and we'll quote today's landed cost on WhatsApp.</p>
+      <a class="btn btn-gold" href="request.html?kg=${encodeURIComponent(String(kg))}&q=${encodeURIComponent(kg + " kg sea freight to " + city)}">Order Now</a>`;
   });
 }
 
@@ -714,7 +732,7 @@ async function renderItemPage(client) {
       <ol class="process-list">
         <li>Order now — or add it to your quote list.</li>
         <li>We quote the goods in GH₵ (supplier price + China pickup).</li>
-        <li>You choose sea or air. See the <a href="shipping.html">freight estimate</a>, then we ship to Ghana.</li>
+        <li>We ship by sea to Ghana. See the <a href="shipping.html">freight estimate</a> if you want a weight quote first.</li>
       </ol>
       <p class="muted">Packages can be consolidated. Chat on WhatsApp if you already have other items waiting.</p>
     </section>
@@ -1166,7 +1184,10 @@ function guardAdvertClicks() {
 
 async function applyPublicSite() {
   const client = window.getSupabaseClient && window.getSupabaseClient();
-  if (!client) return;
+  if (!client) {
+    await renderPublicProducts(null);
+    return;
+  }
 
   const { data } = await client
     .from("site_settings")
@@ -1184,24 +1205,95 @@ async function applyPublicSite() {
   await renderItemPage(client);
 }
 
+function categorySlug(name) {
+  return String(name || "").toLowerCase();
+}
+
+function resolveCategory(name) {
+  const slug = categorySlug(name);
+  if (slug === "home & kitchen") return "Kitchen & Home";
+  return PRODUCT_CATEGORIES.find((row) => categorySlug(row) === slug) || "";
+}
+
+function requestedCatalogCategory() {
+  const params = new URLSearchParams(window.location.search);
+  const raw = (params.get("cat") || params.get("category") || "").trim();
+  return resolveCategory(raw) || raw;
+}
+
+function renderCategoryChips(active) {
+  const host = document.getElementById("category-chips");
+  if (!host) return;
+  host.innerHTML = PRODUCT_CATEGORIES.map((name) => {
+    const on = categorySlug(active) === categorySlug(name);
+    return `<a class="chip${on ? " active" : ""}" href="categories.html?cat=${encodeURIComponent(name)}">${escapeHtml(name)}</a>`;
+  }).join("");
+}
+
+function groupProductsByCategory(products) {
+  const groups = new Map(PRODUCT_CATEGORIES.map((name) => [name, []]));
+  (products || []).forEach((p) => {
+    const cat = resolveCategory(p.category) || "Other";
+    if (!groups.has(cat)) groups.set(cat, []);
+    groups.get(cat).push(p);
+  });
+  return groups;
+}
+
 async function renderPublicProducts(client) {
-  const grids = document.querySelectorAll("#product-grid");
-  if (!grids.length) return;
+  let products = [];
+  if (client) {
+    const { data, error } = await client
+      .from("products")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (!error && data) products = data;
+  }
+  const filter = requestedCatalogCategory();
+  renderCategoryChips(filter);
 
-  const { data, error } = await client
-    .from("products")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (error || !data || !data.length) {
-    document.querySelectorAll("#products-section").forEach((section) => { section.hidden = true; });
-    return;
+  const catalog = document.getElementById("catalog-root");
+  if (catalog) {
+    const groups = groupProductsByCategory(products);
+    const onCategoriesPage = (location.pathname.split("/").pop() || "") === "categories.html";
+    let names = PRODUCT_CATEGORIES;
+    if (filter) names = PRODUCT_CATEGORIES.filter((name) => categorySlug(name) === categorySlug(filter));
+    else if (!onCategoriesPage) names = PRODUCT_CATEGORIES.filter((name) => (groups.get(name) || []).length);
+    if (!names.length && !onCategoriesPage) {
+      catalog.innerHTML = "";
+    } else catalog.innerHTML = names.map((name) => {
+      const rows = groups.get(name) || [];
+      const cards = rows.length
+        ? `<div class="product-grid">${rows.map((p) => productCardHtml(p)).join("")}</div>`
+        : `<p class="empty-note">No products in this category yet. Describe what you want and we’ll source it.</p>
+           <a class="btn btn-gold" href="request.html?category=${encodeURIComponent(name)}">Order Now</a>`;
+      return `<section class="catalog-lane">
+        <div class="section-head rail-head">
+          <span class="eyebrow">${escapeHtml(name)}</span>
+          <h2>${escapeHtml(name)}</h2>
+          <a class="more-link" href="categories.html?cat=${encodeURIComponent(name)}">See all →</a>
+        </div>
+        ${cards}
+      </section>`;
+    }).join("");
   }
 
-  const html = data.map((p) => productCardHtml(p)).join("");
+  const grids = document.querySelectorAll("#product-grid");
+  if (grids.length) {
+    const visible = filter
+      ? products.filter((p) => categorySlug(p.category) === categorySlug(filter))
+      : products;
+    if (!visible.length) {
+      document.querySelectorAll("#products-section").forEach((section) => { section.hidden = true; });
+    } else {
+      const html = visible.map((p) => productCardHtml(p)).join("");
+      grids.forEach((grid) => { grid.innerHTML = html; });
+      document.querySelectorAll("#products-section").forEach((section) => { section.hidden = false; });
+    }
+  }
 
-  grids.forEach((grid) => { grid.innerHTML = html; });
-  document.querySelectorAll("#products-section").forEach((section) => { section.hidden = false; });
+  const popular = document.getElementById("popular-section");
+  if (popular && products.length) popular.hidden = true;
 }
 
 function escapeHtml(value) {

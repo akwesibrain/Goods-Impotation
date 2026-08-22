@@ -320,9 +320,15 @@ async function handleProductSubmit(e, client) {
   const statusEl = document.getElementById("product-status");
   const btn = form.querySelector('button[type="submit"]');
   const name = form.elements.name.value.trim();
+  const category = form.elements.category.value.trim();
   if (!name) {
     statusEl.className = "form-status error";
     statusEl.textContent = "Give the product a name.";
+    return;
+  }
+  if (!category) {
+    statusEl.className = "form-status error";
+    statusEl.textContent = "Pick a category so it can show on the homepage.";
     return;
   }
 
@@ -336,7 +342,7 @@ async function handleProductSubmit(e, client) {
       name,
       description: form.elements.description.value.trim() || null,
       price: form.elements.price.value.trim() || null,
-      category: form.elements.category.value.trim() || null,
+      category,
       image_url: imageUrl,
     }]);
     if (error) throw error;

@@ -1237,6 +1237,37 @@ body.advert-locked .wa-float { display: none !important; }
 .product-price small { font-family: var(--font-body); font-size: 0.7rem; color: var(--ink-500); text-transform: none; letter-spacing: 0; }
 .product-actions { display: grid; gap: 0.45rem; margin-top: 0.6rem; }
 .product-body .btn { margin-top: 0; justify-content: center; padding: 0.7rem 1rem; font-size: 0.75rem; }
+.product-order {
+  margin-top: 0.55rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--navy-deep);
+  background: var(--gold-500);
+  text-align: center;
+  padding: 0.55rem 0.4rem;
+}
+.category-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin: 0 0 var(--space-4);
+}
+.category-chips .chip {
+  border: 1px solid var(--line);
+  background: var(--white);
+  color: var(--navy-deep);
+  text-decoration: none;
+}
+.category-chips .chip.active,
+.category-chips .chip:hover {
+  background: var(--navy-deep);
+  color: var(--white);
+  border-color: var(--navy-deep);
+}
+.catalog-lane { margin-bottom: var(--space-5); }
+.catalog-lane .product-grid { margin-top: var(--space-2); }
 
 .quote-link {
   font-family: var(--font-mono);

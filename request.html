@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Order Now — Mwinbarka Imports</title>
 <meta name="description" content="Tell Mwinbarka Imports what you'd like sourced from China or Turkey — we'll follow up on WhatsApp with a quote.">
-<link rel="stylesheet" href="styles.css?v=flow2">
+<link rel="stylesheet" href="styles.css?v=order3">
 </head>
 <body>
 <script>
@@ -83,7 +83,7 @@
     <ol class="process-list">
       <li>Tell us the item (text, photo, or 1688 / Alibaba link).</li>
       <li>We quote goods + China pickup in GH₵ on WhatsApp.</li>
-      <li>You choose sea or air — see the <a href="shipping.html">freight estimate</a> — then we ship to Ghana.</li>
+      <li>We ship by sea to Ghana after you confirm the GH₵ quote on WhatsApp.</li>
     </ol>
   </div>
 </section>
@@ -112,11 +112,13 @@
           <label for="category">Category (optional)</label>
           <select id="category" name="category">
             <option value="">Select if it fits</option>
+            <option>Kitchen & Home</option>
             <option>Clothing & Fashion</option>
             <option>Electronics</option>
             <option>Shoes & Bags</option>
-            <option>Home & Kitchen</option>
             <option>Beauty & Cosmetics</option>
+            <option>Auto Parts</option>
+            <option>Baby & Kids</option>
             <option>Other</option>
           </select>
         </div>
@@ -155,22 +157,7 @@
         <div id="photo-preview" class="photo-preview"></div>
       </div>
 
-      <div class="field-row">
-        <div class="field">
-          <label for="shipping_method">Shipping (optional)</label>
-          <select id="shipping_method" name="shipping_method">
-            <option value="">Not sure yet</option>
-            <option value="air">Air — faster</option>
-            <option value="sea">Sea — cheaper for bulky goods</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="budget_range">Budget range in GH₵ (optional)</label>
-          <input type="text" id="budget_range" name="budget_range" placeholder="e.g. 300 – 500">
-        </div>
-      </div>
-
-      <button type="submit" class="btn btn-gold">Send Request</button>
+      <button type="submit" class="btn btn-gold">Order Now</button>
       <p class="form-note">Submitting opens WhatsApp with your details prefilled, so you can send it straight to Mwinbarka Imports. We'll reply with a quote in GH₵ once we've checked pricing.</p>
       <div id="form-status" class="form-status"></div>
     </form>
@@ -178,12 +165,11 @@
       <span class="eyebrow">After you send</span>
       <h3>This is not checkout.</h3>
       <ol>
-        <li>WhatsApp opens with your file already written.</li>
+        <li>WhatsApp opens with your order already written.</li>
         <li>We check China or Turkey pricing.</li>
-        <li>You get one GH₵ landed quote — goods, pickup, freight, clearing.</li>
+        <li>You get one GH₵ landed quote — goods, pickup, sea freight, clearing.</li>
         <li>Nothing is paid on this website. Terms are agreed on the official line only: 054 030 9637.</li>
       </ol>
-      <p style="margin-top:1.2rem"><a href="shipping.html">Need sea vs air first? →</a></p>
     </aside>
   </div>
 </section>
@@ -224,13 +210,13 @@
 
 <div class="sticky-cta request-sticky">
   <a class="sticky-chat" href="https://wa.me/233540309637" target="_blank" rel="noopener" aria-label="Chat on WhatsApp">💬</a>
-  <button type="submit" form="request-form" class="btn btn-gold">Send request</button>
+  <button type="submit" form="request-form" class="btn btn-gold">Order Now</button>
 </div>
 
 <a href="https://wa.me/233540309637" class="wa-float" target="_blank" rel="noopener" aria-label="Join our WhatsApp channel">💬</a>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-client.js"></script>
-<script src="script.js?v=flow2"></script>
+<script src="script.js?v=order3"></script>
 </body>
 </html>
