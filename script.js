@@ -56,6 +56,7 @@ document.addEventListener("DOMContentLoaded", () => {
   bindQuoteButtons();
   renderItemPage();
   restoreSearchPhoto();
+  guardAdvertClicks();
 });
 
 /**
@@ -141,6 +142,12 @@ async function handleRequestSubmit(e) {
 
   if (!data.name || !data.phone || !data.request_details) {
     showStatus(statusEl, "error", "Please fill in your name, phone number, and what you'd like imported.");
+    return;
+  }
+
+  if (cachedAdvertUrl && !hasWatchedAdvert()) {
+    showStatus(statusEl, "error", "Watch the full advert first — then send your request.");
+    showAdvertGate({ advert_video_url: cachedAdvertUrl });
     return;
   }
 
@@ -590,7 +597,7 @@ function mountMobileChrome() {
   const here = pageFile();
   const tab = (href, label, extra) => {
     const file = href.split("/").pop();
-    const on = here === file || (file === "index.html" && (here === "" || here === "/"));
+    const on = here === file || (file === "index.html" && (!here || here === "index.html" || here === "item.html"));
     return `<a href="${href}" class="${on ? "active" : ""}">${label}${extra || ""}</a>`;
   };
   const nav = document.createElement("nav");
@@ -777,33 +784,270 @@ function applySocialLinks(settings) {
   });
 }
 
-function showAdvertGate(settings) {
-  const videoUrl = (settings.advert_video_url || "").trim();
-  if (!videoUrl) return;
-  if (sessionStorage.getItem("mwinbarka_advert_seen") === "1") return;
-  if (document.getElementById("advert-gate")) return;
+let cachedAdvertUrl = "";
 
-  const onRequestPage = Boolean(document.getElementById("request-form"));
+function hasWatchedAdvert() {
+  return sessionStorage.getItem("mwinbarka_advert_finished") === "1";
+}
+
+function markAdvertWatched() {
+  sessionStorage.setItem("mwinbarka_advert_finished", "1");
+}
+
+function youtubeIdFromUrl(url) {
+  try {
+    const u = new URL(url);
+    if (u.hostname.includes("youtu.be")) return u.pathname.replace(/^\//, "").split("/")[0] || null;
+    if (u.searchParams.get("v")) return u.searchParams.get("v");
+    const parts = u.pathname.split("/").filter(Boolean);
+    const idx = parts.findIndex((p) => p === "embed" || p === "shorts");
+    if (idx >= 0 && parts[idx + 1]) return parts[idx + 1];
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+function tiktokIdFromUrl(url) {
+  const text = String(url || "");
+  const match = text.match(/\/(?:video|photo|v)\/(\d{10,})/) || text.match(/\/player\/v1\/(\d{10,})/) || text.match(/data-video-id="(\d{10,})"/);
+  return match ? match[1] : null;
+}
+
+async function resolveTikTokId(url) {
+  const direct = tiktokIdFromUrl(url);
+  if (direct) return direct;
+  if (!/tiktok\.com/i.test(url)) return null;
+  try {
+    const res = await fetch("https://www.tiktok.com/oembed?url=" + encodeURIComponent(url));
+    if (!res.ok) return null;
+    const json = await res.json();
+    return tiktokIdFromUrl(json.html) || tiktokIdFromUrl(json.cite) || null;
+  } catch {
+    return null;
+  }
+}
+
+function isDirectVideoUrl(url) {
+  return /\.(mp4|webm|ogg|mov|m4v)(\?|$)/i.test(url) || /\/storage\/v1\/object\/public\//i.test(url);
+}
+
+function advertPlayerHtml(kind, src) {
+  if (kind === "file") {
+    return `<video id="advert-video" playsinline webkit-playsinline preload="auto" controlslist="nodownload noplaybackrate noremoteplayback" disablepictureinpicture></video>`;
+  }
+  if (kind === "youtube") {
+    return `<div id="advert-yt"></div>`;
+  }
+  return `<iframe id="advert-tiktok" title="Mwinbarka Imports advert" allow="autoplay; fullscreen; encrypted-media" allowfullscreen src="${escapeAttr(src)}"></iframe>`;
+}
+
+async function showAdvertGate(settings) {
+  const videoUrl = (settings.advert_video_url || "").trim();
+  cachedAdvertUrl = videoUrl;
+  if (!videoUrl) return;
+  if (hasWatchedAdvert()) return;
+  if (document.getElementById("advert-gate")) return;
+  if (document.body && document.body.id === "admin-page") return;
+
   const overlay = document.createElement("div");
   overlay.id = "advert-gate";
   overlay.innerHTML = `
     <div class="advert-card">
       <span class="eyebrow">MW · Advert</span>
       <h2>Watch this first.</h2>
-      <p>Then continue to request an import.</p>
-      <video id="advert-video" src="${escapeAttr(videoUrl)}" controls playsinline></video>
-      <a class="btn btn-gold" id="advert-continue" href="request.html">Continue to request an import</a>
+      <p>The full advert must play to the end before you can continue. Skipping is turned off.</p>
+      <div class="advert-player" id="advert-player">
+        <div class="advert-loading">Loading advert…</div>
+      </div>
+      <div class="advert-progress" id="advert-progress">Press play, then watch to the end.</div>
+      <button type="button" class="btn btn-gold" id="advert-continue" disabled>Watch the full video to continue</button>
     </div>
   `;
   document.body.appendChild(overlay);
+  document.body.classList.add("advert-locked");
 
-  overlay.querySelector("#advert-continue").addEventListener("click", (e) => {
-    sessionStorage.setItem("mwinbarka_advert_seen", "1");
-    if (onRequestPage) {
-      e.preventDefault();
-      overlay.remove();
+  const playerBox = overlay.querySelector("#advert-player");
+  const continueBtn = overlay.querySelector("#advert-continue");
+  const progressEl = overlay.querySelector("#advert-progress");
+  let unlocked = false;
+  let maxSeen = 0;
+
+  const unlock = () => {
+    if (unlocked) return;
+    unlocked = true;
+    markAdvertWatched();
+    continueBtn.disabled = false;
+    continueBtn.textContent = "Continue";
+    progressEl.textContent = "Advert complete.";
+  };
+
+  const updateProgress = (current, duration) => {
+    if (!duration || duration <= 0) return;
+    if (current > maxSeen) maxSeen = current;
+    const pct = Math.min(100, Math.floor((maxSeen / duration) * 100));
+    progressEl.textContent = `Keep watching… ${pct}%`;
+    if (maxSeen / duration >= 0.92) unlock();
+  };
+
+  continueBtn.addEventListener("click", () => {
+    if (!unlocked) return;
+    overlay.remove();
+    document.body.classList.remove("advert-locked");
+  });
+
+  const ytId = youtubeIdFromUrl(videoUrl);
+  const tiktokId = await resolveTikTokId(videoUrl);
+  const fileUrl = isDirectVideoUrl(videoUrl) ? videoUrl : null;
+
+  if (fileUrl) {
+    playerBox.innerHTML = advertPlayerHtml("file");
+    const video = playerBox.querySelector("video");
+    video.src = fileUrl;
+    video.setAttribute("playsinline", "");
+    mountFileAdvert(video, unlock, updateProgress);
+    return;
+  }
+
+  if (ytId) {
+    playerBox.innerHTML = advertPlayerHtml("youtube");
+    mountYouTubeAdvert(ytId, unlock, updateProgress, progressEl);
+    return;
+  }
+
+  if (tiktokId) {
+    const src = `https://www.tiktok.com/player/v1/${tiktokId}?autoplay=0&loop=0&controls=0&progress_bar=0&rel=0&music_info=0&description=0&native_context_menu=0`;
+    playerBox.innerHTML = advertPlayerHtml("tiktok", src);
+    mountTikTokAdvert(playerBox.querySelector("iframe"), unlock, updateProgress, progressEl);
+    return;
+  }
+
+  playerBox.innerHTML = `<p class="muted">This advert link can't play in the page. In Admin, paste a TikTok video link, a YouTube link, or upload an MP4.</p>`;
+  progressEl.textContent = "Ask Mwinbarka Imports to re-save the advert video.";
+}
+
+function addPlayOverlay(box, onPlay) {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "advert-play";
+  btn.textContent = "▶ Play advert";
+  box.appendChild(btn);
+  btn.addEventListener("click", () => {
+    btn.remove();
+    onPlay();
+  });
+}
+
+function mountFileAdvert(video, unlock, updateProgress) {
+  let maxTime = 0;
+  addPlayOverlay(video.parentElement, () => {
+    video.muted = false;
+    video.play().catch(() => {
+      video.muted = true;
+      video.play();
+    });
+  });
+  video.addEventListener("timeupdate", () => {
+    if (video.currentTime > maxTime + 0.35 && video.seeking) return;
+    if (video.currentTime > maxTime) maxTime = video.currentTime;
+    updateProgress(maxTime, video.duration);
+  });
+  video.addEventListener("seeking", () => {
+    if (video.currentTime > maxTime + 0.4) video.currentTime = maxTime;
+  });
+  video.addEventListener("ended", unlock);
+}
+
+function mountTikTokAdvert(iframe, unlock, updateProgress, progressEl) {
+  addPlayOverlay(iframe.parentElement, () => {
+    iframe.contentWindow.postMessage({ type: "play", "x-tiktok-player": true }, "*");
+  });
+  window.addEventListener("message", (event) => {
+    if (!document.getElementById("advert-gate")) return;
+    const data = event.data;
+    if (!data || !data["x-tiktok-player"]) return;
+    if (data.type === "onStateChange" && Number(data.value) === 0) unlock();
+    if (data.type === "onCurrentTime") {
+      const value = data.value;
+      const current = value && typeof value === "object" ? Number(value.currentTime) : Number(value);
+      const duration = value && typeof value === "object" ? Number(value.duration) : Number(data.duration);
+      if (current >= 0 && duration > 0) updateProgress(current, duration);
+    }
+    if (data.type === "onPlayerReady") {
+      progressEl.textContent = "Press play, then watch to the end.";
     }
   });
+}
+
+function mountYouTubeAdvert(id, unlock, updateProgress, progressEl) {
+  const start = () => {
+    const player = new window.YT.Player("advert-yt", {
+      videoId: id,
+      playerVars: {
+        controls: 0,
+        rel: 0,
+        modestbranding: 1,
+        disablekb: 1,
+        fs: 0,
+        playsinline: 1,
+        origin: location.origin,
+      },
+      events: {
+        onReady(event) {
+          const box = document.getElementById("advert-player");
+          addPlayOverlay(box, () => event.target.playVideo());
+          progressEl.textContent = "Press play, then watch to the end.";
+        },
+        onStateChange(event) {
+          if (event.data === window.YT.PlayerState.ENDED) unlock();
+        },
+      },
+    });
+    const tick = () => {
+      if (hasWatchedAdvert()) return;
+      try {
+        if (player && typeof player.getCurrentTime === "function") {
+          updateProgress(player.getCurrentTime(), player.getDuration());
+        }
+      } catch {
+        /* player not ready */
+      }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  };
+
+  if (window.YT && window.YT.Player) {
+    start();
+    return;
+  }
+  const existing = document.querySelector("script[src*='youtube.com/iframe_api']");
+  const prev = window.onYouTubeIframeAPIReady;
+  window.onYouTubeIframeAPIReady = () => {
+    if (typeof prev === "function") prev();
+    start();
+  };
+  if (!existing) {
+    const tag = document.createElement("script");
+    tag.src = "https://www.youtube.com/iframe_api";
+    document.head.appendChild(tag);
+  }
+}
+
+function guardAdvertClicks() {
+  document.addEventListener(
+    "click",
+    (e) => {
+      if (!cachedAdvertUrl || hasWatchedAdvert()) return;
+      const link = e.target.closest("a[href]");
+      if (!link) return;
+      const href = link.getAttribute("href") || "";
+      if (!/request\.html|quote-list\.html/.test(href)) return;
+      e.preventDefault();
+      showAdvertGate({ advert_video_url: cachedAdvertUrl });
+    },
+    true
+  );
 }
 
 async function applyPublicSite() {

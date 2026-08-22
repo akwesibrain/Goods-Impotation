@@ -258,7 +258,10 @@ function escapeAttr(value) {
 async function uploadMedia(client, file, folder) {
   const safeName = file.name.replace(/[^\w.\-]+/g, "-");
   const path = `${folder}/${Date.now()}-${safeName}`;
-  const { error } = await client.storage.from("media").upload(path, file, { upsert: false });
+  const { error } = await client.storage.from("media").upload(path, file, {
+    contentType: file.type || undefined,
+    upsert: false,
+  });
   if (error) throw error;
   const { data } = client.storage.from("media").getPublicUrl(path);
   return data.publicUrl;
