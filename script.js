@@ -315,7 +315,7 @@ const QUOTE_KEY = "mwinbarka_quote_list";
 
 const POPULAR_SOURCING = [
   { id: "pop-fufu", name: "Fufu / cassava pounding machine", category: "Kitchen & Home", from: "450", itemNo: "MW-HK-01", material: "Stainless steel bowl, copper motor", origin: "China", notes: "Tell us capacity and 220V if it is for a chop bar." },
-  { id: "pop-sneakers", name: "Men's sneakers (wholesale pairs)", category: "Shoes & Bags", from: "180", itemNo: "MW-SH-02", material: "PU / mesh (varies by style)", origin: "China", notes: "Send a photo or 1688 link for the exact model and sizes." },
+  { id: "pop-sneakers", name: "Men's sneakers (wholesale pairs)", category: "Shoes & Bags", from: "180", itemNo: "MW-SH-02", material: "PU / mesh (varies by style)", origin: "China", notes: "Send a photo or wholesale link for the exact model and sizes." },
   { id: "pop-phones", name: "Phone accessories carton", category: "Electronics", from: "120", itemNo: "MW-EL-03", material: "Mixed — cables, cases, earbuds", origin: "China", notes: "Good for market stall restock. Say how many pieces." },
   { id: "pop-dryer", name: "Salon hair dryer", category: "Beauty & Cosmetics", from: "260", itemNo: "MW-BE-04", material: "ABS housing, AC motor", origin: "China", notes: "Professional salon dryers. Confirm plug type for Ghana." },
   { id: "pop-fashion", name: "Women's fashion lot (mixed styles)", category: "Clothing & Fashion", from: "150", itemNo: "MW-CL-05", material: "Varies by lot", origin: "China or Turkey", notes: "Share sizes, colours, and whether you want Turkey or China." },

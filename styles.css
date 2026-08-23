@@ -287,7 +287,7 @@ textarea:focus-visible, select:focus-visible {
   .site-header .nav-links { top: 100%; }
 }
 
-/* Marketplace hero — inspired by sourcing desks like 1688Elephant:
+/* Marketplace hero — inspired by sourcing desks:
    category list | promo | quote panel. Still no cart. */
 .market-wrap { background: var(--navy-900); padding: var(--space-3) 0 var(--space-4); }
 .market-hero {
