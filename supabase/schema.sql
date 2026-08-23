@@ -230,6 +230,58 @@ create policy "Staff can update site settings"
   with check (private.is_staff());
 
 -- ============================================================
+-- Reviews — public can read published quotes; anyone may submit
+-- a draft. Staff publish, edit, or remove.
+-- ============================================================
+
+create table if not exists public.reviews (
+  id          uuid primary key default gen_random_uuid(),
+  author_name text not null,
+  location    text,
+  rating      integer not null default 5 check (rating between 1 and 5),
+  quote       text not null,
+  published   boolean not null default false,
+  user_id     uuid references auth.users(id) on delete set null,
+  created_at  timestamptz not null default now()
+);
+
+create index if not exists reviews_published_idx
+  on public.reviews (published, created_at desc);
+
+alter table public.reviews enable row level security;
+
+drop policy if exists "Public can read published reviews" on public.reviews;
+create policy "Public can read published reviews"
+  on public.reviews for select to anon, authenticated
+  using (published = true);
+
+drop policy if exists "Staff can read all reviews" on public.reviews;
+create policy "Staff can read all reviews"
+  on public.reviews for select to authenticated
+  using (private.is_staff());
+
+drop policy if exists "Anyone can submit a review" on public.reviews;
+create policy "Anyone can submit a review"
+  on public.reviews for insert to anon, authenticated
+  with check (published = false and (user_id is null or user_id = auth.uid()));
+
+drop policy if exists "Staff can add reviews" on public.reviews;
+create policy "Staff can add reviews"
+  on public.reviews for insert to authenticated
+  with check (private.is_staff());
+
+drop policy if exists "Staff can update reviews" on public.reviews;
+create policy "Staff can update reviews"
+  on public.reviews for update to authenticated
+  using (private.is_staff())
+  with check (private.is_staff());
+
+drop policy if exists "Staff can delete reviews" on public.reviews;
+create policy "Staff can delete reviews"
+  on public.reviews for delete to authenticated
+  using (private.is_staff());
+
+-- ============================================================
 -- Storage — product photos and the advert video.
 -- Public can read; only a signed-in admin can upload.
 -- ============================================================

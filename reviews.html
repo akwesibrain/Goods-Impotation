@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>About — Mwinbarka Imports</title>
-<meta name="description" content="Mwinbarka Imports is a Ghana-based importation agent sourcing goods from China and Turkey.">
+<title>Reviews — Mwinbarka Imports</title>
+<meta name="description" content="Customer reviews of Mwinbarka Imports — Accra import desk, quotes in GH₵, China and Turkey to Ghana.">
 <link rel="stylesheet" href="styles.css?v=brand9">
 </head>
 <body>
@@ -41,7 +41,6 @@
 })();
 </script>
 
-
 <header class="site-header">
   <div class="announce-bar">Accra desk · Landed quotes in GH₵ · Official line 054 030 9637 only</div>
   <div class="header-main container">
@@ -62,7 +61,8 @@
       <li><a href="how-it-works.html">Process</a></li>
       <li><a href="categories.html">What we bring</a></li>
       <li><a href="shipping.html">Freight</a></li>
-      <li><a href="about.html" class="active">The desk</a></li>
+      <li><a href="about.html">The desk</a></li>
+      <li><a href="reviews.html" class="active">Reviews</a></li>
       <li><a href="faq.html">FAQ</a></li>
       <li><a href="contact.html">Contact</a></li>
       <li class="nav-request"><a href="request.html">Order Now</a></li>
@@ -72,57 +72,50 @@
 
 <section class="page-hero">
   <div class="container">
-    <span class="eyebrow">MW–DESK–ACC</span>
-    <h1>An Accra desk, not a marketplace.</h1>
-    <p>You should not need a factory account, a freight forwarder, or a customs handbook. That is the work of this desk — sourced in China or Turkey, landed in Ghana, priced in GH₵.</p>
+    <span class="eyebrow">MW–REVIEWS</span>
+    <h1>After the box lands in Ghana.</h1>
+    <p>Real files from Accra, Kumasi, and further inland. Leave your own review if this desk has already sourced for you.</p>
   </div>
 </section>
 
 <section class="section">
   <div class="container">
-    <div class="split">
-      <div>
-        <span class="eyebrow">Who we are</span>
-        <h2 style="margin: var(--space-2) 0;">An importation agent, not a middleman markup shop.</h2>
-        <p style="color: var(--ink-500); font-size: 1.05rem; margin-bottom: var(--space-2);">Mwinbarka Imports works directly with suppliers in China and Turkey to source products on behalf of customers across Ghana — from single personal items to bulk orders for small businesses.</p>
-        <p style="color: var(--ink-500); font-size: 1.05rem;">Every request is priced individually and communicated clearly in Ghana Cedis before anything is purchased, so there are no surprises along the way.</p>
-      </div>
-      <div class="panel">
-        <h3>Where we source from</h3>
-        <p style="margin-bottom: var(--space-2);"><strong style="color: var(--white);">China</strong> — wholesale platforms and factory-direct suppliers across a wide range of goods.</p>
-        <p><strong style="color: var(--white);">Turkey</strong> — textiles, clothing, and home goods known for quality and craftsmanship.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="section section-alt">
-  <div class="container">
-    <div class="section-head">
-      <span class="eyebrow">MW · Coverage</span>
-      <h2>Delivering nationwide across Ghana.</h2>
-    </div>
-    <p style="color: var(--ink-500); font-size: 1.05rem; max-width: 620px;">Wherever you're based — Accra, Kumasi, Takoradi, or beyond — Mwinbarka Imports arranges delivery to you once your item clears. Distance isn't a barrier to getting what you're looking for.</p>
-  </div>
-</section>
-
-<section class="section" id="reviews-section">
-  <div class="container">
-    <div class="section-head rail-head">
-      <span class="eyebrow">MW–REVIEWS</span>
-      <h2>Customers after delivery.</h2>
-      <a href="reviews.html" class="more-link">All reviews →</a>
-    </div>
     <div class="review-grid" id="reviews-grid"></div>
   </div>
 </section>
 
-<section class="cta-band">
-  <div class="container">
-    <p class="bill-meta">MW–01 · New file</p>
-    <h2>File the item. We’ll price the landing.</h2>
-    <p>Describe it, paste a link, or send a photo. The desk replies in GH₵.</p>
-    <a href="request.html" class="btn btn-gold">Order Now →</a>
+<section class="section section-alt">
+  <div class="container account-wrap">
+    <form id="review-form" class="form-card" novalidate>
+      <span class="eyebrow">Leave a review</span>
+      <h2>Tell others how the lane went.</h2>
+      <div class="field-row">
+        <div class="field">
+          <label for="review-name">Name</label>
+          <input type="text" id="review-name" name="author_name" required autocomplete="name">
+        </div>
+        <div class="field">
+          <label for="review-location">Location in Ghana</label>
+          <input type="text" id="review-location" name="location" required placeholder="e.g. Accra, Kumasi">
+        </div>
+      </div>
+      <div class="field">
+        <label for="review-rating">Rating</label>
+        <select id="review-rating" name="rating" required>
+          <option value="5">5 — Excellent</option>
+          <option value="4">4 — Good</option>
+          <option value="3">3 — Fair</option>
+          <option value="2">2 — Poor</option>
+          <option value="1">1 — Bad</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="review-quote">Your review</label>
+        <textarea id="review-quote" name="quote" rows="4" required placeholder="What did you import, and how did the desk handle it?"></textarea>
+      </div>
+      <button type="submit" class="btn btn-gold">Submit review</button>
+      <div id="review-status" class="form-status"></div>
+    </form>
   </div>
 </section>
 
@@ -141,6 +134,7 @@
           <li><a href="categories.html">What we bring</a></li>
           <li><a href="shipping.html">Freight</a></li>
           <li><a href="about.html">About</a></li>
+          <li><a href="reviews.html">Reviews</a></li>
           <li><a href="faq.html">FAQ</a></li>
         </ul>
       </div>

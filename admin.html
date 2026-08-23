@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Admin — Mwinbarka Imports</title>
 <meta name="description" content="Internal request desk for Mwinbarka Imports.">
-<link rel="stylesheet" href="styles.css?v=brand8">
+<link rel="stylesheet" href="styles.css?v=brand9">
 </head>
 <body id="admin-page">
 
@@ -27,7 +27,7 @@
 <section class="page-hero">
   <div class="container">
     <span class="eyebrow">MW · Admin</span>
-    <h1>Requests, products, and site settings.</h1>
+    <h1>Requests, products, reviews, and site settings.</h1>
     <p>Add products by category (Kitchen &amp; Home, fashion, electronics…). They appear on the homepage so customers can Order Now.</p>
   </div>
 </section>
@@ -72,6 +72,7 @@
     <div class="admin-tabs" id="admin-tabs">
       <button type="button" class="chip active" data-tab="requests">Requests</button>
       <button type="button" class="chip" data-tab="products">Products</button>
+      <button type="button" class="chip" data-tab="reviews">Reviews</button>
       <button type="button" class="chip" data-tab="settings">Settings</button>
     </div>
 
@@ -167,6 +168,55 @@
             </tr>
           </thead>
           <tbody id="products-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Reviews -->
+    <div class="admin-panel" id="tab-reviews" hidden>
+      <form id="review-admin-form" class="form-card admin-form" novalidate>
+        <span class="eyebrow">MW · New review</span>
+        <h2 style="margin: var(--space-2) 0 var(--space-3);">Publish a customer review</h2>
+        <div class="field-row">
+          <div class="field">
+            <label for="admin-review-name">Name</label>
+            <input type="text" id="admin-review-name" name="author_name" required>
+          </div>
+          <div class="field">
+            <label for="admin-review-location">Location</label>
+            <input type="text" id="admin-review-location" name="location" placeholder="e.g. Accra">
+          </div>
+        </div>
+        <div class="field">
+          <label for="admin-review-rating">Rating</label>
+          <select id="admin-review-rating" name="rating" required>
+            <option value="5">5</option>
+            <option value="4">4</option>
+            <option value="3">3</option>
+            <option value="2">2</option>
+            <option value="1">1</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="admin-review-quote">Review</label>
+          <textarea id="admin-review-quote" name="quote" rows="3" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-gold">Publish review</button>
+        <div id="review-admin-status" class="form-status"></div>
+      </form>
+
+      <div class="table-wrap" style="margin-top: var(--space-4);">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Customer</th>
+              <th>Rating</th>
+              <th>Review</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="reviews-body"></tbody>
         </table>
       </div>
     </div>

@@ -67,6 +67,7 @@ document.addEventListener("DOMContentLoaded", () => {
   enhanceSearch();
   mountMobileChrome();
   mountAccountChrome();
+  mountReviewsLinks();
   renderPopularSourcing();
   renderQuoteListPage();
   setupShippingAdvisor();
@@ -1194,6 +1195,8 @@ async function applyPublicSite() {
   const client = window.getSupabaseClient && window.getSupabaseClient();
   if (!client) {
     await renderPublicProducts(null);
+    await renderReviews(null);
+    bindReviewForm(null);
     return;
   }
 
@@ -1211,6 +1214,126 @@ async function applyPublicSite() {
 
   await renderPublicProducts(client);
   await renderItemPage(client);
+  await renderReviews(client);
+  bindReviewForm(client);
+}
+
+const FALLBACK_REVIEWS = [
+  { author_name: "Ama Boateng", location: "Accra", rating: 5, quote: "They quoted one GH₵ figure for my salon dryers. Sea freight landed in Tema and they delivered to East Legon." },
+  { author_name: "Kwame Mensah", location: "Kumasi", rating: 5, quote: "I sent a photo of the mill I wanted. Clear landed price, no extra charges later." },
+  { author_name: "Efua Sarpong", location: "Takoradi", rating: 5, quote: "Clothing lot from Turkey. They kept me on one thread until the box arrived." },
+  { author_name: "Yusuf Ibrahim", location: "Tamale", rating: 4, quote: "The sea window they promised is what I got. Quote was in cedis so I could plan." },
+  { author_name: "Akosua Darko", location: "Accra", rating: 5, quote: "First time importing. They explained clearing. I only paid what we agreed." },
+];
+
+function starText(rating) {
+  const n = Math.min(5, Math.max(1, Number(rating) || 5));
+  return "★".repeat(n) + "☆".repeat(5 - n);
+}
+
+function reviewCardHtml(review) {
+  return `<article class="review-card">
+    <div class="review-stars" aria-label="${escapeAttr(String(review.rating || 5))} out of 5">${starText(review.rating)}</div>
+    <p>${escapeHtml(review.quote)}</p>
+    <footer>
+      <strong>${escapeHtml(review.author_name)}</strong>
+      <span>${escapeHtml(review.location || "Ghana")}</span>
+    </footer>
+  </article>`;
+}
+
+function mountReviewsLinks() {
+  if (document.body && document.body.id === "admin-page") return;
+  document.querySelectorAll(".nav-links").forEach((ul) => {
+    if (ul.querySelector("a[href='reviews.html']")) return;
+    const li = document.createElement("li");
+    const here = pageFile();
+    li.innerHTML = `<a href="reviews.html"${here === "reviews.html" ? ' class="active"' : ""}>Reviews</a>`;
+    const faq = [...ul.querySelectorAll("a")].find((a) => a.getAttribute("href") === "faq.html");
+    if (faq && faq.parentElement) ul.insertBefore(li, faq.parentElement);
+    else {
+      const req = ul.querySelector(".nav-request");
+      if (req) ul.insertBefore(li, req);
+      else ul.appendChild(li);
+    }
+  });
+  document.querySelectorAll(".footer-grid ul").forEach((ul) => {
+    if (ul.querySelector("a[href='reviews.html']")) return;
+    const hrefs = [...ul.querySelectorAll("a")].map((a) => a.getAttribute("href") || "").join(" ");
+    if (!/about\.html|faq\.html|how-it-works\.html/.test(hrefs)) return;
+    const li = document.createElement("li");
+    li.innerHTML = `<a href="reviews.html">Reviews</a>`;
+    const faq = [...ul.querySelectorAll("a")].find((a) => a.getAttribute("href") === "faq.html");
+    if (faq && faq.parentElement) ul.insertBefore(li, faq.parentElement);
+    else ul.appendChild(li);
+  });
+}
+
+async function renderReviews(client) {
+  const grids = document.querySelectorAll("#reviews-grid");
+  if (!grids.length) return;
+  let rows = FALLBACK_REVIEWS;
+  if (client) {
+    const { data, error } = await client
+      .from("reviews")
+      .select("author_name, location, rating, quote, created_at")
+      .eq("published", true)
+      .order("created_at", { ascending: false });
+    if (!error && data && data.length) rows = data;
+  }
+  const onHome = (pageFile() === "index.html" || pageFile() === "");
+  const shown = onHome ? rows.slice(0, 4) : rows;
+  const html = shown.map(reviewCardHtml).join("");
+  grids.forEach((grid) => { grid.innerHTML = html; });
+}
+
+async function bindReviewForm(client) {
+  const form = document.getElementById("review-form");
+  if (!form) return;
+  if (window.getMyProfile) {
+    const profile = await window.getMyProfile();
+    if (profile) {
+      if (form.elements.author_name && !form.elements.author_name.value && profile.full_name) {
+        form.elements.author_name.value = profile.full_name;
+      }
+    }
+  }
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const statusEl = document.getElementById("review-status");
+    const btn = form.querySelector('button[type="submit"]');
+    const author_name = form.elements.author_name.value.trim();
+    const quote = form.elements.quote.value.trim();
+    const location = form.elements.location.value.trim();
+    const rating = Number(form.elements.rating.value) || 5;
+    if (!author_name || !quote || !location) {
+      showStatus(statusEl, "error", "Please fill in name, location, and your review.");
+      return;
+    }
+    if (!client) {
+      showStatus(statusEl, "error", "Reviews are not connected yet. Write the desk on the official line.");
+      return;
+    }
+    btn.disabled = true;
+    try {
+      const user = window.getSessionUser ? await window.getSessionUser() : null;
+      const { error } = await client.from("reviews").insert([{
+        author_name,
+        location,
+        rating,
+        quote,
+        published: false,
+        user_id: user ? user.id : null,
+      }]);
+      if (error) throw error;
+      form.reset();
+      if (form.elements.rating) form.elements.rating.value = "5";
+      showStatus(statusEl, "success", "Thank you. The desk will publish your review after a check.");
+    } catch (err) {
+      showStatus(statusEl, "error", err.message || "Couldn't send the review.");
+    }
+    btn.disabled = false;
+  });
 }
 
 function categorySlug(name) {

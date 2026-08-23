@@ -42,6 +42,7 @@ document.addEventListener("DOMContentLoaded", () => {
     signOutBtn.style.display = "inline-flex";
     await loadRequests(client);
     await loadProducts(client);
+    await loadReviews(client);
     await loadSettings(client);
   };
 
@@ -106,6 +107,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   document.getElementById("product-form").addEventListener("submit", (e) => handleProductSubmit(e, client));
+  document.getElementById("review-admin-form").addEventListener("submit", (e) => handleReviewAdminSubmit(e, client));
   document.getElementById("settings-form").addEventListener("submit", (e) => handleSettingsSubmit(e, client));
 });
 
@@ -366,6 +368,102 @@ async function handleProductSubmit(e, client) {
   } catch (err) {
     statusEl.className = "form-status error";
     statusEl.textContent = err.message || "Couldn't save the product.";
+  }
+  btn.disabled = false;
+}
+
+async function loadReviews(client) {
+  const body = document.getElementById("reviews-body");
+  if (!body) return;
+  body.innerHTML = `<tr><td colspan="5" class="admin-empty">Loading reviews...</td></tr>`;
+
+  const { data, error } = await client
+    .from("reviews")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    body.innerHTML = `<tr><td colspan="5" class="admin-empty">Couldn't load reviews: ${escapeHtml(error.message)}</td></tr>`;
+    return;
+  }
+
+  if (!data.length) {
+    body.innerHTML = `<tr><td colspan="5"><div class="admin-empty"><span class="code">MW · NO REVIEWS</span>No reviews yet.</div></td></tr>`;
+    return;
+  }
+
+  body.innerHTML = data.map((r) => `<tr>
+    <td>
+      <strong>${escapeHtml(r.author_name)}</strong>
+      ${r.location ? `<br><span class="muted">${escapeHtml(r.location)}</span>` : ""}
+    </td>
+    <td>${escapeHtml(String(r.rating || 5))} / 5</td>
+    <td class="cell-details">${escapeHtml(r.quote)}</td>
+    <td>${r.published ? '<span class="status-pill confirmed">Published</span>' : '<span class="status-pill new">Pending</span>'}</td>
+    <td>
+      <div class="row-actions">
+        ${r.published
+          ? `<button type="button" class="chip" data-hide-review="${escapeAttr(r.id)}">Hide</button>`
+          : `<button type="button" class="chip" data-publish-review="${escapeAttr(r.id)}">Publish</button>`}
+        <button type="button" class="chip" data-delete-review="${escapeAttr(r.id)}">Delete</button>
+      </div>
+    </td>
+  </tr>`).join("");
+
+  body.querySelectorAll("[data-publish-review]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const { error: err } = await client.from("reviews").update({ published: true }).eq("id", btn.dataset.publishReview);
+      if (err) { alert(err.message); return; }
+      await loadReviews(client);
+    });
+  });
+  body.querySelectorAll("[data-hide-review]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const { error: err } = await client.from("reviews").update({ published: false }).eq("id", btn.dataset.hideReview);
+      if (err) { alert(err.message); return; }
+      await loadReviews(client);
+    });
+  });
+  body.querySelectorAll("[data-delete-review]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      if (!confirm("Delete this review?")) return;
+      const { error: err } = await client.from("reviews").delete().eq("id", btn.dataset.deleteReview);
+      if (err) { alert(err.message); return; }
+      await loadReviews(client);
+    });
+  });
+}
+
+async function handleReviewAdminSubmit(e, client) {
+  e.preventDefault();
+  const form = e.target;
+  const statusEl = document.getElementById("review-admin-status");
+  const btn = form.querySelector('button[type="submit"]');
+  const author_name = form.elements.author_name.value.trim();
+  const quote = form.elements.quote.value.trim();
+  const rating = Number(form.elements.rating.value) || 5;
+  if (!author_name || !quote) {
+    statusEl.className = "form-status error";
+    statusEl.textContent = "Name and review are required.";
+    return;
+  }
+  btn.disabled = true;
+  try {
+    const { error } = await client.from("reviews").insert([{
+      author_name,
+      location: form.elements.location.value.trim() || null,
+      rating,
+      quote,
+      published: true,
+    }]);
+    if (error) throw error;
+    form.reset();
+    statusEl.className = "form-status success";
+    statusEl.textContent = "Review published.";
+    await loadReviews(client);
+  } catch (err) {
+    statusEl.className = "form-status error";
+    statusEl.textContent = err.message || "Couldn't save the review.";
   }
   btn.disabled = false;
 }
