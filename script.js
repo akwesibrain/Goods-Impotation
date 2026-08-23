@@ -1279,11 +1279,11 @@ function maybeShowLandingAdvert() {
 }
 
 const FALLBACK_REVIEWS = [
-  { author_name: "Ama Serwaa", location: "East Legon, Accra", rating: 5, quote: "I run a salon on the East Legon road. I sent a photo of the four stand dryers I wanted. They came back with one GH₵ figure — goods, sea, clearing — and six weeks later the boxes were at my shop. Nobody asked me for a ‘private Tema fee’." },
-  { author_name: "Kojo Mensah", location: "Kejetia, Kumasi", rating: 5, quote: "I restock sneakers for my stall. I snapped the pair a customer wanted and wrote the sizes. They found the carton, told me the landed cost in cedis before I paid anything, and the shoes arrived as pictured. My regulars bought the first week." },
-  { author_name: "Efua Nyarko", location: "Market Circle, Takoradi", rating: 5, quote: "I needed Turkey dresses for the boutique — sizes 10 to 16, not random leftover stock. They checked the lot with me, we agreed the GH₵, and every piece I opened matched what we discussed. I’ll use them again for the Christmas restock." },
-  { author_name: "Fuseini Issah", location: "Tamale Central", rating: 5, quote: "My chop bar mill packed up. I told them 220V and the bowl size. They confirmed the plug for Ghana before they bought it. The machine landed, they sent it up from Tema, and we were grinding again the same week it arrived." },
-  { author_name: "Akosua Owusu", location: "Madina, Accra", rating: 5, quote: "First time importing — baby cots and a stroller for my shop. I was scared of customs. They walked me through the quote in plain cedis, I paid only that, and the goods came to Madina. My sister in Kumasi used the same desk after she saw mine." },
+  { author_name: "Ama", location: "Accra", rating: 5, quote: "Very good service. My things came exactly as I ordered. Will definitely order again." },
+  { author_name: "Kofi", location: "Kumasi", rating: 5, quote: "I was a bit worried at first but everything went well. My items arrived safely." },
+  { author_name: "Efua", location: "Takoradi", rating: 5, quote: "The communication was good and they kept me updated. Delivery was also smooth." },
+  { author_name: "Yakubu", location: "Tamale", rating: 5, quote: "I got exactly what I ordered. The price was also reasonable." },
+  { author_name: "Adwoa", location: "Accra", rating: 5, quote: "Second time ordering from them and so far so good. No complaints." },
 ];
 
 function starText(rating) {
