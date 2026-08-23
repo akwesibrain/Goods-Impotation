@@ -60,7 +60,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   applyPublicSite();
-  showAdvertGate({});
   mountAnnounceBar();
   mountSiteSearch();
   mountFeatureNav();
@@ -826,26 +825,42 @@ const HOSTED_ADVERT_MP4 =
   "https://kajtwabmwbncfgvehqmm.supabase.co/storage/v1/object/public/media/adverts/advert.mp4?v=phone1";
 const FALLBACK_ADVERT_MP4 =
   "https://cdn.jsdelivr.net/gh/akwesibrain/Goods-Impotation@cursor/mwinbarka-imports-site-5d47/assets/advert.mp4";
-const ADVERT_WATCH_KEY = "mwinbarka_advert_finished_v2";
+const ADVERT_SESSION_KEY = "mwinbarka_advert_session_v3";
+const ADVERT_ACCOUNT_KEY = "mwinbarka_advert_account_v1";
 
-function storageFlag(key) {
+let pendingAdvertHref = "";
+
+function markAdvertSkippedForAccount() {
+  try { localStorage.setItem(ADVERT_ACCOUNT_KEY, "1"); } catch (e) { /* private mode */ }
+  try { sessionStorage.setItem(ADVERT_SESSION_KEY, "1"); } catch (e) { /* private mode */ }
+  const stale = document.getElementById("advert-gate");
+  if (stale) {
+    stale.remove();
+    document.body.classList.remove("advert-locked");
+  }
+}
+
+function shouldSkipAdvertForAccount() {
   try {
-    if (localStorage.getItem(key) === "1") return true;
-  } catch (e) { /* private mode */ }
-  try {
-    if (sessionStorage.getItem(key) === "1") return true;
+    if (localStorage.getItem(ADVERT_ACCOUNT_KEY) === "1") return true;
   } catch (e) { /* private mode */ }
   return false;
 }
 
 function hasWatchedAdvert() {
-  return storageFlag(ADVERT_WATCH_KEY);
+  if (shouldSkipAdvertForAccount()) return true;
+  try {
+    return sessionStorage.getItem(ADVERT_SESSION_KEY) === "1";
+  } catch (e) {
+    return false;
+  }
 }
 
 function markAdvertWatched() {
-  try { localStorage.setItem(ADVERT_WATCH_KEY, "1"); } catch (e) { /* private mode */ }
-  try { sessionStorage.setItem(ADVERT_WATCH_KEY, "1"); } catch (e) { /* private mode */ }
+  try { sessionStorage.setItem(ADVERT_SESSION_KEY, "1"); } catch (e) { /* private mode */ }
 }
+
+window.markAdvertSkippedForAccount = markAdvertSkippedForAccount;
 
 function youtubeIdFromUrl(url) {
   try {
@@ -904,7 +919,7 @@ function advertCandidates(remote) {
 function advertPlayerHtml(kind, src) {
   if (kind === "file") {
     return `
-      <video id="advert-video" playsinline webkit-playsinline muted autoplay preload="auto" controls controlslist="nodownload noplaybackrate noremoteplayback" disablepictureinpicture>
+      <video id="advert-video" playsinline webkit-playsinline preload="auto" controls controlslist="nodownload noplaybackrate noremoteplayback" disablepictureinpicture>
         <source type="video/mp4">
       </video>
       <button type="button" class="advert-play" id="advert-play" aria-label="Play advert">▶</button>
@@ -917,29 +932,38 @@ function advertPlayerHtml(kind, src) {
   return `<iframe id="advert-tiktok" title="Mwinbarka Imports advert" allow="autoplay; fullscreen; encrypted-media" allowfullscreen src="${escapeAttr(src)}"></iframe>`;
 }
 
+function removeAdvertGate() {
+  const stale = document.getElementById("advert-gate");
+  if (stale) stale.remove();
+  document.body.classList.remove("advert-locked");
+}
+
+function followPendingAdvertLink() {
+  const href = pendingAdvertHref;
+  pendingAdvertHref = "";
+  if (href && href !== location.href) window.location.href = href;
+}
+
 async function showAdvertGate(settings) {
+  if (document.body && document.body.id === "admin-page") return;
   const remote = ((settings && settings.advert_video_url) || "").trim();
   const sources = advertCandidates(remote);
   const videoUrl = sources[0];
   cachedAdvertUrl = videoUrl;
-  if (hasWatchedAdvert()) {
-    const stale = document.getElementById("advert-gate");
-    if (stale) {
-      stale.remove();
-      document.body.classList.remove("advert-locked");
-    }
+
+  const user = window.getSessionUser ? await window.getSessionUser() : null;
+  if (user) {
+    markAdvertSkippedForAccount();
     return;
   }
-  if (document.body && document.body.id === "admin-page") return;
+  if (hasWatchedAdvert()) {
+    removeAdvertGate();
+    followPendingAdvertLink();
+    return;
+  }
 
   let overlay = document.getElementById("advert-gate");
-  if (overlay && overlay.dataset.mounted === "1") {
-    const video = overlay.querySelector("#advert-video");
-    if (video && video.dataset.activeSrc !== videoUrl) {
-      loadAdvertSources(video, sources, overlay.querySelector("#advert-progress"));
-    }
-    return;
-  }
+  if (overlay && overlay.dataset.mounted === "1") return;
 
   if (!overlay) {
     overlay = document.createElement("div");
@@ -948,7 +972,7 @@ async function showAdvertGate(settings) {
     <div class="advert-stage">
       <div class="advert-player" id="advert-player"></div>
       <div class="advert-hud">
-        <div class="advert-progress" id="advert-progress">Starting advert…</div>
+        <div class="advert-progress" id="advert-progress">Tap Play to watch the advert.</div>
         <button type="button" class="btn btn-gold" id="advert-continue" disabled>Watch the full video to continue</button>
       </div>
     </div>
@@ -986,19 +1010,14 @@ async function showAdvertGate(settings) {
   if (continueBtn) {
     continueBtn.addEventListener("click", () => {
       if (!unlocked) return;
-      overlay.remove();
-      document.body.classList.remove("advert-locked");
+      removeAdvertGate();
+      followPendingAdvertLink();
     });
   }
 
-  overlay.dataset.mounted = "1";
-  const existingVideo = overlay.querySelector("#advert-video");
-  if (!existingVideo) {
-    playerBox.innerHTML = advertPlayerHtml("file");
-  }
+  playerBox.innerHTML = advertPlayerHtml("file");
   const video = overlay.querySelector("video");
-  const alreadyPlaying = !!(existingVideo && !existingVideo.paused && !existingVideo.ended);
-  mountFileAdvert(video, sources, unlock, updateProgress, progressEl, alreadyPlaying);
+  mountFileAdvert(video, sources, unlock, updateProgress, progressEl);
 }
 
 function addPlayOverlay(box, onPlay) {
@@ -1045,7 +1064,7 @@ function loadAdvertSources(video, sources, progressEl) {
   apply(sources[0]);
 }
 
-function mountFileAdvert(video, sources, unlock, updateProgress, progressEl, skipReload) {
+function mountFileAdvert(video, sources, unlock, updateProgress, progressEl) {
   let maxTime = 0;
   const box = video.parentElement;
   const playBtn = box.querySelector("#advert-play");
@@ -1058,7 +1077,7 @@ function mountFileAdvert(video, sources, unlock, updateProgress, progressEl, ski
       start.catch(() => {
         video.muted = true;
         video.play().catch(() => {
-          if (progressEl) progressEl.textContent = "Click Play to start the advert.";
+          if (progressEl) progressEl.textContent = "Tap Play to watch the advert.";
           if (playBtn) playBtn.hidden = false;
         });
       });
@@ -1067,14 +1086,10 @@ function mountFileAdvert(video, sources, unlock, updateProgress, progressEl, ski
 
   video.setAttribute("playsinline", "");
   video.setAttribute("webkit-playsinline", "");
-  if (skipReload) {
-    if (video.ended) unlock();
-    else if (video.duration) updateProgress(video.currentTime, video.duration);
-  } else {
-    loadAdvertSources(video, sources, progressEl);
-    video.muted = true;
-    tryPlay(false);
-  }
+  video.removeAttribute("autoplay");
+  loadAdvertSources(video, sources, progressEl);
+  if (playBtn) playBtn.hidden = false;
+  if (progressEl) progressEl.textContent = "Tap Play to watch the advert.";
 
   addPlayOverlay(box, () => tryPlay(true));
   video.addEventListener("click", () => {
@@ -1192,17 +1207,33 @@ function mountYouTubeAdvert(id, unlock, updateProgress, progressEl) {
   }
 }
 
+function isInternalSiteLink(link) {
+  const href = link.getAttribute("href") || "";
+  if (!href || href.startsWith("#") || href.startsWith("mailto:") || href.startsWith("tel:")) return false;
+  if (/^https?:\/\//i.test(href)) {
+    try {
+      return new URL(href, location.href).origin === location.origin;
+    } catch {
+      return false;
+    }
+  }
+  return !href.startsWith("javascript:");
+}
+
 function guardAdvertClicks() {
   document.addEventListener(
     "click",
     (e) => {
-      if (!cachedAdvertUrl || hasWatchedAdvert()) return;
+      if (hasWatchedAdvert()) return;
+      if (document.getElementById("advert-gate")) return;
       const link = e.target.closest("a[href]");
-      if (!link) return;
-      const href = link.getAttribute("href") || "";
-      if (!/request\.html|quote-list\.html/.test(href)) return;
+      if (!link || !isInternalSiteLink(link)) return;
+      if (link.target === "_blank") return;
+      const dest = link.getAttribute("href") || "";
+      if (/account\.html|admin\.html/.test(dest)) return;
       e.preventDefault();
-      showAdvertGate({ advert_video_url: cachedAdvertUrl });
+      pendingAdvertHref = link.href;
+      showAdvertGate({ advert_video_url: cachedAdvertUrl || HOSTED_ADVERT_MP4 });
     },
     true
   );
@@ -1210,10 +1241,12 @@ function guardAdvertClicks() {
 
 async function applyPublicSite() {
   const client = window.getSupabaseClient && window.getSupabaseClient();
+  cachedAdvertUrl = cachedAdvertUrl || HOSTED_ADVERT_MP4;
   if (!client) {
     await renderPublicProducts(null);
     await renderReviews(null);
     bindReviewForm(null);
+    maybeShowLandingAdvert();
     return;
   }
 
@@ -1226,13 +1259,23 @@ async function applyPublicSite() {
   if (data) {
     applyChannelButton(data);
     applySocialLinks(data);
-    showAdvertGate(data);
+    cachedAdvertUrl = advertCandidates(data.advert_video_url)[0];
   }
+  const user = window.getSessionUser ? await window.getSessionUser() : null;
+  if (user) markAdvertSkippedForAccount();
+  maybeShowLandingAdvert();
 
   await renderPublicProducts(client);
   await renderItemPage(client);
   await renderReviews(client);
   bindReviewForm(client);
+}
+
+function maybeShowLandingAdvert() {
+  const file = pageFile();
+  if (file !== "request.html" && file !== "quote-list.html") return;
+  if (hasWatchedAdvert()) return;
+  showAdvertGate({ advert_video_url: cachedAdvertUrl || HOSTED_ADVERT_MP4 });
 }
 
 const FALLBACK_REVIEWS = [
@@ -1549,6 +1592,7 @@ async function refreshAccountChrome() {
   const sub = document.querySelector("[data-account-head-sub]");
   const signOutBtn = document.getElementById("drawer-signout");
   if (profile) {
+    markAdvertSkippedForAccount();
     if (title) title.textContent = profile.full_name || "My Account";
     if (sub) sub.textContent = profile.email || "Signed in";
     if (signOutBtn) signOutBtn.hidden = false;
