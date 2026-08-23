@@ -1279,11 +1279,11 @@ function maybeShowLandingAdvert() {
 }
 
 const FALLBACK_REVIEWS = [
-  { author_name: "Ama Boateng", location: "Accra", rating: 5, quote: "They quoted one GH₵ figure for my salon dryers. Sea freight landed in Tema and they delivered to East Legon." },
-  { author_name: "Kwame Mensah", location: "Kumasi", rating: 5, quote: "I sent a photo of the mill I wanted. Clear landed price, no extra charges later." },
-  { author_name: "Efua Sarpong", location: "Takoradi", rating: 5, quote: "Clothing lot from Turkey. They kept me on one thread until the box arrived." },
-  { author_name: "Yusuf Ibrahim", location: "Tamale", rating: 4, quote: "The sea window they promised is what I got. Quote was in cedis so I could plan." },
-  { author_name: "Akosua Darko", location: "Accra", rating: 5, quote: "First time importing. They explained clearing. I only paid what we agreed." },
+  { author_name: "Ama Serwaa", location: "East Legon, Accra", rating: 5, quote: "I run a salon on the East Legon road. I sent a photo of the four stand dryers I wanted. They came back with one GH₵ figure — goods, sea, clearing — and six weeks later the boxes were at my shop. Nobody asked me for a ‘private Tema fee’." },
+  { author_name: "Kojo Mensah", location: "Kejetia, Kumasi", rating: 5, quote: "I restock sneakers for my stall. I snapped the pair a customer wanted and wrote the sizes. They found the carton, told me the landed cost in cedis before I paid anything, and the shoes arrived as pictured. My regulars bought the first week." },
+  { author_name: "Efua Nyarko", location: "Market Circle, Takoradi", rating: 5, quote: "I needed Turkey dresses for the boutique — sizes 10 to 16, not random leftover stock. They checked the lot with me, we agreed the GH₵, and every piece I opened matched what we discussed. I’ll use them again for the Christmas restock." },
+  { author_name: "Fuseini Issah", location: "Tamale Central", rating: 5, quote: "My chop bar mill packed up. I told them 220V and the bowl size. They confirmed the plug for Ghana before they bought it. The machine landed, they sent it up from Tema, and we were grinding again the same week it arrived." },
+  { author_name: "Akosua Owusu", location: "Madina, Accra", rating: 5, quote: "First time importing — baby cots and a stroller for my shop. I was scared of customs. They walked me through the quote in plain cedis, I paid only that, and the goods came to Madina. My sister in Kumasi used the same desk after she saw mine." },
 ];
 
 function starText(rating) {
