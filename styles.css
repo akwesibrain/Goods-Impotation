@@ -959,9 +959,191 @@ textarea:focus-visible, select:focus-visible {
 .panel h3 { color: var(--gold-400); font-size: 1rem; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: var(--space-2); }
 
 /* ============================================================
-   ADMIN — manifest desk (admin.html only)
-   Same ticket language, tightened up for scanning leads fast.
+   ADMIN — staff panel (admin.html only)
    ============================================================ */
+body.admin-app {
+  background: #F4F1EA;
+  background-image: none;
+  min-height: 100vh;
+}
+.admin-gate {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-3);
+}
+.admin-gate-card {
+  width: min(440px, 100%);
+  margin: var(--space-5) auto;
+}
+.admin-gate-card h1,
+.admin-gate-card h2 { margin: 0.4rem 0 0.75rem; }
+.admin-gate-card p { color: var(--ink-500); margin-top: 0; }
+.admin-gate-foot { margin-top: var(--space-3); font-size: 0.9rem; }
+.admin-gate-foot a { text-decoration: underline; color: var(--navy-700); }
+
+.admin-shell {
+  display: flex;
+  min-height: 100vh;
+  background: #F4F1EA;
+}
+.admin-sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  background: var(--navy-900);
+  color: rgba(255,255,255,0.78);
+  padding: 1.25rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
+}
+.admin-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  color: var(--white);
+}
+.admin-brand img { width: 36px; height: 36px; object-fit: contain; }
+.admin-brand span { font-family: var(--font-display); font-size: 1.05rem; line-height: 1.15; }
+.admin-brand small { display: block; font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold-400); }
+.admin-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0;
+}
+.admin-nav-btn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.7rem 0.8rem;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: rgba(255,255,255,0.72);
+  cursor: pointer;
+}
+.admin-nav-btn:hover { background: rgba(255,255,255,0.06); color: var(--white); }
+.admin-nav-btn.active { background: var(--gold-500); color: var(--navy-900); }
+.admin-sidebar-foot { margin-top: auto; display: flex; flex-direction: column; gap: 0.7rem; }
+.admin-staff-line {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  word-break: break-all;
+  margin: 0;
+  color: rgba(255,255,255,0.55);
+}
+.admin-sidebar-foot .btn { width: 100%; justify-content: center; }
+.admin-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.admin-top {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.1rem 1.4rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--white);
+}
+.admin-top h1 { font-size: 1.45rem; }
+.admin-top-link {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--navy-700);
+  text-decoration: underline;
+}
+.admin-menu-toggle {
+  display: none;
+  border: 1px solid var(--line);
+  background: var(--white);
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.admin-content { padding: 1.4rem; }
+.admin-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.85rem;
+  margin-bottom: 1.2rem;
+}
+.admin-stat {
+  background: var(--white);
+  border: 1px solid var(--line);
+  padding: 1rem 1.1rem;
+}
+.admin-stat strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  color: var(--navy-900);
+  line-height: 1;
+}
+.admin-stat span {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-500);
+}
+.admin-overview-split {
+  display: grid;
+  grid-template-columns: 1.4fr 0.8fr;
+  gap: 1rem;
+}
+.admin-card {
+  background: var(--white);
+  border: 1px solid var(--line);
+  padding: 1rem;
+}
+.admin-card h2 { font-size: 1.15rem; margin-bottom: 0.8rem; }
+.admin-review-preview {
+  border-top: 1px solid var(--line);
+  padding: 0.75rem 0;
+}
+.admin-review-preview:first-child { border-top: 0; padding-top: 0; }
+.admin-review-preview span { font-family: var(--font-mono); font-size: 0.72rem; color: var(--gold-500); margin-left: 0.4rem; }
+.admin-review-preview p { margin: 0.35rem 0 0; color: var(--ink-500); font-size: 0.92rem; }
+.admin-bar-tools { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+.admin-search {
+  min-width: 220px;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+}
+.admin-table-compact { min-width: 520px; }
+.admin-form h2 { margin: var(--space-2) 0 var(--space-3); }
+.admin-form .form-note { margin-top: 0; margin-bottom: var(--space-3); color: var(--ink-500); }
+
+@media (max-width: 960px) {
+  .admin-stat-grid,
+  .admin-overview-split { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 800px) {
+  .admin-sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 30;
+    transform: translateX(-105%);
+    transition: transform 0.2s ease;
+  }
+  .admin-shell.nav-open .admin-sidebar { transform: translateX(0); }
+  .admin-menu-toggle { display: inline-flex; align-items: center; justify-content: center; }
+  .admin-stat-grid,
+  .admin-overview-split { grid-template-columns: 1fr; }
+  .admin-content { padding: 1rem; }
+  .admin-search { min-width: 0; width: 100%; }
+}
+
 .admin-section { padding: var(--space-4) 0 var(--space-6); min-height: 55vh; }
 
 .admin-bar {
@@ -1055,7 +1237,6 @@ textarea:focus-visible, select:focus-visible {
   margin-top: var(--space-2);
 }
 
-.admin-tabs { display: flex; gap: var(--space-1); flex-wrap: wrap; margin-bottom: var(--space-4); }
 .admin-form { max-width: 640px; }
 .admin-thumb { width: 56px; height: 56px; object-fit: cover; border-radius: var(--radius); }
 

@@ -1,16 +1,28 @@
 // ============================================================
-// MWINBARKA IMPORTS — admin request desk
+// MWINBARKA IMPORTS — admin panel
 // ============================================================
-// Reads and updates the "requests" table. Access is enforced by
-// Supabase row level security (see supabase/schema.sql): the anon
-// key can only INSERT, so hiding these panels is convenience —
+// Reads and updates requests, products, reviews, and settings.
+// Access is enforced by Supabase row level security
+// (see supabase/schema.sql). Hiding these panels is convenience —
 // the database is what actually keeps the data private.
 // ============================================================
 
 const STATUSES = ["New", "Contacted", "Quoted", "Confirmed", "Closed"];
+const TAB_TITLES = {
+  overview: ["MW · Desk", "Overview"],
+  requests: ["MW · Leads", "Requests"],
+  customers: ["MW · Accounts", "Customers"],
+  products: ["MW · Catalog", "Products"],
+  reviews: ["MW · Reviews", "Reviews"],
+  settings: ["MW · Site", "Settings"],
+};
 
 let activeFilter = "All";
+let searchQuery = "";
 let allRequests = [];
+let allProducts = [];
+let allReviews = [];
+let allCustomers = [];
 
 document.addEventListener("DOMContentLoaded", () => {
   const client = window.getSupabaseClient && window.getSupabaseClient();
@@ -38,18 +50,27 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
     loginSection.style.display = "none";
-    dashboard.style.display = "block";
-    signOutBtn.style.display = "inline-flex";
-    await loadRequests(client);
-    await loadProducts(client);
-    await loadReviews(client);
-    await loadSettings(client);
+    dashboard.style.display = "flex";
+    if (signOutBtn) signOutBtn.style.display = "inline-flex";
+    const profile = window.getMyProfile ? await window.getMyProfile() : null;
+    const staffLine = document.getElementById("admin-staff-email");
+    if (staffLine && profile) {
+      staffLine.textContent = profile.email || profile.full_name || "Staff";
+    }
+    await Promise.all([
+      loadRequests(client),
+      loadProducts(client),
+      loadReviews(client),
+      loadCustomers(client),
+      loadSettings(client),
+    ]);
+    showTab(tabFromHash());
   };
 
   const showSignedOut = () => {
-    loginSection.style.display = "block";
+    loginSection.style.display = "flex";
     dashboard.style.display = "none";
-    signOutBtn.style.display = "none";
+    if (signOutBtn) signOutBtn.style.display = "none";
   };
 
   client.auth.getSession().then(({ data }) => {
@@ -96,20 +117,112 @@ document.addEventListener("DOMContentLoaded", () => {
     renderRequests(client);
   });
 
+  const search = document.getElementById("request-search");
+  if (search) {
+    search.addEventListener("input", () => {
+      searchQuery = search.value.trim().toLowerCase();
+      renderRequests(client);
+    });
+  }
+
   document.getElementById("admin-tabs").addEventListener("click", (e) => {
     const chip = e.target.closest("[data-tab]");
     if (!chip) return;
-    document.querySelectorAll("#admin-tabs .chip").forEach((c) => c.classList.remove("active"));
-    chip.classList.add("active");
-    document.querySelectorAll(".admin-panel").forEach((panel) => {
-      panel.hidden = panel.id !== "tab-" + chip.dataset.tab;
-    });
+    showTab(chip.dataset.tab);
+    closeAdminMenu();
   });
+
+  window.addEventListener("hashchange", () => showTab(tabFromHash()));
+
+  const menuToggle = document.getElementById("admin-menu-toggle");
+  if (menuToggle) {
+    menuToggle.addEventListener("click", () => {
+      document.getElementById("admin-dashboard").classList.toggle("nav-open");
+    });
+  }
 
   document.getElementById("product-form").addEventListener("submit", (e) => handleProductSubmit(e, client));
   document.getElementById("review-admin-form").addEventListener("submit", (e) => handleReviewAdminSubmit(e, client));
   document.getElementById("settings-form").addEventListener("submit", (e) => handleSettingsSubmit(e, client));
 });
+
+function tabFromHash() {
+  const name = (location.hash || "#overview").replace("#", "");
+  return TAB_TITLES[name] ? name : "overview";
+}
+
+function showTab(name) {
+  const tab = TAB_TITLES[name] ? name : "overview";
+  document.querySelectorAll("#admin-tabs [data-tab]").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.tab === tab);
+  });
+  document.querySelectorAll(".admin-panel").forEach((panel) => {
+    panel.hidden = panel.id !== "tab-" + tab;
+  });
+  const titles = TAB_TITLES[tab];
+  const kicker = document.getElementById("admin-page-kicker");
+  const title = document.getElementById("admin-page-title");
+  if (kicker) kicker.textContent = titles[0];
+  if (title) title.textContent = titles[1];
+  if (location.hash.replace("#", "") !== tab) {
+    history.replaceState(null, "", "#" + tab);
+  }
+}
+
+function closeAdminMenu() {
+  const shell = document.getElementById("admin-dashboard");
+  if (shell) shell.classList.remove("nav-open");
+}
+
+function countByStatus(status) {
+  return allRequests.filter((r) => (r.status || "New") === status).length;
+}
+
+function renderOverview() {
+  const stats = document.getElementById("overview-stats");
+  const recentBody = document.getElementById("overview-requests");
+  const reviewBox = document.getElementById("overview-reviews");
+  if (!stats || !recentBody || !reviewBox) return;
+
+  const pendingReviews = allReviews.filter((r) => !r.published).length;
+  stats.innerHTML = [
+    ["New requests", countByStatus("New")],
+    ["In progress", countByStatus("Contacted") + countByStatus("Quoted")],
+    ["Confirmed", countByStatus("Confirmed")],
+    ["Products", allProducts.length],
+    ["Pending reviews", pendingReviews],
+    ["Customers", allCustomers.length],
+  ].map(([label, value]) => `<article class="admin-stat">
+      <strong>${value}</strong>
+      <span>${escapeHtml(label)}</span>
+    </article>`).join("");
+
+  const recent = allRequests.slice(0, 6);
+  if (!recent.length) {
+    recentBody.innerHTML = `<tr><td colspan="4"><div class="admin-empty">No requests yet.</div></td></tr>`;
+  } else {
+    recentBody.innerHTML = recent.map((r) => {
+      const status = r.status || "New";
+      return `<tr>
+        <td class="cell-when">${formatDate(r.created_at)}</td>
+        <td><strong>${escapeHtml(r.name)}</strong><br><span class="cell-when">${escapeHtml(r.phone || "")}</span></td>
+        <td class="cell-details">${escapeHtml(r.request_details)}</td>
+        <td><span class="status-pill ${status.toLowerCase()}">${escapeHtml(status)}</span></td>
+      </tr>`;
+    }).join("");
+  }
+
+  const pending = allReviews.filter((r) => !r.published).slice(0, 5);
+  if (!pending.length) {
+    reviewBox.innerHTML = `<div class="admin-empty">No reviews waiting to be published.</div>`;
+    return;
+  }
+  reviewBox.innerHTML = pending.map((r) => `<article class="admin-review-preview">
+      <strong>${escapeHtml(r.author_name)}</strong>
+      <span>${escapeHtml(String(r.rating || 5))} / 5</span>
+      <p>${escapeHtml(r.quote)}</p>
+    </article>`).join("");
+}
 
 async function loadRequests(client) {
   const body = document.getElementById("requests-body");
@@ -127,19 +240,30 @@ async function loadRequests(client) {
 
   allRequests = data || [];
   renderRequests(client);
+  renderOverview();
+}
+
+function matchesSearch(r) {
+  if (!searchQuery) return true;
+  const hay = [
+    r.name, r.phone, r.email, r.location, r.request_details,
+    r.category, r.quantity, r.status,
+  ].join(" ").toLowerCase();
+  return hay.includes(searchQuery);
 }
 
 function renderRequests(client) {
   const body = document.getElementById("requests-body");
   const note = document.getElementById("admin-note");
-  const rows = activeFilter === "All"
-    ? allRequests
-    : allRequests.filter((r) => (r.status || "New") === activeFilter);
+  const rows = allRequests.filter((r) => {
+    const statusOk = activeFilter === "All" || (r.status || "New") === activeFilter;
+    return statusOk && matchesSearch(r);
+  });
 
   if (!rows.length) {
     body.innerHTML = `<tr><td colspan="7"><div class="admin-empty">
       <span class="code">MW · NO ENTRIES</span>
-      ${activeFilter === "All" ? "No requests yet. They'll appear here the moment someone submits the form." : `No requests with status "${escapeHtml(activeFilter)}".`}
+      ${activeFilter === "All" && !searchQuery ? "No requests yet. They'll appear here the moment someone submits the form." : "No requests match this filter."}
     </div></td></tr>`;
     note.textContent = "";
     return;
@@ -171,6 +295,7 @@ function renderRequests(client) {
         pill.className = `status-pill ${select.value.toLowerCase()}`;
         pill.textContent = select.value;
       }
+      renderOverview();
     });
   });
 }
@@ -193,6 +318,7 @@ function rowHtml(r) {
     <td class="cell-details">
       ${escapeHtml(r.category) ? `<span class="status-pill">${escapeHtml(r.category)}</span><br>` : ""}
       ${escapeHtml(r.request_details)}
+      ${r.photo_url ? `<br><a href="${escapeAttr(r.photo_url)}" target="_blank" rel="noopener">Photo</a>` : ""}
       ${referenceHtml(r.reference_url)}
     </td>
     <td>${r.quantity ? escapeHtml(r.quantity) : (r.budget_range ? "GH₵" + escapeHtml(r.budget_range) : '<span class="muted">—</span>')}</td>
@@ -281,6 +407,46 @@ async function uploadMedia(client, file, folder) {
   return data.publicUrl;
 }
 
+async function loadCustomers(client) {
+  const body = document.getElementById("customers-body");
+  const note = document.getElementById("customers-note");
+  if (!body) return;
+  body.innerHTML = `<tr><td colspan="4" class="admin-empty">Loading customers...</td></tr>`;
+
+  const { data, error } = await client
+    .from("profiles")
+    .select("id, full_name, phone, is_staff, created_at")
+    .eq("is_staff", false)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    body.innerHTML = `<tr><td colspan="4" class="admin-empty">Couldn't load customers: ${escapeHtml(error.message)}</td></tr>`;
+    return;
+  }
+
+  allCustomers = data || [];
+  if (!allCustomers.length) {
+    body.innerHTML = `<tr><td colspan="4"><div class="admin-empty"><span class="code">MW · NO CUSTOMERS</span>No customer accounts yet. Guests can still send orders without signing up.</div></td></tr>`;
+    if (note) note.textContent = "";
+    renderOverview();
+    return;
+  }
+
+  const counts = {};
+  allRequests.forEach((r) => {
+    if (r.user_id) counts[r.user_id] = (counts[r.user_id] || 0) + 1;
+  });
+
+  body.innerHTML = allCustomers.map((c) => `<tr>
+    <td class="cell-when">${formatDate(c.created_at)}</td>
+    <td><strong>${escapeHtml(c.full_name) || '<span class="muted">—</span>'}</strong></td>
+    <td>${escapeHtml(c.phone) || '<span class="muted">—</span>'}</td>
+    <td>${counts[c.id] || 0}</td>
+  </tr>`).join("");
+  if (note) note.textContent = `${allCustomers.length} customer account${allCustomers.length === 1 ? "" : "s"}.`;
+  renderOverview();
+}
+
 async function loadProducts(client) {
   const body = document.getElementById("products-body");
   body.innerHTML = `<tr><td colspan="5" class="admin-empty">Loading products...</td></tr>`;
@@ -294,6 +460,9 @@ async function loadProducts(client) {
     body.innerHTML = `<tr><td colspan="5" class="admin-empty">Couldn't load products: ${escapeHtml(error.message)}</td></tr>`;
     return;
   }
+
+  allProducts = data || [];
+  renderOverview();
 
   if (!data.length) {
     body.innerHTML = `<tr><td colspan="5"><div class="admin-empty"><span class="code">MW · NO PRODUCTS</span>No products yet. Add one above.</div></td></tr>`;
@@ -386,6 +555,9 @@ async function loadReviews(client) {
     body.innerHTML = `<tr><td colspan="5" class="admin-empty">Couldn't load reviews: ${escapeHtml(error.message)}</td></tr>`;
     return;
   }
+
+  allReviews = data || [];
+  renderOverview();
 
   if (!data.length) {
     body.innerHTML = `<tr><td colspan="5"><div class="admin-empty"><span class="code">MW · NO REVIEWS</span>No reviews yet.</div></td></tr>`;

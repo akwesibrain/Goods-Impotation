@@ -4,289 +4,324 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
-<title>Admin — Mwinbarka Imports</title>
-<meta name="description" content="Internal request desk for Mwinbarka Imports.">
-<link rel="stylesheet" href="styles.css?v=brand13">
+<title>Admin panel — Mwinbarka Imports</title>
+<meta name="description" content="Staff admin panel for Mwinbarka Imports.">
+<link rel="stylesheet" href="styles.css?v=brand15">
 </head>
-<body id="admin-page">
+<body id="admin-page" class="admin-app">
 
-<header class="site-header">
-  <nav class="nav container">
-    <a href="index.html" class="nav-logo">
-      <img src="assets/logo.png" alt="Mwinbarka Imports logo">
-      Mwinbarka Imports
-    </a>
-    <ul class="nav-links">
-      <li><a href="index.html">Back to site</a></li>
-    </ul>
-    <button id="signout-btn" class="btn btn-gold nav-cta" style="display:none;">Sign out</button>
-    <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">☰</button>
-  </nav>
-</header>
-
-<section class="page-hero">
-  <div class="container">
-    <span class="eyebrow">MW · Admin</span>
-    <h1>Requests, products, reviews, and site settings.</h1>
-    <p>Add products by category (Kitchen &amp; Home, fashion, electronics…). They appear on the homepage so customers can Order Now.</p>
-  </div>
-</section>
-
-<!-- Shown when Supabase credentials haven't been added to supabase-client.js yet -->
 <section class="section" id="admin-unconfigured" style="display:none;">
   <div class="container">
-    <div class="form-card">
+    <div class="form-card admin-gate-card">
       <span class="eyebrow">MW · Setup needed</span>
-      <h2 style="margin: var(--space-2) 0;">Supabase isn't connected yet.</h2>
-      <p style="color: var(--ink-500);">Add your Project URL and anon key to <strong>supabase-client.js</strong>, and run <strong>supabase/schema.sql</strong> in the Supabase SQL editor. Until then, requests still reach you on WhatsApp — they just aren't stored here.</p>
+      <h2>Supabase isn’t connected yet.</h2>
+      <p>Add your Project URL and anon key to <strong>supabase-client.js</strong>, and run <strong>supabase/schema.sql</strong> in the Supabase SQL editor.</p>
     </div>
   </div>
 </section>
 
-<!-- Login -->
-<section class="section" id="admin-login" style="display:none;">
-  <div class="container">
-    <form id="login-form" class="form-card" style="max-width: 420px;" novalidate>
-      <span class="eyebrow">MW · Staff only</span>
-      <h2 style="margin: var(--space-2) 0 var(--space-3);">Sign in</h2>
+<section class="admin-gate" id="admin-login" style="display:none;">
+  <form id="login-form" class="form-card admin-gate-card" novalidate>
+    <span class="eyebrow">MW · Staff only</span>
+    <h1>Admin panel</h1>
+    <p>Sign in with the staff account to manage requests, products, reviews, and site settings.</p>
 
-      <div class="field">
-        <label for="email">Email</label>
-        <input type="email" id="email" name="email" required autocomplete="username">
-      </div>
+    <div class="field">
+      <label for="email">Email</label>
+      <input type="email" id="email" name="email" required autocomplete="username">
+    </div>
 
-      <div class="field">
-        <label for="password">Password</label>
-        <input type="password" id="password" name="password" required autocomplete="current-password">
-      </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password" required autocomplete="current-password">
+    </div>
 
-      <button type="submit" class="btn btn-gold">Sign in</button>
-      <div id="login-status" class="form-status"></div>
-    </form>
-  </div>
+    <button type="submit" class="btn btn-gold">Sign in</button>
+    <div id="login-status" class="form-status"></div>
+    <p class="admin-gate-foot"><a href="index.html">Back to the website</a></p>
+  </form>
 </section>
 
-<!-- Dashboard -->
-<section class="admin-section" id="admin-dashboard" style="display:none;">
-  <div class="container">
-    <div class="admin-tabs" id="admin-tabs">
-      <button type="button" class="chip active" data-tab="requests">Requests</button>
-      <button type="button" class="chip" data-tab="products">Products</button>
-      <button type="button" class="chip" data-tab="reviews">Reviews</button>
-      <button type="button" class="chip" data-tab="settings">Settings</button>
+<section class="admin-shell" id="admin-dashboard" style="display:none;">
+  <aside class="admin-sidebar">
+    <a href="index.html" class="admin-brand">
+      <img src="assets/logo.png" alt="Mwinbarka Imports logo">
+      <span>Admin panel<small>Mwinbarka Imports</small></span>
+    </a>
+
+    <nav class="admin-tabs" id="admin-tabs">
+      <button type="button" class="admin-nav-btn active" data-tab="overview">Overview</button>
+      <button type="button" class="admin-nav-btn" data-tab="requests">Requests</button>
+      <button type="button" class="admin-nav-btn" data-tab="customers">Customers</button>
+      <button type="button" class="admin-nav-btn" data-tab="products">Products</button>
+      <button type="button" class="admin-nav-btn" data-tab="reviews">Reviews</button>
+      <button type="button" class="admin-nav-btn" data-tab="settings">Settings</button>
+    </nav>
+
+    <div class="admin-sidebar-foot">
+      <p class="admin-staff-line" id="admin-staff-email">Staff</p>
+      <button id="signout-btn" class="btn btn-gold" type="button">Sign out</button>
     </div>
+  </aside>
 
-    <!-- Requests -->
-    <div class="admin-panel" id="tab-requests">
-      <div class="admin-bar">
-        <div class="admin-filters" id="status-filters">
-          <button class="chip active" data-status="All">All</button>
-          <button class="chip" data-status="New">New</button>
-          <button class="chip" data-status="Contacted">Contacted</button>
-          <button class="chip" data-status="Quoted">Quoted</button>
-          <button class="chip" data-status="Confirmed">Confirmed</button>
-          <button class="chip" data-status="Closed">Closed</button>
-        </div>
-        <button class="chip" id="refresh-btn">Refresh</button>
+  <div class="admin-main">
+    <header class="admin-top">
+      <button type="button" class="admin-menu-toggle" id="admin-menu-toggle" aria-label="Open menu">☰</button>
+      <div>
+        <span class="eyebrow" id="admin-page-kicker">MW · Desk</span>
+        <h1 id="admin-page-title">Overview</h1>
       </div>
+      <a href="index.html" class="admin-top-link">View site</a>
+    </header>
 
-      <div class="table-wrap">
-        <table class="admin-table">
-          <thead>
-            <tr>
-              <th>Received</th>
-              <th>Customer</th>
-              <th>Location</th>
-              <th>Request</th>
-              <th>Qty</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="requests-body"></tbody>
-        </table>
-      </div>
-      <p class="admin-note" id="admin-note"></p>
-    </div>
+    <div class="admin-content">
 
-    <!-- Products -->
-    <div class="admin-panel" id="tab-products" hidden>
-      <form id="product-form" class="form-card admin-form" novalidate>
-        <span class="eyebrow">MW · New product</span>
-        <h2 style="margin: var(--space-2) 0 var(--space-3);">Add a product</h2>
-
-        <div class="field-row">
-          <div class="field">
-            <label for="product-name">Name</label>
-            <input type="text" id="product-name" name="name" required>
+      <div class="admin-panel" id="tab-overview">
+        <div class="admin-stat-grid" id="overview-stats"></div>
+        <div class="admin-overview-split">
+          <div class="admin-card">
+            <h2>Newest requests</h2>
+            <div class="table-wrap">
+              <table class="admin-table admin-table-compact">
+                <thead>
+                  <tr>
+                    <th>Received</th>
+                    <th>Customer</th>
+                    <th>Request</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="overview-requests"></tbody>
+              </table>
+            </div>
           </div>
-          <div class="field">
-            <label for="product-price">Price in GH₵</label>
-            <input type="text" id="product-price" name="price" placeholder="e.g. 450">
-          </div>
-        </div>
-
-        <div class="field">
-          <label for="product-category">Category</label>
-          <select id="product-category" name="category" required>
-            <option value="">Select a category</option>
-            <option>Kitchen & Home</option>
-            <option>Clothing & Fashion</option>
-            <option>Electronics</option>
-            <option>Shoes & Bags</option>
-            <option>Beauty & Cosmetics</option>
-            <option>Auto Parts</option>
-            <option>Baby & Kids</option>
-            <option>Other</option>
-          </select>
-          <div class="hint">Products in these categories appear on the homepage and Categories page so customers can Order Now.</div>
-        </div>
-
-        <div class="field">
-          <label for="product-description">Description</label>
-          <textarea id="product-description" name="description" rows="3"></textarea>
-        </div>
-
-        <div class="field">
-          <label for="product-image">Photo</label>
-          <input type="file" id="product-image" name="image" accept="image/*">
-        </div>
-
-        <button type="submit" class="btn btn-gold">Save product</button>
-        <div id="product-status" class="form-status"></div>
-      </form>
-
-      <div class="table-wrap" style="margin-top: var(--space-4);">
-        <table class="admin-table">
-          <thead>
-            <tr>
-              <th>Photo</th>
-              <th>Product</th>
-              <th>Category</th>
-              <th>Price</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="products-body"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Reviews -->
-    <div class="admin-panel" id="tab-reviews" hidden>
-      <form id="review-admin-form" class="form-card admin-form" novalidate>
-        <span class="eyebrow">MW · New review</span>
-        <h2 style="margin: var(--space-2) 0 var(--space-3);">Publish a customer review</h2>
-        <div class="field-row">
-          <div class="field">
-            <label for="admin-review-name">Name</label>
-            <input type="text" id="admin-review-name" name="author_name" required>
-          </div>
-          <div class="field">
-            <label for="admin-review-location">Location</label>
-            <input type="text" id="admin-review-location" name="location" placeholder="e.g. Accra">
+          <div class="admin-card">
+            <h2>Pending reviews</h2>
+            <div id="overview-reviews"></div>
           </div>
         </div>
-        <div class="field">
-          <label for="admin-review-rating">Rating</label>
-          <select id="admin-review-rating" name="rating" required>
-            <option value="5">5</option>
-            <option value="4">4</option>
-            <option value="3">3</option>
-            <option value="2">2</option>
-            <option value="1">1</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="admin-review-quote">Review</label>
-          <textarea id="admin-review-quote" name="quote" rows="3" required></textarea>
-        </div>
-        <button type="submit" class="btn btn-gold">Publish review</button>
-        <div id="review-admin-status" class="form-status"></div>
-      </form>
-
-      <div class="table-wrap" style="margin-top: var(--space-4);">
-        <table class="admin-table">
-          <thead>
-            <tr>
-              <th>Customer</th>
-              <th>Rating</th>
-              <th>Review</th>
-              <th>Status</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="reviews-body"></tbody>
-        </table>
       </div>
-    </div>
 
-    <!-- Settings -->
-    <div class="admin-panel" id="tab-settings" hidden>
-      <form id="settings-form" class="form-card admin-form" novalidate>
-        <span class="eyebrow">MW · WhatsApp channel</span>
-        <h2 style="margin: var(--space-2) 0 var(--space-3);">Channel and social links</h2>
-        <p class="form-note" style="margin-top: 0; margin-bottom: var(--space-3);">Paste the WhatsApp channel invite here. The gold floating button on the website will open this link so visitors can join the channel.</p>
-
-        <div class="field">
-          <label for="whatsapp_channel_url">WhatsApp channel link</label>
-          <input type="url" id="whatsapp_channel_url" name="whatsapp_channel_url" placeholder="https://whatsapp.com/channel/...">
-          <div class="hint">Copy the channel link from WhatsApp and paste it here.</div>
+      <div class="admin-panel" id="tab-requests" hidden>
+        <div class="admin-bar">
+          <div class="admin-filters" id="status-filters">
+            <button class="chip active" data-status="All">All</button>
+            <button class="chip" data-status="New">New</button>
+            <button class="chip" data-status="Contacted">Contacted</button>
+            <button class="chip" data-status="Quoted">Quoted</button>
+            <button class="chip" data-status="Confirmed">Confirmed</button>
+            <button class="chip" data-status="Closed">Closed</button>
+          </div>
+          <div class="admin-bar-tools">
+            <input type="search" id="request-search" class="admin-search" placeholder="Search name, phone, product…" aria-label="Search requests">
+            <button class="chip" id="refresh-btn" type="button">Refresh</button>
+          </div>
         </div>
 
-        <div class="field">
-          <label for="whatsapp_url">WhatsApp</label>
-          <input type="url" id="whatsapp_url" name="whatsapp_url" placeholder="https://wa.me/233540309637">
+        <div class="table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Received</th>
+                <th>Customer</th>
+                <th>Location</th>
+                <th>Request</th>
+                <th>Qty</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="requests-body"></tbody>
+          </table>
         </div>
+        <p class="admin-note" id="admin-note"></p>
+      </div>
 
-        <div class="field">
-          <label for="facebook_url">Facebook URL</label>
-          <input type="url" id="facebook_url" name="facebook_url" placeholder="https://facebook.com/...">
+      <div class="admin-panel" id="tab-customers" hidden>
+        <div class="table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Joined</th>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Orders</th>
+              </tr>
+            </thead>
+            <tbody id="customers-body"></tbody>
+          </table>
         </div>
+        <p class="admin-note" id="customers-note"></p>
+      </div>
 
-        <div class="field">
-          <label for="instagram_url">Instagram URL</label>
-          <input type="url" id="instagram_url" name="instagram_url" placeholder="https://instagram.com/...">
+      <div class="admin-panel" id="tab-products" hidden>
+        <form id="product-form" class="form-card admin-form" novalidate>
+          <span class="eyebrow">MW · New product</span>
+          <h2>Add a product</h2>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="product-name">Name</label>
+              <input type="text" id="product-name" name="name" required>
+            </div>
+            <div class="field">
+              <label for="product-price">Price in GH₵</label>
+              <input type="text" id="product-price" name="price" placeholder="e.g. 450">
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="product-category">Category</label>
+            <select id="product-category" name="category" required>
+              <option value="">Select a category</option>
+              <option>Kitchen & Home</option>
+              <option>Clothing & Fashion</option>
+              <option>Electronics</option>
+              <option>Shoes & Bags</option>
+              <option>Beauty & Cosmetics</option>
+              <option>Auto Parts</option>
+              <option>Baby & Kids</option>
+              <option>Other</option>
+            </select>
+            <div class="hint">Products in these categories appear on the homepage and Categories page so customers can Order Now.</div>
+          </div>
+
+          <div class="field">
+            <label for="product-description">Description</label>
+            <textarea id="product-description" name="description" rows="3"></textarea>
+          </div>
+
+          <div class="field">
+            <label for="product-image">Photo</label>
+            <input type="file" id="product-image" name="image" accept="image/*">
+          </div>
+
+          <button type="submit" class="btn btn-gold">Save product</button>
+          <div id="product-status" class="form-status"></div>
+        </form>
+
+        <div class="table-wrap" style="margin-top: var(--space-4);">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Photo</th>
+                <th>Product</th>
+                <th>Category</th>
+                <th>Price</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="products-body"></tbody>
+          </table>
         </div>
+      </div>
 
-        <div class="field">
-          <label for="tiktok_url">TikTok URL</label>
-          <input type="url" id="tiktok_url" name="tiktok_url" placeholder="https://tiktok.com/@...">
+      <div class="admin-panel" id="tab-reviews" hidden>
+        <form id="review-admin-form" class="form-card admin-form" novalidate>
+          <span class="eyebrow">MW · New review</span>
+          <h2>Publish a customer review</h2>
+          <div class="field-row">
+            <div class="field">
+              <label for="admin-review-name">Name</label>
+              <input type="text" id="admin-review-name" name="author_name" required>
+            </div>
+            <div class="field">
+              <label for="admin-review-location">Location</label>
+              <input type="text" id="admin-review-location" name="location" placeholder="e.g. Accra">
+            </div>
+          </div>
+          <div class="field">
+            <label for="admin-review-rating">Rating</label>
+            <select id="admin-review-rating" name="rating" required>
+              <option value="5">5</option>
+              <option value="4">4</option>
+              <option value="3">3</option>
+              <option value="2">2</option>
+              <option value="1">1</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="admin-review-quote">Review</label>
+            <textarea id="admin-review-quote" name="quote" rows="3" required></textarea>
+          </div>
+          <button type="submit" class="btn btn-gold">Publish review</button>
+          <div id="review-admin-status" class="form-status"></div>
+        </form>
+
+        <div class="table-wrap" style="margin-top: var(--space-4);">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Customer</th>
+                <th>Rating</th>
+                <th>Review</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="reviews-body"></tbody>
+          </table>
         </div>
+      </div>
 
-        <span class="eyebrow" style="display:block; margin-top: var(--space-3);">MW · Advert video</span>
-        <h2 style="margin: var(--space-2) 0 var(--space-3);">Video before a request</h2>
-        <p class="form-note" style="margin-top: 0; margin-bottom: var(--space-3);">Visitors must watch this video to the end before they can send a request. Paste a TikTok or YouTube link, or upload an MP4. Short TikTok links (vt.tiktok.com) work. A webpage URL that is not a video will not play.</p>
+      <div class="admin-panel" id="tab-settings" hidden>
+        <form id="settings-form" class="form-card admin-form" novalidate>
+          <span class="eyebrow">MW · WhatsApp channel</span>
+          <h2>Channel and social links</h2>
+          <p class="form-note">Paste the WhatsApp channel invite here. The gold floating button on the website will open this link so visitors can join the channel.</p>
 
-        <div class="field">
-          <label for="advert_video_url">Video link (optional)</label>
-          <input type="url" id="advert_video_url" name="advert_video_url" placeholder="TikTok, YouTube, or https://…/video.mp4">
-        </div>
+          <div class="field">
+            <label for="whatsapp_channel_url">WhatsApp channel link</label>
+            <input type="url" id="whatsapp_channel_url" name="whatsapp_channel_url" placeholder="https://whatsapp.com/channel/...">
+            <div class="hint">Copy the channel link from WhatsApp and paste it here.</div>
+          </div>
 
-        <div class="field">
-          <label for="advert_video_file">Or upload a video file</label>
-          <input type="file" id="advert_video_file" name="advert_video_file" accept="video/*">
-        </div>
+          <div class="field">
+            <label for="whatsapp_url">WhatsApp</label>
+            <input type="url" id="whatsapp_url" name="whatsapp_url" placeholder="https://wa.me/233540309637">
+          </div>
 
-        <button type="submit" class="btn btn-gold">Save settings</button>
-        <div id="settings-status" class="form-status"></div>
-      </form>
+          <div class="field">
+            <label for="facebook_url">Facebook URL</label>
+            <input type="url" id="facebook_url" name="facebook_url" placeholder="https://facebook.com/...">
+          </div>
+
+          <div class="field">
+            <label for="instagram_url">Instagram URL</label>
+            <input type="url" id="instagram_url" name="instagram_url" placeholder="https://instagram.com/...">
+          </div>
+
+          <div class="field">
+            <label for="tiktok_url">TikTok URL</label>
+            <input type="url" id="tiktok_url" name="tiktok_url" placeholder="https://tiktok.com/@...">
+          </div>
+
+          <span class="eyebrow" style="display:block; margin-top: var(--space-3);">MW · Advert video</span>
+          <h2>Video before a request</h2>
+          <p class="form-note">Guests see this video when they tap an internal site link. Paste a TikTok or YouTube link, or upload an MP4.</p>
+
+          <div class="field">
+            <label for="advert_video_url">Video link (optional)</label>
+            <input type="url" id="advert_video_url" name="advert_video_url" placeholder="TikTok, YouTube, or https://…/video.mp4">
+          </div>
+
+          <div class="field">
+            <label for="advert_video_file">Or upload a video file</label>
+            <input type="file" id="advert_video_file" name="advert_video_file" accept="video/*">
+          </div>
+
+          <button type="submit" class="btn btn-gold">Save settings</button>
+          <div id="settings-status" class="form-status"></div>
+        </form>
+      </div>
+
     </div>
   </div>
 </section>
-
-<footer class="site-footer">
-  <div class="container">
-    <div class="footer-bottom">
-      <span>© 2026 Mwinbarka Imports. All rights reserved.</span>
-      <span>Accra, Ghana</span>
-    </div>
-  </div>
-</footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-client.js"></script>
-<script src="script.js?v=brand13"></script>
-<script src="admin.js"></script>
+<script src="script.js?v=brand15"></script>
+<script src="admin.js?v=brand15"></script>
 </body>
 </html>
