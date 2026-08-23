@@ -9,13 +9,13 @@
 
 const STATUSES = ["New", "Contacted", "Quoted", "Confirmed", "Closed"];
 const TAB_TITLES = {
-  overview: ["MW · Desk", "Overview"],
-  requests: ["MW · Leads", "Requests"],
-  customers: ["MW · Accounts", "Customers"],
-  sms: ["MW · SMS", "SMS"],
-  products: ["MW · Catalog", "Products"],
-  reviews: ["MW · Reviews", "Reviews"],
-  settings: ["MW · Site", "Settings"],
+  overview: ["Desk", "Dashboard"],
+  requests: ["Leads", "Orders"],
+  customers: ["Accounts", "Customers"],
+  sms: ["SMS", "SMS"],
+  products: ["Catalog", "Products"],
+  reviews: ["Reviews", "Reviews"],
+  settings: ["Site", "Settings"],
 };
 
 let activeFilter = "All";
@@ -26,9 +26,12 @@ let allReviews = [];
 let allCustomers = [];
 let allSmsMessages = [];
 let smsKeySaved = false;
+let selectedRequestId = null;
+let adminClient = null;
 
 document.addEventListener("DOMContentLoaded", () => {
   const client = window.getSupabaseClient && window.getSupabaseClient();
+  adminClient = client;
 
   const unconfigured = document.getElementById("admin-unconfigured");
   const loginSection = document.getElementById("admin-login");
@@ -54,12 +57,14 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     loginSection.style.display = "none";
     dashboard.style.display = "flex";
-    if (signOutBtn) signOutBtn.style.display = "inline-flex";
+    if (signOutBtn) signOutBtn.style.display = "";
     const profile = window.getMyProfile ? await window.getMyProfile() : null;
     const staffLine = document.getElementById("admin-staff-email");
-    if (staffLine && profile) {
-      staffLine.textContent = profile.email || profile.full_name || "Staff";
-    }
+    const staffName = document.getElementById("admin-user-name");
+    const staffAvatar = document.getElementById("admin-user-avatar");
+    if (staffLine && profile) staffLine.textContent = profile.email || "Staff";
+    if (staffName && profile) staffName.textContent = profile.full_name || "Staff";
+    if (staffAvatar && profile) staffAvatar.textContent = initials(profile.full_name || profile.email || "MW");
     await Promise.all([
       loadRequests(client),
       loadProducts(client),
@@ -154,9 +159,21 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("sms-send-form").addEventListener("submit", (e) => handleSmsSend(e, client));
 
   dashboard.addEventListener("click", (e) => {
-    const btn = e.target.closest("[data-sms-phone]");
-    if (!btn) return;
-    openSmsComposer(btn.dataset.smsPhone, btn.dataset.smsName || "");
+    const closeBtn = e.target.closest("[data-close-detail]");
+    if (closeBtn) {
+      closeDetail();
+      return;
+    }
+    const smsBtn = e.target.closest("[data-sms-phone]");
+    if (smsBtn) {
+      openSmsComposer(smsBtn.dataset.smsPhone, smsBtn.dataset.smsName || "");
+      return;
+    }
+    const row = e.target.closest("[data-request-id]");
+    if (row && adminClient) {
+      showTab("requests");
+      openDetail(row.dataset.requestId, adminClient);
+    }
   });
 
   const provider = document.getElementById("sms-provider");
@@ -198,13 +215,12 @@ function showTab(name) {
     panel.hidden = panel.id !== "tab-" + tab;
   });
   const titles = TAB_TITLES[tab];
-  const kicker = document.getElementById("admin-page-kicker");
   const title = document.getElementById("admin-page-title");
-  if (kicker) kicker.textContent = titles[0];
   if (title) title.textContent = titles[1];
   if (location.hash.replace("#", "") !== tab) {
     history.replaceState(null, "", "#" + tab);
   }
+  if (tab !== "requests") closeDetail();
 }
 
 function closeAdminMenu() {
@@ -242,7 +258,7 @@ function renderOverview() {
   } else {
     recentBody.innerHTML = recent.map((r) => {
       const status = r.status || "New";
-      return `<tr>
+      return `<tr class="admin-order-row" data-request-id="${escapeAttr(r.id)}">
         <td class="cell-when">${formatDate(r.created_at)}</td>
         <td><strong>${escapeHtml(r.name)}</strong><br><span class="cell-when">${escapeHtml(r.phone || "")}</span></td>
         <td class="cell-details">${escapeHtml(r.request_details)}</td>
@@ -265,7 +281,7 @@ function renderOverview() {
 
 async function loadRequests(client) {
   const body = document.getElementById("requests-body");
-  body.innerHTML = `<tr><td colspan="7" class="admin-empty">Loading requests...</td></tr>`;
+  body.innerHTML = `<tr><td colspan="5" class="admin-empty">Loading orders...</td></tr>`;
 
   const { data, error } = await client
     .from("requests")
@@ -273,7 +289,7 @@ async function loadRequests(client) {
     .order("created_at", { ascending: false });
 
   if (error) {
-    body.innerHTML = `<tr><td colspan="7" class="admin-empty">Couldn't load requests: ${escapeHtml(error.message)}</td></tr>`;
+    body.innerHTML = `<tr><td colspan="5" class="admin-empty">Couldn't load orders: ${escapeHtml(error.message)}</td></tr>`;
     return;
   }
 
@@ -301,78 +317,189 @@ function renderRequests(client) {
   });
 
   if (!rows.length) {
-    body.innerHTML = `<tr><td colspan="7"><div class="admin-empty">
-      <span class="code">MW · NO ENTRIES</span>
-      ${activeFilter === "All" && !searchQuery ? "No requests yet. They'll appear here the moment someone submits the form." : "No requests match this filter."}
+    body.innerHTML = `<tr><td colspan="5"><div class="admin-empty">
+      ${activeFilter === "All" && !searchQuery ? "No orders yet. They’ll appear here when someone submits the form." : "No orders match this filter."}
     </div></td></tr>`;
     note.textContent = "";
     return;
   }
 
   body.innerHTML = rows.map(rowHtml).join("");
-  note.textContent = `Showing ${rows.length} of ${allRequests.length} request${allRequests.length === 1 ? "" : "s"}.`;
+  note.textContent = `${rows.length} of ${allRequests.length} order${allRequests.length === 1 ? "" : "s"}`;
 
-  body.querySelectorAll("select[data-id]").forEach((select) => {
-    select.addEventListener("change", async () => {
-      const id = select.dataset.id;
-      const previous = select.dataset.current;
-      select.disabled = true;
-
-      const { error } = await client.from("requests").update({ status: select.value }).eq("id", id);
-
-      select.disabled = false;
-
-      if (error) {
-        select.value = previous;
-        alert(`Couldn't update status: ${error.message}`);
-        return;
-      }
-      select.dataset.current = select.value;
-      const record = allRequests.find((r) => r.id === id);
-      if (record) record.status = select.value;
-      const pill = select.closest("td").querySelector(".status-pill");
-      if (pill) {
-        pill.className = `status-pill ${select.value.toLowerCase()}`;
-        pill.textContent = select.value;
-      }
-      renderOverview();
-    });
-  });
+  if (selectedRequestId) {
+    const still = rows.find((r) => r.id === selectedRequestId);
+    if (still) openDetail(selectedRequestId, client);
+    else closeDetail();
+  }
 }
 
 function rowHtml(r) {
   const status = r.status || "New";
+  const selected = r.id === selectedRequestId ? " is-selected" : "";
+  return `<tr class="admin-order-row${selected}" data-request-id="${escapeAttr(r.id)}">
+    <td class="cell-when">#${escapeHtml(shortId(r.id))}</td>
+    <td>
+      <div class="admin-person">
+        <span class="admin-avatar">${escapeHtml(initials(r.name))}</span>
+        <span>
+          <strong>${escapeHtml(r.name)}</strong>
+          <small>${escapeHtml(r.phone || r.email || "")}</small>
+        </span>
+      </div>
+    </td>
+    <td><span class="status-pill ${status.toLowerCase()}">${escapeHtml(status)}</span></td>
+    <td>${r.quantity ? escapeHtml(r.quantity) : (r.budget_range ? "GH₵" + escapeHtml(r.budget_range) : "—")}</td>
+    <td class="cell-when">${formatShortDate(r.created_at)}</td>
+  </tr>`;
+}
+
+function shortId(id) {
+  return String(id || "").replace(/-/g, "").slice(0, 6).toUpperCase();
+}
+
+function initials(name) {
+  const parts = String(name || "MW").trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "MW";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+function closeDetail() {
+  selectedRequestId = null;
+  const panel = document.getElementById("admin-detail");
+  if (panel) panel.hidden = true;
+  document.querySelectorAll(".admin-order-row.is-selected").forEach((row) => row.classList.remove("is-selected"));
+}
+
+function openDetail(id, client) {
+  const record = allRequests.find((r) => r.id === id);
+  const panel = document.getElementById("admin-detail");
+  const inner = document.getElementById("admin-detail-inner");
+  if (!record || !panel || !inner) return;
+  selectedRequestId = id;
+  panel.hidden = false;
+  document.querySelectorAll(".admin-order-row").forEach((row) => {
+    row.classList.toggle("is-selected", row.dataset.requestId === id);
+  });
+  inner.innerHTML = detailHtml(record);
+  const statusSelect = inner.querySelector("[data-detail-status]");
+  if (statusSelect) {
+    statusSelect.addEventListener("change", async () => {
+      const previous = record.status || "New";
+      statusSelect.disabled = true;
+      const { error } = await client.from("requests").update({ status: statusSelect.value }).eq("id", record.id);
+      statusSelect.disabled = false;
+      if (error) {
+        statusSelect.value = previous;
+        alert(`Couldn't update status: ${error.message}`);
+        return;
+      }
+      record.status = statusSelect.value;
+      renderRequests(client);
+      renderOverview();
+      openDetail(record.id, client);
+    });
+  }
+  const smsForm = inner.querySelector("[data-detail-sms]");
+  if (smsForm) {
+    smsForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const statusEl = inner.querySelector("[data-detail-sms-status]");
+      const message = smsForm.elements.message.value.trim();
+      if (!message || !record.phone) return;
+      statusEl.className = "form-status";
+      statusEl.textContent = "Sending…";
+      const result = await sendSmsMessage(client, {
+        phone: record.phone,
+        name: record.name,
+        message,
+      });
+      statusEl.className = `form-status ${result.ok ? "success" : "error"}`;
+      statusEl.textContent = result.ok ? "SMS sent." : result.error;
+      if (result.ok) smsForm.reset();
+    });
+  }
+}
+
+function detailHtml(r) {
+  const status = r.status || "New";
   const waLink = whatsappLink(r.phone, r.name);
+  const tel = telLink(r.phone);
   const options = STATUSES.map(
     (s) => `<option${s === status ? " selected" : ""}>${s}</option>`
   ).join("");
-
-  return `<tr>
-    <td class="cell-when">${formatDate(r.created_at)}</td>
-    <td>
-      <strong>${escapeHtml(r.name)}</strong><br>
-      <span class="cell-when">${escapeHtml(r.phone || "")}</span>
-      ${r.email ? `<br><span class="cell-when">${escapeHtml(r.email)}</span>` : ""}
-    </td>
-    <td>${escapeHtml(r.location) || '<span class="muted">—</span>'}</td>
-    <td class="cell-details">
-      ${escapeHtml(r.category) ? `<span class="status-pill">${escapeHtml(r.category)}</span><br>` : ""}
-      ${escapeHtml(r.request_details)}
-      ${r.photo_url ? `<br><a href="${escapeAttr(r.photo_url)}" target="_blank" rel="noopener">Photo</a>` : ""}
-      ${referenceHtml(r.reference_url)}
-    </td>
-    <td>${r.quantity ? escapeHtml(r.quantity) : (r.budget_range ? "GH₵" + escapeHtml(r.budget_range) : '<span class="muted">—</span>')}</td>
-    <td>
-      <span class="status-pill ${status.toLowerCase()}">${escapeHtml(status)}</span>
-      <select data-id="${escapeAttr(r.id)}" data-current="${escapeAttr(status)}">${options}</select>
-    </td>
-    <td>
-      <div class="row-actions">
-        ${waLink ? `<a href="${escapeAttr(waLink)}" target="_blank" rel="noopener">Reply on WhatsApp</a>` : '<span class="muted">No number</span>'}
-        ${r.phone ? `<button type="button" class="chip" data-sms-phone="${escapeAttr(r.phone)}" data-sms-name="${escapeAttr(r.name || "")}">Send SMS</button>` : ""}
+  return `
+    <div class="admin-detail-head">
+      <div>
+        <h2>#${escapeHtml(shortId(r.id))}</h2>
+        <span class="status-pill ${status.toLowerCase()}">${escapeHtml(status)}</span>
       </div>
-    </td>
-  </tr>`;
+      <button type="button" class="admin-detail-close" data-close-detail aria-label="Close">×</button>
+    </div>
+    <div class="admin-detail-profile">
+      <span class="admin-avatar">${escapeHtml(initials(r.name))}</span>
+      <h3>${escapeHtml(r.name)}</h3>
+      <p>${escapeHtml(r.location || "Ghana")}</p>
+    </div>
+    <div class="admin-contact-row">
+      ${r.email ? `<a class="admin-contact-btn" href="mailto:${escapeAttr(r.email)}" title="Email">
+        <svg viewBox="0 0 24 24"><path d="M4 6h16v12H4z"/><path d="m4 7 8 6 8-6"/></svg>
+      </a>` : ""}
+      ${tel ? `<a class="admin-contact-btn" href="${escapeAttr(tel)}" title="Call">
+        <svg viewBox="0 0 24 24"><path d="M6.5 4h3l1.5 4-2 1.5a12 12 0 0 0 5 5L15.5 13l4 1.5v3A14 14 0 0 1 6.5 4Z"/></svg>
+      </a>` : ""}
+      ${r.phone ? `<button type="button" class="admin-contact-btn" data-sms-phone="${escapeAttr(r.phone)}" data-sms-name="${escapeAttr(r.name || "")}" title="SMS">
+        <svg viewBox="0 0 24 24"><path d="M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9l-4 3v-3H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"/></svg>
+      </button>` : ""}
+    </div>
+    <dl class="admin-detail-meta">
+      <div>
+        <dt>Request</dt>
+        <dd>${escapeHtml(r.request_details)}</dd>
+      </div>
+      ${r.category ? `<div><dt>Category</dt><dd>${escapeHtml(r.category)}</dd></div>` : ""}
+      ${r.quantity ? `<div><dt>Quantity</dt><dd>${escapeHtml(r.quantity)}</dd></div>` : ""}
+      ${r.phone ? `<div><dt>Phone</dt><dd>${escapeHtml(r.phone)}</dd></div>` : ""}
+      ${r.email ? `<div><dt>Email</dt><dd>${escapeHtml(r.email)}</dd></div>` : ""}
+      <div>
+        <dt>Received</dt>
+        <dd>${formatDate(r.created_at)}</dd>
+      </div>
+      <div>
+        <dt>Status</dt>
+        <dd><select data-detail-status>${options}</select></dd>
+      </div>
+    </dl>
+    ${r.photo_url ? `<img class="admin-detail-photo" src="${escapeAttr(r.photo_url)}" alt="Order photo">` : ""}
+    ${referenceHtml(r.reference_url)}
+    ${r.phone ? `<form class="admin-detail-sms" data-detail-sms>
+      <label for="detail-sms-message">Send SMS</label>
+      <textarea id="detail-sms-message" name="message" maxlength="480" placeholder="Write a text to ${escapeAttr(r.name)}…"></textarea>
+      <button type="submit" class="btn btn-gold" style="width:100%; justify-content:center; margin-top:0.6rem;">Send SMS</button>
+      <div class="form-status" data-detail-sms-status></div>
+    </form>` : ""}
+    <div class="admin-detail-actions">
+      ${waLink ? `<a class="btn btn-gold" href="${escapeAttr(waLink)}" target="_blank" rel="noopener">Chat</a>` : ""}
+    </div>
+  `;
+}
+
+function telLink(phone) {
+  if (!phone) return null;
+  let digits = String(phone).replace(/\D/g, "");
+  if (digits.startsWith("00")) digits = digits.slice(2);
+  if (digits.startsWith("0")) digits = "233" + digits.slice(1);
+  else if (!digits.startsWith("233") && digits.length === 9) digits = "233" + digits;
+  if (digits.length < 11) return null;
+  return `tel:+${digits}`;
+}
+
+function formatShortDate(value) {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 }
 
 /**
@@ -867,6 +994,30 @@ async function loadSmsMessages(client) {
   </tr>`).join("");
 }
 
+async function sendSmsMessage(client, { phone, name, message }) {
+  try {
+    const { data, error } = await client.functions.invoke("send-sms", {
+      body: { phone, name, message },
+    });
+    if (error) {
+      let detail = error.message || "Couldn't send the SMS.";
+      try {
+        const extra = await error.context.json();
+        if (extra && extra.error) detail = extra.error;
+      } catch {
+        /* keep detail */
+      }
+      throw new Error(detail);
+    }
+    if (data && data.error) throw new Error(data.error);
+    await loadSmsMessages(client);
+    return { ok: true, phone: data && data.phone ? data.phone : phone };
+  } catch (err) {
+    await loadSmsMessages(client);
+    return { ok: false, error: err.message || "Couldn't send the SMS." };
+  }
+}
+
 async function handleSmsSend(e, client) {
   e.preventDefault();
   const form = e.target;
@@ -883,30 +1034,15 @@ async function handleSmsSend(e, client) {
   btn.disabled = true;
   statusEl.className = "form-status";
   statusEl.textContent = "Sending…";
-  try {
-    const { data, error } = await client.functions.invoke("send-sms", {
-      body: { phone, name, message },
-    });
-    if (error) {
-      let detail = error.message || "Couldn't send the SMS.";
-      try {
-        const extra = await error.context.json();
-        if (extra && extra.error) detail = extra.error;
-      } catch {
-        /* keep detail */
-      }
-      throw new Error(detail);
-    }
-    if (data && data.error) throw new Error(data.error);
+  const result = await sendSmsMessage(client, { phone, name, message });
+  if (result.ok) {
     form.elements.message.value = "";
     updateSmsCount();
     statusEl.className = "form-status success";
-    statusEl.textContent = `SMS sent to ${data && data.phone ? data.phone : phone}.`;
-    await loadSmsMessages(client);
-  } catch (err) {
+    statusEl.textContent = `SMS sent to ${result.phone}.`;
+  } else {
     statusEl.className = "form-status error";
-    statusEl.textContent = err.message || "Couldn't send the SMS.";
-    await loadSmsMessages(client);
+    statusEl.textContent = result.error;
   }
   btn.disabled = false;
 }

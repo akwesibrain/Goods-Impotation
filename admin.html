@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Admin panel — Mwinbarka Imports</title>
 <meta name="description" content="Staff admin panel for Mwinbarka Imports.">
-<link rel="stylesheet" href="styles.css?v=brand16">
+<link rel="stylesheet" href="styles.css?v=brand17">
 </head>
 <body id="admin-page" class="admin-app">
 
@@ -22,9 +22,9 @@
 
 <section class="admin-gate" id="admin-login" style="display:none;">
   <form id="login-form" class="form-card admin-gate-card" novalidate>
-    <span class="eyebrow">MW · Staff only</span>
+    <span class="eyebrow">Staff only</span>
     <h1>Admin panel</h1>
-    <p>Sign in with the staff account to manage requests, SMS, products, reviews, and site settings.</p>
+    <p>Sign in to manage orders, SMS, products, reviews, and site settings.</p>
 
     <div class="field">
       <label for="email">Email</label>
@@ -46,42 +46,67 @@
   <aside class="admin-sidebar">
     <a href="index.html" class="admin-brand">
       <img src="assets/logo.png" alt="Mwinbarka Imports logo">
-      <span>Admin panel<small>Mwinbarka Imports</small></span>
+      <span>Mwinbarka<small>Admin</small></span>
     </a>
 
     <nav class="admin-tabs" id="admin-tabs">
-      <button type="button" class="admin-nav-btn active" data-tab="overview">Overview</button>
-      <button type="button" class="admin-nav-btn" data-tab="requests">Requests</button>
-      <button type="button" class="admin-nav-btn" data-tab="customers">Customers</button>
-      <button type="button" class="admin-nav-btn" data-tab="sms">SMS</button>
-      <button type="button" class="admin-nav-btn" data-tab="products">Products</button>
-      <button type="button" class="admin-nav-btn" data-tab="reviews">Reviews</button>
-      <button type="button" class="admin-nav-btn" data-tab="settings">Settings</button>
+      <button type="button" class="admin-nav-btn active" data-tab="overview">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5Z"/></svg>
+        Dashboard
+      </button>
+      <button type="button" class="admin-nav-btn" data-tab="requests">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10a2 2 0 0 1 2 2v14l-7-3-7 3V6a2 2 0 0 1 2-2Z"/></svg>
+        Orders
+      </button>
+      <button type="button" class="admin-nav-btn" data-tab="sms">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9l-4 3v-3H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"/></svg>
+        SMS
+      </button>
+      <button type="button" class="admin-nav-btn" data-tab="customers">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 19v-1a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v1"/><circle cx="10" cy="8" r="3"/><path d="M20 19v-1a3.5 3.5 0 0 0-2.5-3.35"/><circle cx="17.5" cy="8.5" r="2.2"/></svg>
+        Customers
+      </button>
+      <button type="button" class="admin-nav-btn" data-tab="products">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8.5 12 4l8 4.5v9L12 22l-8-4.5v-9Z"/><path d="M12 12.5 20 8M12 12.5V22M12 12.5 4 8"/></svg>
+        Products
+      </button>
+      <button type="button" class="admin-nav-btn" data-tab="reviews">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 4 2.1 4.6L19 9.3l-3.5 3.3.9 4.9L12 15.8 7.6 17.5l.9-4.9L5 9.3l4.9-.7L12 4Z"/></svg>
+        Reviews
+      </button>
+      <button type="button" class="admin-nav-btn admin-nav-secondary" data-tab="settings">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a7.7 7.7 0 0 0 .1-1 7.7 7.7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7.4 7.4 0 0 0-1.7-1L15 3h-4l-.3 2.5a7.4 7.4 0 0 0-1.7 1L6.6 5.5l-2 3.5 2 1.5a7.7 7.7 0 0 0-.1 1 7.7 7.7 0 0 0 .1 1l-2 1.5 2 3.5 2.4-1a7.4 7.4 0 0 0 1.7 1L11 21h4l.3-2.5a7.4 7.4 0 0 0 1.7-1l2.4 1 2-3.5-2-1.5Z"/></svg>
+        Settings
+      </button>
     </nav>
 
     <div class="admin-sidebar-foot">
-      <p class="admin-staff-line" id="admin-staff-email">Staff</p>
-      <button id="signout-btn" class="btn btn-gold" type="button">Sign out</button>
+      <button id="signout-btn" class="admin-logout" type="button">Log out</button>
     </div>
   </aside>
 
-  <div class="admin-main">
+  <div class="admin-workspace">
     <header class="admin-top">
       <button type="button" class="admin-menu-toggle" id="admin-menu-toggle" aria-label="Open menu">☰</button>
-      <div>
-        <span class="eyebrow" id="admin-page-kicker">MW · Desk</span>
-        <h1 id="admin-page-title">Overview</h1>
-      </div>
+      <h1 id="admin-page-title">Dashboard</h1>
       <a href="index.html" class="admin-top-link">View site</a>
+      <div class="admin-user">
+        <span class="admin-avatar" id="admin-user-avatar">MW</span>
+        <span>
+          <strong id="admin-user-name">Staff</strong>
+          <small id="admin-staff-email">Sign in</small>
+        </span>
+      </div>
     </header>
 
-    <div class="admin-content">
+    <div class="admin-stage">
+      <div class="admin-content">
 
       <div class="admin-panel" id="tab-overview">
         <div class="admin-stat-grid" id="overview-stats"></div>
         <div class="admin-overview-split">
           <div class="admin-card">
-            <h2>Newest requests</h2>
+            <h2>Newest orders</h2>
             <div class="table-wrap">
               <table class="admin-table admin-table-compact">
                 <thead>
@@ -106,7 +131,7 @@
       <div class="admin-panel" id="tab-requests" hidden>
         <div class="admin-bar">
           <div class="admin-filters" id="status-filters">
-            <button class="chip active" data-status="All">All</button>
+            <button class="chip active" data-status="All">Any status</button>
             <button class="chip" data-status="New">New</button>
             <button class="chip" data-status="Contacted">Contacted</button>
             <button class="chip" data-status="Quoted">Quoted</button>
@@ -114,22 +139,20 @@
             <button class="chip" data-status="Closed">Closed</button>
           </div>
           <div class="admin-bar-tools">
-            <input type="search" id="request-search" class="admin-search" placeholder="Search name, phone, product…" aria-label="Search requests">
+            <input type="search" id="request-search" class="admin-search" placeholder="Search orders…" aria-label="Search orders">
             <button class="chip" id="refresh-btn" type="button">Refresh</button>
           </div>
         </div>
 
-        <div class="table-wrap">
-          <table class="admin-table">
+        <div class="table-wrap admin-order-wrap">
+          <table class="admin-table admin-order-table">
             <thead>
               <tr>
-                <th>Received</th>
+                <th>Order</th>
                 <th>Customer</th>
-                <th>Location</th>
-                <th>Request</th>
-                <th>Qty</th>
                 <th>Status</th>
-                <th>Actions</th>
+                <th>Qty</th>
+                <th>Date</th>
               </tr>
             </thead>
             <tbody id="requests-body"></tbody>
@@ -158,9 +181,9 @@
 
       <div class="admin-panel" id="tab-sms" hidden>
         <form id="sms-settings-form" class="form-card admin-form" novalidate>
-          <span class="eyebrow">MW · SMS account</span>
+          <span class="eyebrow">SMS account</span>
           <h2>Connect SMS</h2>
-          <p class="form-note">Save your SMS account here so the desk can text Ghana numbers. Use <strong>Arkesel</strong> (common in Ghana) or Twilio. Only staff can see this. Do not put keys on the public website.</p>
+          <p class="form-note">Save your SMS account here so the desk can text Ghana numbers. Use <strong>Arkesel</strong> (common in Ghana) or Twilio. Only staff can see this.</p>
 
           <div class="field">
             <label for="sms-provider">Provider</label>
@@ -192,7 +215,7 @@
         </form>
 
         <form id="sms-send-form" class="form-card admin-form" novalidate>
-          <span class="eyebrow">MW · New SMS</span>
+          <span class="eyebrow">New SMS</span>
           <h2>Message a customer</h2>
 
           <div class="field">
@@ -246,7 +269,7 @@
 
       <div class="admin-panel" id="tab-products" hidden>
         <form id="product-form" class="form-card admin-form" novalidate>
-          <span class="eyebrow">MW · New product</span>
+          <span class="eyebrow">New product</span>
           <h2>Add a product</h2>
 
           <div class="field-row">
@@ -308,7 +331,7 @@
 
       <div class="admin-panel" id="tab-reviews" hidden>
         <form id="review-admin-form" class="form-card admin-form" novalidate>
-          <span class="eyebrow">MW · New review</span>
+          <span class="eyebrow">New review</span>
           <h2>Publish a customer review</h2>
           <div class="field-row">
             <div class="field">
@@ -356,7 +379,7 @@
 
       <div class="admin-panel" id="tab-settings" hidden>
         <form id="settings-form" class="form-card admin-form" novalidate>
-          <span class="eyebrow">MW · WhatsApp channel</span>
+          <span class="eyebrow">WhatsApp channel</span>
           <h2>Channel and social links</h2>
           <p class="form-note">Paste the WhatsApp channel invite here. The gold floating button on the website will open this link so visitors can join the channel.</p>
 
@@ -386,7 +409,7 @@
             <input type="url" id="tiktok_url" name="tiktok_url" placeholder="https://tiktok.com/@...">
           </div>
 
-          <span class="eyebrow" style="display:block; margin-top: var(--space-3);">MW · Advert video</span>
+          <span class="eyebrow" style="display:block; margin-top: var(--space-3);">Advert video</span>
           <h2>Video before a request</h2>
           <p class="form-note">Guests see this video when they tap an internal site link. Paste a TikTok or YouTube link, or upload an MP4.</p>
 
@@ -405,13 +428,18 @@
         </form>
       </div>
 
+      </div>
+
+      <aside class="admin-detail" id="admin-detail" hidden>
+        <div class="admin-detail-inner" id="admin-detail-inner"></div>
+      </aside>
     </div>
   </div>
 </section>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-client.js"></script>
-<script src="script.js?v=brand16"></script>
-<script src="admin.js?v=brand16"></script>
+<script src="script.js?v=brand17"></script>
+<script src="admin.js?v=brand17"></script>
 </body>
 </html>
