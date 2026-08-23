@@ -5,7 +5,7 @@ const STORAGE = `${ORIGIN}/storage/v1/object/public/media/site`;
 // Supabase rewrites HTML from functions/storage to text/plain + a sandbox CSP,
 // so browsers show source instead of the site. Send HTML to a renderer.
 const HTML_HOST =
-  "https://raw.githack.com/akwesibrain/Goods-Impotation/cfb8f11c42226f3c24a4d3fc8f7bea25bec0886e/";
+  "https://raw.githack.com/akwesibrain/Goods-Impotation/628a1525e9dcfd55d7811ecbe562cd26ab408273/";
 
 const TYPES: Record<string, string> = {
   html: "text/html; charset=utf-8",
