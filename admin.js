@@ -26,6 +26,17 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   const showSignedIn = async () => {
+    const staff = window.isStaffSession ? await window.isStaffSession() : false;
+    if (!staff) {
+      const statusEl = document.getElementById("login-status");
+      if (statusEl) {
+        statusEl.className = "form-status error";
+        statusEl.textContent = "This desk is for staff only. Customer accounts use Login / Sign Up on the site.";
+      }
+      await client.auth.signOut();
+      showSignedOut();
+      return;
+    }
     loginSection.style.display = "none";
     dashboard.style.display = "block";
     signOutBtn.style.display = "inline-flex";

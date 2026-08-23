@@ -66,12 +66,15 @@ document.addEventListener("DOMContentLoaded", () => {
   mountFeatureNav();
   enhanceSearch();
   mountMobileChrome();
+  mountAccountChrome();
   renderPopularSourcing();
   renderQuoteListPage();
   setupShippingAdvisor();
   bindQuoteButtons();
   renderItemPage();
   restoreSearchPhoto();
+  prefillRequestFromAccount();
+  mountAccountPage();
   guardAdvertClicks();
 });
 
@@ -156,7 +159,7 @@ async function handleRequestSubmit(e) {
   };
 
   if (!data.name || !data.phone || !data.email || !data.request_details || !data.location || !data.quantity || !data.category) {
-    showStatus(statusEl, "error", "Please fill in name, WhatsApp number, email, product, category, location, and quantity.");
+    showStatus(statusEl, "error", "Please fill in name, phone number, email, product, category, location, and quantity.");
     return;
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
@@ -188,7 +191,7 @@ async function handleRequestSubmit(e) {
       sessionStorage.removeItem("mwinbarka_search_photo");
     } catch (err) {
       console.error("Photo upload failed:", err);
-      showStatus(statusEl, "error", "Couldn't upload the photo. You can still order — attach the picture on WhatsApp.");
+      showStatus(statusEl, "error", "Couldn't upload the photo. You can still order — attach the picture when we reply.");
     }
   }
 
@@ -257,7 +260,7 @@ function showStatus(el, type, msg, waUrl) {
     link.href = waUrl;
     link.target = "_blank";
     link.rel = "noopener";
-    link.textContent = "Didn't open? Tap here to send it on WhatsApp.";
+    link.textContent = "Didn't open? Tap here to send the message.";
     el.appendChild(document.createElement("br"));
     el.appendChild(link);
   }
@@ -268,7 +271,7 @@ function mountAnnounceBar() {
   if (document.querySelector(".announce-bar")) return;
   const bar = document.createElement("div");
   bar.className = "announce-bar";
-  bar.textContent = "Quotes in GH₵ · Typical WhatsApp reply within 24 hours · China & Turkey → Ghana";
+  bar.textContent = "Quotes in GH₵ · Typical reply within 24 hours · China & Turkey → Ghana";
   const header = document.querySelector(".site-header");
   if (header) header.insertBefore(bar, header.firstChild);
   else document.body.insertBefore(bar, document.body.firstChild);
@@ -459,7 +462,7 @@ function renderQuoteListPage() {
   if (!wrap) return;
   const items = getQuoteList();
   if (!items.length) {
-    wrap.innerHTML = `<p class="empty-note">Your quote list is empty. Add items from Home, then send them all in one WhatsApp request.</p>
+    wrap.innerHTML = `<p class="empty-note">Your quote list is empty. Add items from Home, then send them all in one request.</p>
       <a class="btn btn-gold" href="index.html">Browse popular sourcing</a>`;
     return;
   }
@@ -482,7 +485,7 @@ function renderQuoteListPage() {
       `).join("")}
     </ul>
     <div class="hero-actions" style="margin-top: 1.5rem;">
-      <a class="btn btn-gold" href="request.html?from=list">Send all on WhatsApp</a>
+      <a class="btn btn-gold" href="request.html?from=list">Send all as one order</a>
       <button type="button" class="btn btn-outline-dark" id="clear-quote-list">Clear list</button>
     </div>
   `;
@@ -530,7 +533,7 @@ function setupShippingAdvisor() {
     }
     out.hidden = false;
     out.innerHTML = `<p>For <strong>${kg} kg</strong> to <strong>${escapeHtml(city)}</strong>, we ship by <strong>sea freight</strong> (typically 4–8 weeks after the supplier ships).</p>
-      <p>We don't publish a live GH₵/kg table because fuel and season change the number. Order now and we'll quote today's landed cost on WhatsApp.</p>
+      <p>We don't publish a live GH₵/kg table because fuel and season change the number. Order now and we'll quote today's landed cost on the official line.</p>
       <a class="btn btn-gold" href="request.html?kg=${encodeURIComponent(String(kg))}&q=${encodeURIComponent(kg + " kg sea freight to " + city)}">Order Now</a>`;
   });
 }
@@ -609,7 +612,7 @@ function mountMobileChrome() {
     phone.href = `https://wa.me/${WA_NUMBER}`;
     phone.target = "_blank";
     phone.rel = "noopener";
-    phone.setAttribute("aria-label", "Call or chat on WhatsApp");
+    phone.setAttribute("aria-label", "Call or chat with the desk");
     phone.textContent = "☎";
     const toggle = main && main.querySelector(".nav-toggle");
     if (toggle) main.insertBefore(phone, toggle);
@@ -631,6 +634,7 @@ function mountMobileChrome() {
     ${tab("categories.html", "Categories")}
     ${tab("quote-list.html", "Quote", ` <span data-quote-count>0</span>`)}
     ${tab("request.html", "Order")}
+    <button type="button" class="tab-account${here === "account.html" ? " active" : ""}" data-open-account>Account</button>
   `;
   document.body.appendChild(nav);
   updateQuoteBadge();
@@ -729,7 +733,7 @@ async function renderItemPage(client) {
     <div class="item-hero">${img}</div>
     <div class="item-info">
       <h1>${escapeHtml(item.name)}</h1>
-      ${price ? `<div class="product-price">${escapeHtml(price)} <small>indicative landed start — WhatsApp quote is final</small></div>` : ""}
+      ${price ? `<div class="product-price">${escapeHtml(price)} <small>indicative landed start — official quote is final</small></div>` : ""}
     </div>
     <section class="item-block">
       <h2>How to request this</h2>
@@ -738,13 +742,13 @@ async function renderItemPage(client) {
         <li>We quote the goods in GH₵ (supplier price + China pickup).</li>
         <li>We ship by sea to Ghana. See the <a href="shipping.html">freight estimate</a> if you want a weight quote first.</li>
       </ol>
-      <p class="muted">Packages can be consolidated. Chat on WhatsApp if you already have other items waiting.</p>
+      <p class="muted">Packages can be consolidated. Write the desk if you already have other items waiting.</p>
     </section>
     <section class="item-block">
       <h2>Sourcing agent</h2>
       <p><strong>Mwinbarka Imports</strong> — Accra, Ghana</p>
-      <p class="muted">Direct source from China and Turkey. Quotes and payment terms stay on WhatsApp.</p>
-      <a class="btn btn-outline-dark" href="https://wa.me/${WA_NUMBER}" target="_blank" rel="noopener">Chat on WhatsApp</a>
+      <p class="muted">Direct source from China and Turkey. Quotes and payment terms stay on the official line.</p>
+      <a class="btn btn-outline-dark" href="https://wa.me/${WA_NUMBER}" target="_blank" rel="noopener">Open official chat</a>
     </section>
     <section class="item-block">
       <h2>Product attributes</h2>
@@ -778,15 +782,15 @@ function applyChannelButton(settings) {
   const channel = (settings.whatsapp_channel_url || "").trim();
   if (!channel) return;
   btn.href = channel;
-  btn.setAttribute("aria-label", "Join our WhatsApp channel");
-  btn.title = "Join our WhatsApp channel";
+  btn.setAttribute("aria-label", "Join our channel");
+  btn.title = "Join our channel";
 }
 
 function applySocialLinks(settings) {
   const items = [
     ["Facebook", settings.facebook_url],
     ["Instagram", settings.instagram_url],
-    ["WhatsApp", settings.whatsapp_url || settings.whatsapp_channel_url],
+    ["Chat", settings.whatsapp_url || settings.whatsapp_channel_url],
     ["TikTok", settings.tiktok_url],
   ].filter(([, url]) => url && String(url).trim());
 
@@ -1298,6 +1302,293 @@ async function renderPublicProducts(client) {
 
   const popular = document.getElementById("popular-section");
   if (popular && products.length) popular.hidden = true;
+}
+
+function openAccountDrawer() {
+  const drawer = document.getElementById("account-drawer");
+  const backdrop = document.querySelector(".account-backdrop");
+  if (!drawer || !backdrop) {
+    window.location.href = "account.html";
+    return;
+  }
+  drawer.hidden = false;
+  backdrop.hidden = false;
+  document.body.classList.add("account-drawer-open");
+}
+
+function closeAccountDrawer() {
+  const drawer = document.getElementById("account-drawer");
+  const backdrop = document.querySelector(".account-backdrop");
+  if (drawer) drawer.hidden = true;
+  if (backdrop) backdrop.hidden = true;
+  document.body.classList.remove("account-drawer-open");
+}
+
+function mountAccountChrome() {
+  if (document.body && document.body.id === "admin-page") return;
+
+  document.querySelectorAll(".nav-links").forEach((ul) => {
+    if (ul.querySelector("[data-account-nav], a[href='account.html']")) return;
+    const li = document.createElement("li");
+    const here = pageFile();
+    li.innerHTML = `<a href="account.html" data-account-nav${here === "account.html" ? ' class="active"' : ""}>Account</a>`;
+    const req = ul.querySelector(".nav-request");
+    if (req) ul.insertBefore(li, req);
+    else ul.appendChild(li);
+  });
+
+  const main = document.querySelector(".header-main") || document.querySelector(".tf-top .header-main");
+  if (main && !main.querySelector(".header-account")) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "header-account";
+    btn.setAttribute("aria-label", "Account");
+    btn.setAttribute("data-open-account", "");
+    btn.textContent = "👤";
+    const toggle = main.querySelector(".nav-toggle");
+    if (toggle) main.insertBefore(btn, toggle);
+    else main.appendChild(btn);
+  }
+
+  if (!document.getElementById("account-drawer")) {
+    const backdrop = document.createElement("div");
+    backdrop.className = "account-backdrop";
+    backdrop.hidden = true;
+    backdrop.addEventListener("click", closeAccountDrawer);
+
+    const drawer = document.createElement("aside");
+    drawer.id = "account-drawer";
+    drawer.className = "account-drawer";
+    drawer.hidden = true;
+    drawer.innerHTML = `
+      <a class="account-drawer-head" href="account.html">
+        <span class="account-avatar" aria-hidden="true">👤</span>
+        <span class="account-head-copy">
+          <strong data-account-head-title>Login / Sign Up</strong>
+          <small data-account-head-sub>Keep orders on one account</small>
+        </span>
+        <span aria-hidden="true">›</span>
+      </a>
+      <nav class="account-drawer-nav">
+        <a href="account.html#orders"><span aria-hidden="true">☰</span> My Orders</a>
+        <a href="account.html#transit"><span aria-hidden="true">🚂</span> My Transit</a>
+        <a href="request.html"><span aria-hidden="true">💬</span> My Inquiry</a>
+        <a href="account.html"><span aria-hidden="true">👤</span> My Account</a>
+      </nav>
+      <button type="button" class="account-drawer-signout" id="drawer-signout" hidden>Sign out</button>
+      <div class="account-drawer-foot"><span aria-hidden="true">🌐</span> English</div>
+    `;
+
+    document.body.appendChild(backdrop);
+    document.body.appendChild(drawer);
+  }
+
+  document.addEventListener("click", (e) => {
+    const openBtn = e.target.closest("[data-open-account]");
+    if (openBtn) {
+      e.preventDefault();
+      openAccountDrawer();
+    }
+  });
+
+  const signOutBtn = document.getElementById("drawer-signout");
+  if (signOutBtn) {
+    signOutBtn.addEventListener("click", async () => {
+      if (window.signOutCustomer) await window.signOutCustomer();
+      closeAccountDrawer();
+      window.location.reload();
+    });
+  }
+
+  refreshAccountChrome();
+}
+
+async function refreshAccountChrome() {
+  const profile = window.getMyProfile ? await window.getMyProfile() : null;
+  const title = document.querySelector("[data-account-head-title]");
+  const sub = document.querySelector("[data-account-head-sub]");
+  const signOutBtn = document.getElementById("drawer-signout");
+  if (profile) {
+    if (title) title.textContent = profile.full_name || "My Account";
+    if (sub) sub.textContent = profile.email || "Signed in";
+    if (signOutBtn) signOutBtn.hidden = false;
+  } else {
+    if (title) title.textContent = "Login / Sign Up";
+    if (sub) sub.textContent = "Keep orders on one account";
+    if (signOutBtn) signOutBtn.hidden = true;
+  }
+}
+
+async function prefillRequestFromAccount() {
+  const form = document.getElementById("request-form");
+  if (!form || !window.getMyProfile) return;
+  const profile = await window.getMyProfile();
+  if (!profile) return;
+  if (form.elements.name && !form.elements.name.value && profile.full_name) {
+    form.elements.name.value = profile.full_name;
+  }
+  if (form.elements.phone && !form.elements.phone.value && profile.phone) {
+    form.elements.phone.value = profile.phone;
+  }
+  if (form.elements.email && !form.elements.email.value && profile.email) {
+    form.elements.email.value = profile.email;
+  }
+}
+
+function showAccountTab(name) {
+  const login = document.getElementById("account-login-form");
+  const signup = document.getElementById("account-signup-form");
+  if (!login || !signup) return;
+  login.hidden = name !== "login";
+  signup.hidden = name !== "signup";
+  document.querySelectorAll("[data-account-tab]").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.accountTab === name);
+  });
+}
+
+function orderCardHtml(row) {
+  const when = row.created_at ? new Date(row.created_at).toLocaleDateString() : "";
+  return `<article class="account-order">
+    <div>
+      <strong>${escapeHtml(row.request_details || "Import request")}</strong>
+      <span>${escapeHtml(row.category || "")} · ${escapeHtml(row.quantity || "")}</span>
+    </div>
+    <em>${escapeHtml(row.status || "New")}</em>
+    <small>${escapeHtml(when)}</small>
+  </article>`;
+}
+
+async function mountAccountPage() {
+  const authBox = document.getElementById("account-auth");
+  const signedBox = document.getElementById("account-signed");
+  if (!authBox || !signedBox) return;
+
+  const hash = (location.hash || "").replace("#", "");
+  if (hash === "signup") showAccountTab("signup");
+
+  document.querySelectorAll("[data-account-tab]").forEach((btn) => {
+    btn.addEventListener("click", () => showAccountTab(btn.dataset.accountTab));
+  });
+
+  const paint = async () => {
+    const profile = window.getMyProfile ? await window.getMyProfile() : null;
+    if (!profile) {
+      authBox.hidden = false;
+      signedBox.hidden = true;
+      return;
+    }
+    authBox.hidden = true;
+    signedBox.hidden = false;
+    const hello = document.getElementById("account-hello");
+    const email = document.getElementById("account-email");
+    const name = document.getElementById("profile-name");
+    const phone = document.getElementById("profile-phone");
+    if (hello) hello.textContent = profile.full_name ? `Hello, ${profile.full_name}` : "Signed in";
+    if (email) email.textContent = profile.email || "";
+    if (name) name.value = profile.full_name || "";
+    if (phone) phone.value = profile.phone || "";
+
+    const ordersEl = document.getElementById("account-orders");
+    const transitEl = document.getElementById("account-transit");
+    const rows = window.fetchMyOrders ? await window.fetchMyOrders() : [];
+    if (ordersEl) {
+      ordersEl.innerHTML = rows.length
+        ? rows.map(orderCardHtml).join("")
+        : `<p class="empty-note">No orders on this account yet. <a href="request.html">Order Now</a></p>`;
+    }
+    const transit = rows.filter((row) => ["Quoted", "Confirmed"].includes(row.status));
+    if (transitEl) {
+      transitEl.innerHTML = transit.length
+        ? transit.map(orderCardHtml).join("")
+        : `<p class="empty-note">Nothing in transit yet. Quoted and confirmed files show here.</p>`;
+    }
+  };
+
+  const loginForm = document.getElementById("account-login-form");
+  if (loginForm) {
+    loginForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const status = document.getElementById("login-status");
+      const btn = loginForm.querySelector('button[type="submit"]');
+      btn.disabled = true;
+      try {
+        if (!window.signInCustomer) throw new Error("Account service is not connected yet.");
+        await window.signInCustomer({
+          email: loginForm.elements.email.value.trim(),
+          password: loginForm.elements.password.value,
+        });
+        await refreshAccountChrome();
+        await paint();
+      } catch (err) {
+        showStatus(status, "error", err.message || "Could not log in.");
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  }
+
+  const signupForm = document.getElementById("account-signup-form");
+  if (signupForm) {
+    signupForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const status = document.getElementById("signup-status");
+      const btn = signupForm.querySelector('button[type="submit"]');
+      btn.disabled = true;
+      try {
+        if (!window.signUpCustomer) throw new Error("Account service is not connected yet.");
+        const result = await window.signUpCustomer({
+          fullName: signupForm.elements.full_name.value.trim(),
+          phone: signupForm.elements.phone.value.trim(),
+          email: signupForm.elements.email.value.trim(),
+          password: signupForm.elements.password.value,
+        });
+        if (result && result.needsConfirm) {
+          showStatus(status, "success", "Account created. Check your email to confirm, then log in.");
+          showAccountTab("login");
+        } else {
+          await refreshAccountChrome();
+          await paint();
+        }
+      } catch (err) {
+        showStatus(status, "error", err.message || "Could not create the account.");
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  }
+
+  const profileForm = document.getElementById("account-profile-form");
+  if (profileForm) {
+    profileForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const status = document.getElementById("profile-status");
+      try {
+        if (!window.updateMyProfile) throw new Error("Account service is not connected yet.");
+        await window.updateMyProfile({
+          full_name: profileForm.elements.full_name.value.trim(),
+          phone: profileForm.elements.phone.value.trim(),
+        });
+        showStatus(status, "success", "Details saved.");
+        await refreshAccountChrome();
+      } catch (err) {
+        showStatus(status, "error", err.message || "Could not save details.");
+      }
+    });
+  }
+
+  const signOut = document.getElementById("account-signout");
+  if (signOut) {
+    signOut.addEventListener("click", async () => {
+      if (window.signOutCustomer) await window.signOutCustomer();
+      window.location.href = "account.html";
+    });
+  }
+
+  await paint();
+  if (hash === "orders" || hash === "transit") {
+    const target = document.getElementById(hash);
+    if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 }
 
 function escapeHtml(value) {

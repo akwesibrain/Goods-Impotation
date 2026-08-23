@@ -17,6 +17,7 @@ create table if not exists public.requests (
   origin          text,
   shipping_method text,
   photo_url       text,
+  user_id         uuid references auth.users(id) on delete set null,
   status          text not null default 'New',
   created_at      timestamptz not null default now(),
   constraint requests_status_check
@@ -27,13 +28,88 @@ create table if not exists public.requests (
 create index if not exists requests_created_at_idx
   on public.requests (created_at desc);
 
+create index if not exists requests_user_id_idx
+  on public.requests (user_id);
+
 -- ============================================================
 -- Row level security
 --
 -- The anon key ships in the browser, so RLS is the only thing
--- protecting customer data. The public may INSERT a request and
--- nothing else; reading and updating requires a signed-in user.
+-- protecting customer data. Guests may INSERT a request.
+-- Customers may read their own rows. Staff may read/update all.
 -- ============================================================
+
+create schema if not exists private;
+
+create table if not exists public.profiles (
+  id         uuid primary key references auth.users(id) on delete cascade,
+  full_name  text,
+  phone      text,
+  is_staff   boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+alter table public.profiles enable row level security;
+
+create or replace function private.is_staff()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce(
+    (select p.is_staff from public.profiles p where p.id = auth.uid()),
+    false
+  );
+$$;
+
+revoke all on function private.is_staff() from public;
+grant execute on function private.is_staff() to anon, authenticated;
+
+drop policy if exists "Users can read own profile" on public.profiles;
+create policy "Users can read own profile"
+  on public.profiles for select to authenticated
+  using (id = auth.uid() or private.is_staff());
+
+drop policy if exists "Users can insert own profile" on public.profiles;
+create policy "Users can insert own profile"
+  on public.profiles for insert to authenticated
+  with check (id = auth.uid() and is_staff = false);
+
+drop policy if exists "Users can update own profile" on public.profiles;
+create policy "Users can update own profile"
+  on public.profiles for update to authenticated
+  using (id = auth.uid())
+  with check (id = auth.uid());
+
+revoke update on table public.profiles from anon, authenticated;
+grant select, insert on table public.profiles to authenticated;
+grant update (full_name, phone) on table public.profiles to authenticated;
+
+create or replace function private.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.profiles (id, full_name, phone, is_staff)
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data->>'full_name', ''),
+    coalesce(new.raw_user_meta_data->>'phone', ''),
+    false
+  )
+  on conflict (id) do nothing;
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function private.handle_new_user();
 
 alter table public.requests enable row level security;
 
@@ -42,22 +118,29 @@ create policy "Anyone can submit a request"
   on public.requests
   for insert
   to anon, authenticated
-  with check (true);
+  with check (
+    user_id is null
+    or user_id = auth.uid()
+    or private.is_staff()
+  );
 
 drop policy if exists "Signed-in staff can read requests" on public.requests;
-create policy "Signed-in staff can read requests"
-  on public.requests
-  for select
-  to authenticated
-  using (true);
-
 drop policy if exists "Signed-in staff can update requests" on public.requests;
-create policy "Signed-in staff can update requests"
-  on public.requests
-  for update
-  to authenticated
-  using (true)
-  with check (true);
+drop policy if exists "Staff can read all requests" on public.requests;
+create policy "Staff can read all requests"
+  on public.requests for select to authenticated
+  using (private.is_staff());
+
+drop policy if exists "Customers can read own requests" on public.requests;
+create policy "Customers can read own requests"
+  on public.requests for select to authenticated
+  using (user_id = auth.uid());
+
+drop policy if exists "Staff can update requests" on public.requests;
+create policy "Staff can update requests"
+  on public.requests for update to authenticated
+  using (private.is_staff())
+  with check (private.is_staff());
 
 -- Note: no delete policy on purpose. Leads are archived by setting
 -- status to 'Closed' rather than removed, so nothing is lost by a
@@ -86,27 +169,27 @@ create policy "Anyone can view products"
   to anon, authenticated
   using (true);
 
-drop policy if exists "Signed-in staff can add products" on public.products;
-create policy "Signed-in staff can add products"
+drop policy if exists "Staff can add products" on public.products;
+create policy "Staff can add products"
   on public.products
   for insert
   to authenticated
-  with check (true);
+  with check (private.is_staff());
 
-drop policy if exists "Signed-in staff can update products" on public.products;
-create policy "Signed-in staff can update products"
+drop policy if exists "Staff can update products" on public.products;
+create policy "Staff can update products"
   on public.products
   for update
   to authenticated
-  using (true)
-  with check (true);
+  using (private.is_staff())
+  with check (private.is_staff());
 
-drop policy if exists "Signed-in staff can delete products" on public.products;
-create policy "Signed-in staff can delete products"
+drop policy if exists "Staff can delete products" on public.products;
+create policy "Staff can delete products"
   on public.products
   for delete
   to authenticated
-  using (true);
+  using (private.is_staff());
 
 -- ============================================================
 -- Site settings — one row. Channel link, social URLs, advert video.
@@ -138,13 +221,13 @@ create policy "Anyone can read site settings"
   to anon, authenticated
   using (true);
 
-drop policy if exists "Signed-in staff can update site settings" on public.site_settings;
-create policy "Signed-in staff can update site settings"
+drop policy if exists "Staff can update site settings" on public.site_settings;
+create policy "Staff can update site settings"
   on public.site_settings
   for update
   to authenticated
-  using (true)
-  with check (true);
+  using (private.is_staff())
+  with check (private.is_staff());
 
 -- ============================================================
 -- Storage — product photos and the advert video.
@@ -162,27 +245,27 @@ create policy "Public can read media"
   to anon, authenticated
   using (bucket_id = 'media');
 
-drop policy if exists "Signed-in staff can upload media" on storage.objects;
-create policy "Signed-in staff can upload media"
+drop policy if exists "Staff can upload media" on storage.objects;
+create policy "Staff can upload media"
   on storage.objects
   for insert
   to authenticated
-  with check (bucket_id = 'media');
+  with check (bucket_id = 'media' and private.is_staff());
 
-drop policy if exists "Signed-in staff can update media" on storage.objects;
-create policy "Signed-in staff can update media"
+drop policy if exists "Staff can update media" on storage.objects;
+create policy "Staff can update media"
   on storage.objects
   for update
   to authenticated
-  using (bucket_id = 'media')
-  with check (bucket_id = 'media');
+  using (bucket_id = 'media' and private.is_staff())
+  with check (bucket_id = 'media' and private.is_staff());
 
-drop policy if exists "Signed-in staff can delete media" on storage.objects;
-create policy "Signed-in staff can delete media"
+drop policy if exists "Staff can delete media" on storage.objects;
+create policy "Staff can delete media"
   on storage.objects
   for delete
   to authenticated
-  using (bucket_id = 'media');
+  using (bucket_id = 'media' and private.is_staff());
 
 drop policy if exists "Anyone can upload request photos" on storage.objects;
 create policy "Anyone can upload request photos"
@@ -202,34 +285,13 @@ create policy "Anyone can upload request photos"
 -- what admin.html asks for.
 --
 -- ============================================================
--- Public sign-up is off
+-- Customer sign-up is on
 --
--- The dashboard toggle (Authentication → Email → Allow new users
--- to sign up) needs a Management API token we don't have here, so
--- new accounts are blocked at the database instead. The existing
--- admin user can still sign in. Anyone else who hits /signup gets
--- "Public sign-up is disabled".
--- ============================================================
-
-create schema if not exists private;
-
-create or replace function private.reject_extra_signups()
-returns trigger
-language plpgsql
-security definer
-set search_path = auth, private
-as $$
-begin
-  if exists (select 1 from auth.users) then
-    raise exception 'Public sign-up is disabled';
-  end if;
-  return new;
-end;
-$$;
-
-drop trigger if exists reject_extra_signups on auth.users;
-create trigger reject_extra_signups
-before insert on auth.users
-for each row
-execute function private.reject_extra_signups();
+-- Authentication → Providers → Email must allow new users to
+-- sign up. New auth users get a profiles row (is_staff = false).
+-- Mark the desk login as staff:
+--
+--   update public.profiles set is_staff = true
+--   where id = (select id from auth.users where email = 'you@desk.com');
+--
 -- ============================================================

@@ -15,14 +15,14 @@ The site's only job is to:
 
 1. Explain what Mwinbarka Imports does and build trust
 2. Get visitors to submit an "import request" describing what they want sourced
-3. Route that request to WhatsApp (and save it to a database) so the client can follow up
+3. Route that request to the official chat line (and save it to a database) so the client can follow up
    and negotiate price/timeline manually
 
 ## Business model (important — do not build catalog/cart features)
 
 - Customer submits a request (free text: "what do you want imported")
-- Request is saved to Supabase AND auto-opens WhatsApp with a prefilled message
-- All pricing, payment, and order confirmation happens off-site via WhatsApp between
+- Request is saved to Supabase AND auto-opens the official chat with a prefilled message
+- All pricing, payment, and order confirmation happens off-site on the official line between
   the client and the customer
 - There is NO payment gateway integration (no Paystack, no cards, no Mobile Money on-site)
 - There is NO product listing/browsing — only example category images to inspire visitors
@@ -46,13 +46,13 @@ The site's only job is to:
 ## Target audience
 
 - Ghanaian customers (mobile-first — most visitors will be on phones)
-- WhatsApp is the primary communication channel — every CTA should lead toward WhatsApp
-  contact, not a generic "contact us" dead end
+- The official line is the primary communication channel — say the word “WhatsApp” only once
+  on the public site (Contact page). Everywhere else use “official line”, “chat”, or the number.
 
 ## Tech stack
 
 - Frontend: plain HTML/CSS/JS, mobile-first, no build step
-- Backend/Database: Supabase (one `requests` table + simple admin auth — see `supabase/schema.sql`)
+- Backend/Database: Supabase (`requests`, `profiles`, customer login/signup, staff admin — see `supabase/schema.sql`)
 - Hosting/Deploy: Netlify (`netlify.toml`, publish from repo root)
 - WhatsApp integration: `wa.me/233540309637?text=...` links, prefilled with form data
   (WhatsApp number: 0540309637 → international format 233540309637)
@@ -60,7 +60,7 @@ The site's only job is to:
 ## Design/UX principles
 
 - Mobile-first — most Ghanaian visitors will be on phones, design for small screens first
-- Every page should have a clear path to either WhatsApp or the request form — avoid dead ends
+- Every page should have a clear path to either the official line or the request form — avoid dead ends
 - Keep the request form short and low-friction (name, phone, what they want — rest optional)
   since the goal is capturing the lead, not collecting every detail upfront
 - Use the gold accent sparingly and deliberately (CTAs, prices, key highlights) against navy/white
@@ -71,5 +71,5 @@ The site's only job is to:
 - Shopping cart
 - Product catalog with individual product pages
 - Online payment/checkout (Paystack, cards, Mobile Money integration)
-- User accounts/login for customers (only admin needs login)
-- Order tracking system (all order status is discussed via WhatsApp)
+- Customer wallets, balances, or batch payment
+- Order tracking beyond the customer’s own saved requests

@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>How It Works — Mwinbarka Imports</title>
-<meta name="description" content="How Mwinbarka Imports sources and delivers goods from China and Turkey to Ghana, step by step.">
+<title>Account — Mwinbarka Imports</title>
+<meta name="description" content="Sign up or log in to Mwinbarka Imports to keep your orders on one account.">
 <link rel="stylesheet" href="styles.css?v=brand7">
 </head>
 <body>
@@ -41,7 +41,6 @@
 })();
 </script>
 
-
 <header class="site-header">
   <div class="announce-bar">Accra desk · Landed quotes in GH₵ · Official line 054 030 9637 only</div>
   <div class="header-main container">
@@ -59,12 +58,13 @@
   <nav class="nav container">
     <ul class="nav-links">
       <li><a href="index.html">Desk</a></li>
-      <li><a href="how-it-works.html" class="active">Process</a></li>
+      <li><a href="how-it-works.html">Process</a></li>
       <li><a href="categories.html">What we bring</a></li>
       <li><a href="shipping.html">Freight</a></li>
       <li><a href="about.html">The desk</a></li>
       <li><a href="faq.html">FAQ</a></li>
       <li><a href="contact.html">Contact</a></li>
+      <li><a href="account.html" class="active">Account</a></li>
       <li class="nav-request"><a href="request.html">Order Now</a></li>
     </ul>
   </nav>
@@ -72,99 +72,92 @@
 
 <section class="page-hero">
   <div class="container">
-    <span class="eyebrow">MW–LANE · Process</span>
-    <h1>The file moves. You stay on one thread.</h1>
-    <p>No cart. After you open a request, everything else happens on the official line — 054 030 9637.</p>
+    <span class="eyebrow">MW–ACCOUNT</span>
+    <h1>Your desk file.</h1>
+    <p>Sign up or log in to keep orders on one account. Guests can still Order Now without signing in.</p>
   </div>
 </section>
 
-<section class="section">
-  <div class="container">
-    <div class="section-head">
-      <span class="eyebrow">MW · Three ways to start</span>
-      <h2>Describe it, paste a link, or send a photo.</h2>
+<section class="section" id="account-auth">
+  <div class="container account-wrap">
+    <div class="account-tabs" role="tablist">
+      <button type="button" class="chip active" data-account-tab="login">Log in</button>
+      <button type="button" class="chip" data-account-tab="signup">Sign up</button>
     </div>
-    <div class="ticket-grid">
-      <div class="ticket">
-        <span class="code">WAY / 01</span>
-        <h3>Describe it</h3>
-        <p>Name, size, colour, quantity. A sentence is enough — we'll ask follow-ups on the official line.</p>
-        <div class="stub"><span>Request form</span><span>Optional login</span></div>
+
+    <form id="account-login-form" class="form-card" novalidate>
+      <span class="eyebrow">Returning customer</span>
+      <h2>Log in</h2>
+      <div class="field">
+        <label for="login-email">Email</label>
+        <input type="email" id="login-email" name="email" required autocomplete="email">
       </div>
-      <div class="ticket">
-        <span class="code">WAY / 02</span>
-        <h3>Paste a 1688 / Alibaba link</h3>
-        <p>Use the search bar or the paste box on the homepage. We open the listing and quote you in GH₵.</p>
-        <div class="stub"><span>Link</span><span>Factory price</span></div>
+      <div class="field">
+        <label for="login-password">Password</label>
+        <input type="password" id="login-password" name="password" required autocomplete="current-password">
       </div>
-      <div class="ticket">
-        <span class="code">WAY / 03</span>
-        <h3>Upload a photo</h3>
-        <p>Attach a picture on the request form, or add items to your quote list and send them together.</p>
-        <div class="stub"><span>Photo</span><span>Quote list</span></div>
+      <button type="submit" class="btn btn-gold">Log in</button>
+      <div id="login-status" class="form-status"></div>
+    </form>
+
+    <form id="account-signup-form" class="form-card" hidden novalidate>
+      <span class="eyebrow">New customer</span>
+      <h2>Create an account</h2>
+      <div class="field">
+        <label for="signup-name">Full name</label>
+        <input type="text" id="signup-name" name="full_name" required autocomplete="name">
       </div>
-    </div>
+      <div class="field">
+        <label for="signup-phone">Phone number</label>
+        <input type="tel" id="signup-phone" name="phone" required autocomplete="tel" placeholder="0XX XXX XXXX">
+      </div>
+      <div class="field">
+        <label for="signup-email">Email</label>
+        <input type="email" id="signup-email" name="email" required autocomplete="email">
+      </div>
+      <div class="field">
+        <label for="signup-password">Password</label>
+        <input type="password" id="signup-password" name="password" required autocomplete="new-password" minlength="6">
+        <div class="hint">At least 6 characters.</div>
+      </div>
+      <button type="submit" class="btn btn-gold">Sign up</button>
+      <div id="signup-status" class="form-status"></div>
+    </form>
   </div>
 </section>
 
-<section class="section section-alt">
-  <div class="container">
-    <div class="split" style="margin-bottom: var(--space-6);">
-      <div>
-        <span class="eyebrow">MW–01</span>
-        <h2 style="margin: var(--space-2) 0;">You tell us what you need</h2>
-        <p style="color: var(--ink-500); font-size: 1.05rem;">Fill in the request form with a description of the item — the more detail, the better (photos, links, size, color, quantity). If you're not sure how to describe it, just send what you know; we'll ask follow-up questions on the official line.</p>
+<section class="section" id="account-signed" hidden>
+  <div class="container account-wrap">
+    <form id="account-profile-form" class="form-card" novalidate>
+      <span class="eyebrow">My Account</span>
+      <h2 id="account-hello">Signed in</h2>
+      <p class="muted" id="account-email"></p>
+      <div class="field">
+        <label for="profile-name">Full name</label>
+        <input type="text" id="profile-name" name="full_name" required autocomplete="name">
       </div>
-      <div class="panel">
-        <h3>What helps most</h3>
-        <p>A photo or a link to the exact item (from 1688, Alibaba, Instagram, anywhere) gets you the most accurate quote, fastest.</p>
+      <div class="field">
+        <label for="profile-phone">Phone number</label>
+        <input type="tel" id="profile-phone" name="phone" required autocomplete="tel">
       </div>
+      <div class="hero-actions">
+        <button type="submit" class="btn btn-gold">Save details</button>
+        <button type="button" class="btn btn-outline-dark" id="account-signout">Sign out</button>
+      </div>
+      <div id="profile-status" class="form-status"></div>
+    </form>
+
+    <div class="form-card" id="orders">
+      <span class="eyebrow">My Orders</span>
+      <h2>Requests on this account</h2>
+      <div id="account-orders" class="account-order-list">Loading…</div>
     </div>
 
-    <div class="split" style="margin-bottom: var(--space-6);">
-      <div class="panel" style="order: 2;">
-        <h3>Typical turnaround</h3>
-        <p>Most quotes come back within 24 hours. Items from Turkey with an active supplier relationship can be even faster.</p>
-      </div>
-      <div style="order: 1;">
-        <span class="eyebrow">MW–02</span>
-        <h2 style="margin: var(--space-2) 0;">We source it and quote you in GH₵</h2>
-        <p style="color: var(--ink-500); font-size: 1.05rem;">We check current pricing directly from suppliers in China or Turkey, factor in shipping and clearing, and send you one clear price in Ghana Cedis — no hidden costs added later.</p>
-      </div>
+    <div class="form-card" id="transit">
+      <span class="eyebrow">My Transit</span>
+      <h2>Quoted or confirmed files</h2>
+      <div id="account-transit" class="account-order-list">Loading…</div>
     </div>
-
-    <div class="split" style="margin-bottom: var(--space-6);">
-      <div>
-        <span class="eyebrow">MW–03</span>
-        <h2 style="margin: var(--space-2) 0;">You confirm, we purchase and ship</h2>
-        <p style="color: var(--ink-500); font-size: 1.05rem;">Once you approve the quote and terms discussed on the official line, we place the order with the supplier and arrange shipping to Ghana. We'll keep you updated on progress.</p>
-      </div>
-      <div class="panel">
-        <h3>Payment</h3>
-        <p>Payment terms are agreed directly with you on the official line before we proceed — we'll walk you through it.</p>
-      </div>
-    </div>
-
-    <div class="split">
-      <div class="panel" style="order: 2;">
-        <h3>Delivery</h3>
-        <p>We deliver to your location across Ghana once your item clears — no need to travel to pick it up yourself.</p>
-      </div>
-      <div style="order: 1;">
-        <span class="eyebrow">MW–04</span>
-        <h2 style="margin: var(--space-2) 0;">It arrives at your door</h2>
-        <p style="color: var(--ink-500); font-size: 1.05rem;">Your item clears customs and gets delivered to you. That's it — from one message to a package in your hands.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="cta-band">
-  <div class="container">
-    <p class="bill-meta">MW–01 · New file</p>
-    <h2>Order now. We’ll take the rest of the lane.</h2>
-    <p>Two minutes. Sign in if you want. A real reply on the official line.</p>
-    <a href="request.html" class="btn btn-gold">Order Now →</a>
   </div>
 </section>
 

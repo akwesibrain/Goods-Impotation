@@ -37,11 +37,93 @@ if (
   supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 }
 
+window.getSessionUser = async function () {
+  if (!supabaseClient) return null;
+  const { data } = await supabaseClient.auth.getUser();
+  return data.user || null;
+};
+
+window.getMyProfile = async function () {
+  const user = await window.getSessionUser();
+  if (!user || !supabaseClient) return null;
+  const { data } = await supabaseClient
+    .from("profiles")
+    .select("id, full_name, phone, is_staff")
+    .eq("id", user.id)
+    .maybeSingle();
+  return {
+    id: user.id,
+    email: user.email || "",
+    full_name: (data && data.full_name) || user.user_metadata?.full_name || "",
+    phone: (data && data.phone) || user.user_metadata?.phone || "",
+    is_staff: !!(data && data.is_staff),
+  };
+};
+
+window.isStaffSession = async function () {
+  const profile = await window.getMyProfile();
+  return !!(profile && profile.is_staff);
+};
+
+window.signInCustomer = async function ({ email, password }) {
+  if (!supabaseClient) throw new Error("Account service is not connected yet.");
+  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if (error) throw error;
+  return true;
+};
+
+window.signUpCustomer = async function ({ email, password, fullName, phone }) {
+  if (!supabaseClient) throw new Error("Account service is not connected yet.");
+  const { data, error } = await supabaseClient.auth.signUp({
+    email,
+    password,
+    options: { data: { full_name: fullName || "", phone: phone || "" } },
+  });
+  if (error) throw error;
+  if (data.session && data.user) {
+    await supabaseClient.from("profiles").upsert({
+      id: data.user.id,
+      full_name: fullName || "",
+      phone: phone || "",
+    }, { onConflict: "id" });
+  }
+  return { needsConfirm: !!(data.user && !data.session) };
+};
+
+window.signOutCustomer = async function () {
+  if (!supabaseClient) return;
+  await supabaseClient.auth.signOut();
+};
+
+window.updateMyProfile = async function ({ full_name, phone }) {
+  const user = await window.getSessionUser();
+  if (!user || !supabaseClient) throw new Error("Please log in first.");
+  const { error } = await supabaseClient
+    .from("profiles")
+    .update({ full_name: full_name || "", phone: phone || "" })
+    .eq("id", user.id);
+  if (error) throw error;
+  return true;
+};
+
+window.fetchMyOrders = async function () {
+  const user = await window.getSessionUser();
+  if (!user || !supabaseClient) return [];
+  const { data, error } = await supabaseClient
+    .from("requests")
+    .select("id, request_details, category, quantity, status, created_at")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data || [];
+};
+
 window.saveRequestToSupabase = async function (data) {
   if (!supabaseClient) {
-    // Not configured yet — silently skip, WhatsApp still handles the lead.
+    // Not configured yet — silently skip, chat still handles the lead.
     return null;
   }
+  const user = await window.getSessionUser();
   const { error } = await supabaseClient.from("requests").insert([
     {
       name: data.name,
@@ -56,6 +138,7 @@ window.saveRequestToSupabase = async function (data) {
       origin: data.origin || null,
       shipping_method: data.shipping_method || null,
       photo_url: data.photo_url || null,
+      user_id: user ? user.id : null,
     },
   ]);
   if (error) throw error;
