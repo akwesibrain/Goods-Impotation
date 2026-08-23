@@ -5,12 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>About — Mwinbarka Imports</title>
 <meta name="description" content="Mwinbarka Imports is a Ghana-based importation agent sourcing goods from China and Turkey.">
-<link rel="stylesheet" href="styles.css?v=brand9">
+<link rel="stylesheet" href="styles.css?v=brand10">
 </head>
 <body>
 <script>
 (function () {
-  try { if (sessionStorage.getItem("mwinbarka_advert_finished_v2") === "1") return; } catch (e) {}
+  var seen = false;
+  try { seen = localStorage.getItem("mwinbarka_advert_finished_v2") === "1"; } catch (e) {}
+  try { seen = seen || sessionStorage.getItem("mwinbarka_advert_finished_v2") === "1"; } catch (e) {}
+  if (seen) return;
   if (document.getElementById("advert-gate")) return;
   var src = "https://kajtwabmwbncfgvehqmm.supabase.co/storage/v1/object/public/media/adverts/advert.mp4?v=phone1";
   var gate = document.createElement("div");
@@ -163,6 +166,6 @@
 <a href="https://wa.me/233540309637" class="wa-float" target="_blank" rel="noopener" aria-label="Join our channel">💬</a>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-client.js"></script>
-<script src="script.js?v=brand9"></script>
+<script src="script.js?v=brand10"></script>
 </body>
 </html>

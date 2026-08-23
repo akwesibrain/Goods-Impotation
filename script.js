@@ -828,12 +828,23 @@ const FALLBACK_ADVERT_MP4 =
   "https://cdn.jsdelivr.net/gh/akwesibrain/Goods-Impotation@cursor/mwinbarka-imports-site-5d47/assets/advert.mp4";
 const ADVERT_WATCH_KEY = "mwinbarka_advert_finished_v2";
 
+function storageFlag(key) {
+  try {
+    if (localStorage.getItem(key) === "1") return true;
+  } catch (e) { /* private mode */ }
+  try {
+    if (sessionStorage.getItem(key) === "1") return true;
+  } catch (e) { /* private mode */ }
+  return false;
+}
+
 function hasWatchedAdvert() {
-  return sessionStorage.getItem(ADVERT_WATCH_KEY) === "1";
+  return storageFlag(ADVERT_WATCH_KEY);
 }
 
 function markAdvertWatched() {
-  sessionStorage.setItem(ADVERT_WATCH_KEY, "1");
+  try { localStorage.setItem(ADVERT_WATCH_KEY, "1"); } catch (e) { /* private mode */ }
+  try { sessionStorage.setItem(ADVERT_WATCH_KEY, "1"); } catch (e) { /* private mode */ }
 }
 
 function youtubeIdFromUrl(url) {
@@ -986,7 +997,8 @@ async function showAdvertGate(settings) {
     playerBox.innerHTML = advertPlayerHtml("file");
   }
   const video = overlay.querySelector("video");
-  mountFileAdvert(video, sources, unlock, updateProgress, progressEl);
+  const alreadyPlaying = !!(existingVideo && !existingVideo.paused && !existingVideo.ended);
+  mountFileAdvert(video, sources, unlock, updateProgress, progressEl, alreadyPlaying);
 }
 
 function addPlayOverlay(box, onPlay) {
@@ -1033,7 +1045,7 @@ function loadAdvertSources(video, sources, progressEl) {
   apply(sources[0]);
 }
 
-function mountFileAdvert(video, sources, unlock, updateProgress, progressEl) {
+function mountFileAdvert(video, sources, unlock, updateProgress, progressEl, skipReload) {
   let maxTime = 0;
   const box = video.parentElement;
   const playBtn = box.querySelector("#advert-play");
@@ -1053,11 +1065,16 @@ function mountFileAdvert(video, sources, unlock, updateProgress, progressEl) {
     }
   };
 
-  loadAdvertSources(video, sources, progressEl);
   video.setAttribute("playsinline", "");
   video.setAttribute("webkit-playsinline", "");
-  video.muted = true;
-  tryPlay(false);
+  if (skipReload) {
+    if (video.ended) unlock();
+    else if (video.duration) updateProgress(video.currentTime, video.duration);
+  } else {
+    loadAdvertSources(video, sources, progressEl);
+    video.muted = true;
+    tryPlay(false);
+  }
 
   addPlayOverlay(box, () => tryPlay(true));
   video.addEventListener("click", () => {
