@@ -1123,6 +1123,7 @@ body.admin-app {
 .admin-table-compact { min-width: 520px; }
 .admin-form h2 { margin: var(--space-2) 0 var(--space-3); }
 .admin-form .form-note { margin-top: 0; margin-bottom: var(--space-3); color: var(--ink-500); }
+.sms-templates { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0 0 0.9rem; }
 
 @media (max-width: 960px) {
   .admin-stat-grid,

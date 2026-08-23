@@ -330,6 +330,78 @@ create policy "Anyone can upload request photos"
   );
 
 -- ============================================================
+-- SMS — staff-only credentials and outbound log.
+-- Public site_settings is readable by anyone, so SMS keys live here.
+-- ============================================================
+
+create table if not exists public.sms_settings (
+  id           integer primary key default 1 check (id = 1),
+  provider     text not null default 'arkesel',
+  api_key      text,
+  account_sid  text,
+  sender_id    text,
+  updated_at   timestamptz not null default now(),
+  constraint sms_settings_provider_check
+    check (provider in ('arkesel', 'twilio'))
+);
+
+insert into public.sms_settings (id, provider)
+values (1, 'arkesel')
+on conflict (id) do nothing;
+
+alter table public.sms_settings enable row level security;
+
+revoke all on table public.sms_settings from public, anon;
+grant select, insert, update on table public.sms_settings to authenticated;
+
+drop policy if exists "Staff can read sms settings" on public.sms_settings;
+create policy "Staff can read sms settings"
+  on public.sms_settings for select to authenticated
+  using (private.is_staff());
+
+drop policy if exists "Staff can write sms settings" on public.sms_settings;
+create policy "Staff can write sms settings"
+  on public.sms_settings for insert to authenticated
+  with check (private.is_staff());
+
+drop policy if exists "Staff can update sms settings" on public.sms_settings;
+create policy "Staff can update sms settings"
+  on public.sms_settings for update to authenticated
+  using (private.is_staff())
+  with check (private.is_staff());
+
+create table if not exists public.sms_messages (
+  id            uuid primary key default gen_random_uuid(),
+  customer_name text,
+  phone         text not null,
+  body          text not null,
+  status        text not null default 'sent',
+  error         text,
+  created_by    uuid references auth.users(id) on delete set null,
+  created_at    timestamptz not null default now(),
+  constraint sms_messages_status_check
+    check (status in ('sent', 'failed'))
+);
+
+create index if not exists sms_messages_created_at_idx
+  on public.sms_messages (created_at desc);
+
+alter table public.sms_messages enable row level security;
+
+revoke all on table public.sms_messages from public, anon;
+grant select, insert on table public.sms_messages to authenticated;
+
+drop policy if exists "Staff can read sms messages" on public.sms_messages;
+create policy "Staff can read sms messages"
+  on public.sms_messages for select to authenticated
+  using (private.is_staff());
+
+drop policy if exists "Staff can insert sms messages" on public.sms_messages;
+create policy "Staff can insert sms messages"
+  on public.sms_messages for insert to authenticated
+  with check (private.is_staff());
+
+-- ============================================================
 -- Creating the admin login
 --
 -- Supabase Dashboard > Authentication > Users > "Add user",

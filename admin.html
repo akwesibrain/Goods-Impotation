@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Admin panel — Mwinbarka Imports</title>
 <meta name="description" content="Staff admin panel for Mwinbarka Imports.">
-<link rel="stylesheet" href="styles.css?v=brand15">
+<link rel="stylesheet" href="styles.css?v=brand16">
 </head>
 <body id="admin-page" class="admin-app">
 
@@ -24,7 +24,7 @@
   <form id="login-form" class="form-card admin-gate-card" novalidate>
     <span class="eyebrow">MW · Staff only</span>
     <h1>Admin panel</h1>
-    <p>Sign in with the staff account to manage requests, products, reviews, and site settings.</p>
+    <p>Sign in with the staff account to manage requests, SMS, products, reviews, and site settings.</p>
 
     <div class="field">
       <label for="email">Email</label>
@@ -53,6 +53,7 @@
       <button type="button" class="admin-nav-btn active" data-tab="overview">Overview</button>
       <button type="button" class="admin-nav-btn" data-tab="requests">Requests</button>
       <button type="button" class="admin-nav-btn" data-tab="customers">Customers</button>
+      <button type="button" class="admin-nav-btn" data-tab="sms">SMS</button>
       <button type="button" class="admin-nav-btn" data-tab="products">Products</button>
       <button type="button" class="admin-nav-btn" data-tab="reviews">Reviews</button>
       <button type="button" class="admin-nav-btn" data-tab="settings">Settings</button>
@@ -146,12 +147,101 @@
                 <th>Name</th>
                 <th>Phone</th>
                 <th>Orders</th>
+                <th></th>
               </tr>
             </thead>
             <tbody id="customers-body"></tbody>
           </table>
         </div>
         <p class="admin-note" id="customers-note"></p>
+      </div>
+
+      <div class="admin-panel" id="tab-sms" hidden>
+        <form id="sms-settings-form" class="form-card admin-form" novalidate>
+          <span class="eyebrow">MW · SMS account</span>
+          <h2>Connect SMS</h2>
+          <p class="form-note">Save your SMS account here so the desk can text Ghana numbers. Use <strong>Arkesel</strong> (common in Ghana) or Twilio. Only staff can see this. Do not put keys on the public website.</p>
+
+          <div class="field">
+            <label for="sms-provider">Provider</label>
+            <select id="sms-provider" name="provider">
+              <option value="arkesel">Arkesel</option>
+              <option value="twilio">Twilio</option>
+            </select>
+          </div>
+
+          <div class="field" id="sms-sid-field" hidden>
+            <label for="sms-account-sid">Twilio Account SID</label>
+            <input type="text" id="sms-account-sid" name="account_sid" autocomplete="off">
+          </div>
+
+          <div class="field">
+            <label for="sms-api-key" id="sms-api-key-label">Arkesel API key</label>
+            <input type="password" id="sms-api-key" name="api_key" autocomplete="new-password" placeholder="Leave blank to keep the saved key">
+            <div class="hint" id="sms-key-hint">Get a key from Arkesel, then paste it here.</div>
+          </div>
+
+          <div class="field">
+            <label for="sms-sender-id" id="sms-sender-label">Sender ID</label>
+            <input type="text" id="sms-sender-id" name="sender_id" maxlength="20" placeholder="Mwinbarka">
+            <div class="hint" id="sms-sender-hint">Up to 11 letters. Arkesel must approve this name before it will show on the customer’s phone.</div>
+          </div>
+
+          <button type="submit" class="btn btn-gold">Save SMS account</button>
+          <div id="sms-settings-status" class="form-status"></div>
+        </form>
+
+        <form id="sms-send-form" class="form-card admin-form" novalidate>
+          <span class="eyebrow">MW · New SMS</span>
+          <h2>Message a customer</h2>
+
+          <div class="field">
+            <label for="sms-recipient">Customer</label>
+            <select id="sms-recipient">
+              <option value="">Choose a customer, or type a number below</option>
+            </select>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="sms-name">Name</label>
+              <input type="text" id="sms-name" name="name" placeholder="Customer name">
+            </div>
+            <div class="field">
+              <label for="sms-phone">Phone</label>
+              <input type="tel" id="sms-phone" name="phone" required placeholder="0XX XXX XXXX">
+            </div>
+          </div>
+
+          <div class="sms-templates" id="sms-templates">
+            <button type="button" class="chip" data-sms-template="Hello, this is Mwinbarka Imports. We received your order and we are checking China / Turkey pricing now.">Order received</button>
+            <button type="button" class="chip" data-sms-template="Hello, your GH₵ landed quote is ready. Please check the official line 054 030 9637 to confirm.">Quote ready</button>
+            <button type="button" class="chip" data-sms-template="Hello, your goods have arrived in Tema. We will arrange delivery. Official line 054 030 9637.">Goods arrived</button>
+          </div>
+
+          <div class="field">
+            <label for="sms-message">Message</label>
+            <textarea id="sms-message" name="message" rows="4" required maxlength="480" placeholder="Write the SMS…"></textarea>
+            <div class="hint"><span id="sms-count">0</span> / 480 characters · one SMS is about 160</div>
+          </div>
+
+          <button type="submit" class="btn btn-gold">Send SMS</button>
+          <div id="sms-send-status" class="form-status"></div>
+        </form>
+
+        <div class="table-wrap" style="margin-top: var(--space-4);">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Sent</th>
+                <th>Customer</th>
+                <th>Message</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="sms-body"></tbody>
+          </table>
+        </div>
       </div>
 
       <div class="admin-panel" id="tab-products" hidden>
@@ -321,7 +411,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-client.js"></script>
-<script src="script.js?v=brand15"></script>
-<script src="admin.js?v=brand15"></script>
+<script src="script.js?v=brand16"></script>
+<script src="admin.js?v=brand16"></script>
 </body>
 </html>

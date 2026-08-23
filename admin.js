@@ -12,6 +12,7 @@ const TAB_TITLES = {
   overview: ["MW · Desk", "Overview"],
   requests: ["MW · Leads", "Requests"],
   customers: ["MW · Accounts", "Customers"],
+  sms: ["MW · SMS", "SMS"],
   products: ["MW · Catalog", "Products"],
   reviews: ["MW · Reviews", "Reviews"],
   settings: ["MW · Site", "Settings"],
@@ -23,6 +24,8 @@ let allRequests = [];
 let allProducts = [];
 let allReviews = [];
 let allCustomers = [];
+let allSmsMessages = [];
+let smsKeySaved = false;
 
 document.addEventListener("DOMContentLoaded", () => {
   const client = window.getSupabaseClient && window.getSupabaseClient();
@@ -63,7 +66,10 @@ document.addEventListener("DOMContentLoaded", () => {
       loadReviews(client),
       loadCustomers(client),
       loadSettings(client),
+      loadSmsSettings(client),
+      loadSmsMessages(client),
     ]);
+    fillSmsRecipients();
     showTab(tabFromHash());
   };
 
@@ -144,6 +150,38 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("product-form").addEventListener("submit", (e) => handleProductSubmit(e, client));
   document.getElementById("review-admin-form").addEventListener("submit", (e) => handleReviewAdminSubmit(e, client));
   document.getElementById("settings-form").addEventListener("submit", (e) => handleSettingsSubmit(e, client));
+  document.getElementById("sms-settings-form").addEventListener("submit", (e) => handleSmsSettingsSubmit(e, client));
+  document.getElementById("sms-send-form").addEventListener("submit", (e) => handleSmsSend(e, client));
+
+  dashboard.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-sms-phone]");
+    if (!btn) return;
+    openSmsComposer(btn.dataset.smsPhone, btn.dataset.smsName || "");
+  });
+
+  const provider = document.getElementById("sms-provider");
+  if (provider) provider.addEventListener("change", updateSmsProviderLabels);
+
+  const recipient = document.getElementById("sms-recipient");
+  if (recipient) {
+    recipient.addEventListener("change", () => {
+      const option = recipient.selectedOptions[0];
+      if (!option || !option.value) return;
+      document.getElementById("sms-phone").value = option.value;
+      document.getElementById("sms-name").value = option.dataset.name || "";
+    });
+  }
+
+  document.getElementById("sms-templates")?.addEventListener("click", (e) => {
+    const chip = e.target.closest("[data-sms-template]");
+    if (!chip) return;
+    const box = document.getElementById("sms-message");
+    box.value = chip.dataset.smsTemplate;
+    updateSmsCount();
+    box.focus();
+  });
+
+  document.getElementById("sms-message")?.addEventListener("input", updateSmsCount);
 });
 
 function tabFromHash() {
@@ -192,6 +230,7 @@ function renderOverview() {
     ["Products", allProducts.length],
     ["Pending reviews", pendingReviews],
     ["Customers", allCustomers.length],
+    ["SMS sent", allSmsMessages.filter((m) => m.status === "sent").length],
   ].map(([label, value]) => `<article class="admin-stat">
       <strong>${value}</strong>
       <span>${escapeHtml(label)}</span>
@@ -240,6 +279,7 @@ async function loadRequests(client) {
 
   allRequests = data || [];
   renderRequests(client);
+  fillSmsRecipients();
   renderOverview();
 }
 
@@ -329,6 +369,7 @@ function rowHtml(r) {
     <td>
       <div class="row-actions">
         ${waLink ? `<a href="${escapeAttr(waLink)}" target="_blank" rel="noopener">Reply on WhatsApp</a>` : '<span class="muted">No number</span>'}
+        ${r.phone ? `<button type="button" class="chip" data-sms-phone="${escapeAttr(r.phone)}" data-sms-name="${escapeAttr(r.name || "")}">Send SMS</button>` : ""}
       </div>
     </td>
   </tr>`;
@@ -411,7 +452,7 @@ async function loadCustomers(client) {
   const body = document.getElementById("customers-body");
   const note = document.getElementById("customers-note");
   if (!body) return;
-  body.innerHTML = `<tr><td colspan="4" class="admin-empty">Loading customers...</td></tr>`;
+  body.innerHTML = `<tr><td colspan="5" class="admin-empty">Loading customers...</td></tr>`;
 
   const { data, error } = await client
     .from("profiles")
@@ -420,13 +461,13 @@ async function loadCustomers(client) {
     .order("created_at", { ascending: false });
 
   if (error) {
-    body.innerHTML = `<tr><td colspan="4" class="admin-empty">Couldn't load customers: ${escapeHtml(error.message)}</td></tr>`;
+    body.innerHTML = `<tr><td colspan="5" class="admin-empty">Couldn't load customers: ${escapeHtml(error.message)}</td></tr>`;
     return;
   }
 
   allCustomers = data || [];
   if (!allCustomers.length) {
-    body.innerHTML = `<tr><td colspan="4"><div class="admin-empty"><span class="code">MW · NO CUSTOMERS</span>No customer accounts yet. Guests can still send orders without signing up.</div></td></tr>`;
+    body.innerHTML = `<tr><td colspan="5"><div class="admin-empty"><span class="code">MW · NO CUSTOMERS</span>No customer accounts yet. Guests can still send orders without signing up.</div></td></tr>`;
     if (note) note.textContent = "";
     renderOverview();
     return;
@@ -442,8 +483,14 @@ async function loadCustomers(client) {
     <td><strong>${escapeHtml(c.full_name) || '<span class="muted">—</span>'}</strong></td>
     <td>${escapeHtml(c.phone) || '<span class="muted">—</span>'}</td>
     <td>${counts[c.id] || 0}</td>
+    <td>
+      <div class="row-actions">
+        ${c.phone ? `<button type="button" class="chip" data-sms-phone="${escapeAttr(c.phone)}" data-sms-name="${escapeAttr(c.full_name || "")}">Send SMS</button>` : '<span class="muted">No number</span>'}
+      </div>
+    </td>
   </tr>`).join("");
   if (note) note.textContent = `${allCustomers.length} customer account${allCustomers.length === 1 ? "" : "s"}.`;
+  fillSmsRecipients();
   renderOverview();
 }
 
@@ -679,6 +726,187 @@ async function handleSettingsSubmit(e, client) {
   } catch (err) {
     statusEl.className = "form-status error";
     statusEl.textContent = err.message || "Couldn't save settings.";
+  }
+  btn.disabled = false;
+}
+
+function updateSmsCount() {
+  const box = document.getElementById("sms-message");
+  const count = document.getElementById("sms-count");
+  if (count && box) count.textContent = String(box.value.length);
+}
+
+function updateSmsProviderLabels() {
+  const provider = document.getElementById("sms-provider")?.value || "arkesel";
+  const sidField = document.getElementById("sms-sid-field");
+  const keyLabel = document.getElementById("sms-api-key-label");
+  const keyHint = document.getElementById("sms-key-hint");
+  const senderLabel = document.getElementById("sms-sender-label");
+  const senderHint = document.getElementById("sms-sender-hint");
+  const isTwilio = provider === "twilio";
+  if (sidField) sidField.hidden = !isTwilio;
+  if (keyLabel) keyLabel.textContent = isTwilio ? "Twilio Auth Token" : "Arkesel API key";
+  if (keyHint) {
+    keyHint.textContent = isTwilio
+      ? "Paste the Auth Token from Twilio. Leave blank to keep a saved token."
+      : "Get a key from Arkesel, then paste it here. Leave blank to keep the saved key.";
+  }
+  if (senderLabel) senderLabel.textContent = isTwilio ? "From number" : "Sender ID";
+  if (senderHint) {
+    senderHint.textContent = isTwilio
+      ? "The Twilio number that will send the text, e.g. +233..."
+      : "Up to 11 letters. Arkesel must approve this name before it will show on the customer’s phone.";
+  }
+}
+
+function openSmsComposer(phone, name) {
+  showTab("sms");
+  closeAdminMenu();
+  const phoneEl = document.getElementById("sms-phone");
+  const nameEl = document.getElementById("sms-name");
+  const recipient = document.getElementById("sms-recipient");
+  if (phoneEl) phoneEl.value = phone || "";
+  if (nameEl) nameEl.value = name || "";
+  if (recipient) {
+    const match = [...recipient.options].find((opt) => opt.value === phone);
+    recipient.value = match ? phone : "";
+  }
+  document.getElementById("sms-message")?.focus();
+}
+
+function fillSmsRecipients() {
+  const select = document.getElementById("sms-recipient");
+  if (!select) return;
+  const seen = new Map();
+  allRequests.forEach((r) => {
+    if (r.phone && !seen.has(r.phone)) seen.set(r.phone, r.name || "Customer");
+  });
+  allCustomers.forEach((c) => {
+    if (c.phone && !seen.has(c.phone)) seen.set(c.phone, c.full_name || "Customer");
+  });
+  const current = select.value;
+  select.innerHTML = `<option value="">Choose a customer, or type a number below</option>` +
+    [...seen.entries()].map(([phone, name]) =>
+      `<option value="${escapeAttr(phone)}" data-name="${escapeAttr(name)}">${escapeHtml(name)} · ${escapeHtml(phone)}</option>`
+    ).join("");
+  if (current && seen.has(current)) select.value = current;
+}
+
+async function loadSmsSettings(client) {
+  const form = document.getElementById("sms-settings-form");
+  if (!form) return;
+  const { data, error } = await client.from("sms_settings").select("*").eq("id", 1).maybeSingle();
+  if (error || !data) return;
+  form.elements.provider.value = data.provider || "arkesel";
+  form.elements.account_sid.value = data.account_sid || "";
+  form.elements.sender_id.value = data.sender_id || "";
+  smsKeySaved = !!(data.api_key && data.api_key.length);
+  form.elements.api_key.value = "";
+  form.elements.api_key.placeholder = smsKeySaved ? "Key saved — leave blank to keep it" : "Paste your API key";
+  updateSmsProviderLabels();
+}
+
+async function handleSmsSettingsSubmit(e, client) {
+  e.preventDefault();
+  const form = e.target;
+  const statusEl = document.getElementById("sms-settings-status");
+  const btn = form.querySelector('button[type="submit"]');
+  btn.disabled = true;
+  try {
+    const patch = {
+      provider: form.elements.provider.value || "arkesel",
+      account_sid: form.elements.account_sid.value.trim() || null,
+      sender_id: form.elements.sender_id.value.trim() || null,
+      updated_at: new Date().toISOString(),
+    };
+    const apiKey = form.elements.api_key.value.trim();
+    if (apiKey) patch.api_key = apiKey;
+    const { error } = await client.from("sms_settings").update(patch).eq("id", 1);
+    if (error) throw error;
+    form.elements.api_key.value = "";
+    smsKeySaved = smsKeySaved || !!apiKey;
+    form.elements.api_key.placeholder = smsKeySaved ? "Key saved — leave blank to keep it" : "Paste your API key";
+    statusEl.className = "form-status success";
+    statusEl.textContent = "SMS account saved. You can send texts from this tab.";
+  } catch (err) {
+    statusEl.className = "form-status error";
+    statusEl.textContent = err.message || "Couldn't save the SMS account.";
+  }
+  btn.disabled = false;
+}
+
+async function loadSmsMessages(client) {
+  const body = document.getElementById("sms-body");
+  if (!body) return;
+  body.innerHTML = `<tr><td colspan="4" class="admin-empty">Loading SMS…</td></tr>`;
+  const { data, error } = await client
+    .from("sms_messages")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(50);
+  if (error) {
+    body.innerHTML = `<tr><td colspan="4" class="admin-empty">Couldn't load SMS: ${escapeHtml(error.message)}</td></tr>`;
+    return;
+  }
+  allSmsMessages = data || [];
+  renderOverview();
+  if (!allSmsMessages.length) {
+    body.innerHTML = `<tr><td colspan="4"><div class="admin-empty"><span class="code">MW · NO SMS</span>Sent texts will appear here.</div></td></tr>`;
+    return;
+  }
+  body.innerHTML = allSmsMessages.map((m) => `<tr>
+    <td class="cell-when">${formatDate(m.created_at)}</td>
+    <td>
+      <strong>${escapeHtml(m.customer_name) || "Customer"}</strong><br>
+      <span class="cell-when">${escapeHtml(m.phone)}</span>
+    </td>
+    <td class="cell-details">${escapeHtml(m.body)}${m.error ? `<br><span class="muted">${escapeHtml(m.error)}</span>` : ""}</td>
+    <td>${m.status === "sent"
+      ? '<span class="status-pill confirmed">Sent</span>'
+      : '<span class="status-pill new">Failed</span>'}</td>
+  </tr>`).join("");
+}
+
+async function handleSmsSend(e, client) {
+  e.preventDefault();
+  const form = e.target;
+  const statusEl = document.getElementById("sms-send-status");
+  const btn = form.querySelector('button[type="submit"]');
+  const phone = form.elements.phone.value.trim();
+  const message = form.elements.message.value.trim();
+  const name = form.elements.name.value.trim();
+  if (!phone || !message) {
+    statusEl.className = "form-status error";
+    statusEl.textContent = "Enter a phone number and a message.";
+    return;
+  }
+  btn.disabled = true;
+  statusEl.className = "form-status";
+  statusEl.textContent = "Sending…";
+  try {
+    const { data, error } = await client.functions.invoke("send-sms", {
+      body: { phone, name, message },
+    });
+    if (error) {
+      let detail = error.message || "Couldn't send the SMS.";
+      try {
+        const extra = await error.context.json();
+        if (extra && extra.error) detail = extra.error;
+      } catch {
+        /* keep detail */
+      }
+      throw new Error(detail);
+    }
+    if (data && data.error) throw new Error(data.error);
+    form.elements.message.value = "";
+    updateSmsCount();
+    statusEl.className = "form-status success";
+    statusEl.textContent = `SMS sent to ${data && data.phone ? data.phone : phone}.`;
+    await loadSmsMessages(client);
+  } catch (err) {
+    statusEl.className = "form-status error";
+    statusEl.textContent = err.message || "Couldn't send the SMS.";
+    await loadSmsMessages(client);
   }
   btn.disabled = false;
 }
