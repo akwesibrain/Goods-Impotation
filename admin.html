@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Admin panel — Mwinbarka Imports</title>
 <meta name="description" content="Staff admin panel for Mwinbarka Imports.">
-<link rel="stylesheet" href="styles.css?v=brand21">
+<link rel="stylesheet" href="styles.css?v=brand22">
 </head>
 <body id="admin-page" class="admin-app">
 
@@ -320,7 +320,7 @@
           <div class="field">
             <label for="paystack-webhook-url">Webhook URL</label>
             <input type="text" id="paystack-webhook-url" readonly>
-            <div class="hint">Copy this into Paystack → Settings → API Keys & Webhooks so paid orders update automatically.</div>
+            <div class="hint">Copy this into Paystack → Settings → API Keys & Webhooks so paid orders update automatically. <button type="button" class="chip" id="copy-paystack-webhook">Copy URL</button></div>
           </div>
 
           <button type="submit" class="btn btn-gold">Save Paystack keys</button>
@@ -602,6 +602,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-client.js?v=brand21"></script>
 <script src="script.js?v=brand21"></script>
-<script src="admin.js?v=brand21"></script>
+<script src="admin.js?v=brand22"></script>
 </body>
 </html>

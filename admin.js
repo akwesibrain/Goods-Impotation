@@ -182,6 +182,18 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("sms-broadcast-form")?.addEventListener("submit", (e) => handleSmsBroadcast(e, client));
   document.getElementById("paystack-settings-form")?.addEventListener("submit", (e) => handlePaystackSettingsSubmit(e, client));
   document.getElementById("paystack-link-form")?.addEventListener("submit", (e) => handlePaystackLinkSubmit(e, client));
+  document.getElementById("copy-paystack-webhook")?.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(PAYSTACK_WEBHOOK_URL);
+      const statusEl = document.getElementById("paystack-settings-status");
+      if (statusEl) {
+        statusEl.className = "form-status success";
+        statusEl.textContent = "Webhook URL copied. Paste it in Paystack → API Keys & Webhooks.";
+      }
+    } catch {
+      document.getElementById("paystack-webhook-url")?.select();
+    }
+  });
 
   dashboard.addEventListener("click", (e) => {
     const closeBtn = e.target.closest("[data-close-detail]");
@@ -1405,6 +1417,7 @@ async function loadPaystackSettings(client) {
   if (error || !data) return;
   form.elements.public_key.value = data.public_key || "";
   form.elements.secret_key.value = "";
+  paystackSecretSaved = !!data.public_key;
   const hint = document.getElementById("paystack-secret-hint");
   if (hint) {
     hint.textContent = data.public_key
@@ -1420,13 +1433,24 @@ async function handlePaystackSettingsSubmit(e, client) {
   const btn = form.querySelector('button[type="submit"]');
   btn.disabled = true;
   try {
+    const publicKey = form.elements.public_key.value.trim();
+    const secret = form.elements.secret_key.value.trim();
+    if (publicKey && !/^pk_(live|test)_/.test(publicKey)) {
+      throw new Error("The public key should start with pk_live_ or pk_test_.");
+    }
+    if (secret && !/^sk_(live|test)_/.test(secret)) {
+      throw new Error("The secret key should start with sk_live_ or sk_test_.");
+    }
     const patch = {
-      public_key: form.elements.public_key.value.trim() || null,
+      public_key: publicKey || null,
       updated_at: new Date().toISOString(),
     };
-    const secret = form.elements.secret_key.value.trim();
     if (secret) patch.secret_key = secret;
-    const { error } = await client.from("payment_settings").update(patch).eq("id", 1);
+    const { error } = await client
+      .from("payment_settings")
+      .update(patch)
+      .eq("id", 1)
+      .select("public_key, updated_at");
     if (error) throw error;
     form.elements.secret_key.value = "";
     paystackSecretSaved = paystackSecretSaved || !!secret;
