@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Payment — Mwinbarka Imports</title>
+<link rel="stylesheet" href="styles.css?v=brand21">
+</head>
+<body>
+<header class="site-header">
+  <div class="announce-bar">Accra desk · Landed quotes in GH₵ · Official line 054 030 9637 only</div>
+  <div class="header-main container">
+    <a href="index.html" class="nav-logo">
+      <img src="assets/logo.png" alt="Mwinbarka Imports logo">
+      <span class="logo-lockup">Mwinbarka <em>Imports</em><small>China · Turkey → Ghana</small></span>
+    </a>
+  </div>
+</header>
+
+<section class="page-hero">
+  <div class="container">
+    <span class="eyebrow">Payment</span>
+    <h1>Thank you.</h1>
+    <p id="pay-copy">If you completed payment, the desk will confirm it. Nothing else is charged through this website.</p>
+    <p class="muted" id="pay-ref"></p>
+    <p>Official line: <strong>054 030 9637</strong></p>
+    <a class="btn btn-gold" href="index.html">Back to the desk</a>
+  </div>
+</section>
+
+<script>
+(function () {
+  const params = new URLSearchParams(location.search);
+  const reference = params.get("reference") || params.get("trxref") || "";
+  const refEl = document.getElementById("pay-ref");
+  if (reference && refEl) refEl.textContent = "Reference: " + reference;
+})();
+</script>
+</body>
+</html>

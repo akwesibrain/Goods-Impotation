@@ -13,6 +13,7 @@ const TAB_TITLES = {
   requests: ["Leads", "Orders"],
   customers: ["Accounts", "Customers"],
   sms: ["SMS", "SMS"],
+  payments: ["Pay", "Payments"],
   products: ["Catalog", "Products"],
   reviews: ["Reviews", "Reviews"],
   settings: ["Site", "Settings"],
@@ -25,6 +26,8 @@ let allProducts = [];
 let allReviews = [];
 let allCustomers = [];
 let allSmsMessages = [];
+let allPayments = [];
+let paystackSecretSaved = false;
 let smsKeySaved = false;
 let selectedRequestId = null;
 let adminClient = null;
@@ -74,6 +77,8 @@ document.addEventListener("DOMContentLoaded", () => {
       loadSettings(client),
       loadSmsSettings(client),
       loadSmsMessages(client),
+      loadPaystackSettings(client),
+      loadPayments(client),
     ]);
     fillSmsRecipients();
     if (sessionStorage.getItem("mwinbarka_staff_email_changed")) {
@@ -175,6 +180,8 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("sms-settings-form").addEventListener("submit", (e) => handleSmsSettingsSubmit(e, client));
   document.getElementById("sms-send-form").addEventListener("submit", (e) => handleSmsSend(e, client));
   document.getElementById("sms-broadcast-form")?.addEventListener("submit", (e) => handleSmsBroadcast(e, client));
+  document.getElementById("paystack-settings-form")?.addEventListener("submit", (e) => handlePaystackSettingsSubmit(e, client));
+  document.getElementById("paystack-link-form")?.addEventListener("submit", (e) => handlePaystackLinkSubmit(e, client));
 
   dashboard.addEventListener("click", (e) => {
     const closeBtn = e.target.closest("[data-close-detail]");
@@ -280,6 +287,7 @@ function renderOverview() {
     ["Pending reviews", pendingReviews],
     ["Customers", allCustomers.length],
     ["SMS sent", allSmsMessages.filter((m) => m.status === "sent").length],
+    ["Paid", allPayments.filter((p) => p.status === "paid").length],
   ].map(([label, value]) => `<article class="admin-stat">
       <strong>${value}</strong>
       <span>${escapeHtml(label)}</span>
@@ -453,6 +461,39 @@ function openDetail(id, client) {
       if (result.ok) smsForm.reset();
     });
   }
+  const payForm = inner.querySelector("[data-detail-pay]");
+  if (payForm) {
+    payForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const statusEl = inner.querySelector("[data-detail-pay-status]");
+      const resultEl = inner.querySelector("[data-detail-pay-result]");
+      statusEl.className = "form-status";
+      statusEl.textContent = "Creating Paystack link…";
+      if (resultEl) resultEl.hidden = true;
+      const result = await createPaymentLink(client, {
+        request_id: record.id,
+        name: record.name,
+        phone: record.phone,
+        email: payForm.elements.email.value.trim(),
+        amount: payForm.elements.amount.value.trim(),
+      });
+      statusEl.className = `form-status ${result.ok ? "success" : "error"}`;
+      statusEl.textContent = result.ok ? "Payment link created." : result.error;
+      if (result.ok && resultEl && result.authorization_url) {
+        resultEl.hidden = false;
+        resultEl.innerHTML = `<a href="${escapeAttr(result.authorization_url)}" target="_blank" rel="noopener">Open Paystack</a>
+          <button type="button" class="chip" data-copy-pay="${escapeAttr(result.authorization_url)}">Copy link</button>`;
+        resultEl.querySelector("[data-copy-pay]")?.addEventListener("click", async () => {
+          try {
+            await navigator.clipboard.writeText(result.authorization_url);
+            statusEl.textContent = "Link copied. Send it on the official line.";
+          } catch {
+            statusEl.textContent = result.authorization_url;
+          }
+        });
+      }
+    });
+  }
 }
 
 function detailHtml(r) {
@@ -512,6 +553,15 @@ function detailHtml(r) {
       <button type="submit" class="btn btn-gold" style="width:100%; justify-content:center; margin-top:0.6rem;">Send SMS</button>
       <div class="form-status" data-detail-sms-status></div>
     </form>` : ""}
+    <form class="admin-detail-sms" data-detail-pay>
+      <label for="detail-pay-amount">Paystack — amount in GH₵</label>
+      <input type="text" id="detail-pay-amount" name="amount" inputmode="decimal" required placeholder="e.g. 450">
+      <label for="detail-pay-email" style="margin-top:0.7rem;">Email for the receipt</label>
+      <input type="email" id="detail-pay-email" name="email" required value="${escapeAttr(r.email || "")}" placeholder="customer@email.com">
+      <button type="submit" class="btn btn-gold" style="width:100%; justify-content:center; margin-top:0.6rem;">Create payment link</button>
+      <div class="form-status" data-detail-pay-status></div>
+      <p class="form-note" data-detail-pay-result hidden></p>
+    </form>
     <div class="admin-detail-actions">
       ${waLink ? `<a class="btn btn-gold" href="${escapeAttr(waLink)}" target="_blank" rel="noopener">Chat</a>` : ""}
     </div>
@@ -1327,3 +1377,183 @@ async function handleSmsSend(e, client) {
   }
   btn.disabled = false;
 }
+
+const PAYSTACK_WEBHOOK_URL = "https://kajtwabmwbncfgvehqmm.supabase.co/functions/v1/paystack-webhook";
+
+function formatCedis(pesewas) {
+  const n = Number(pesewas || 0) / 100;
+  return "GH₵ " + n.toLocaleString("en-GH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function paymentStatusLabel(status) {
+  if (status === "paid") return '<span class="status-pill confirmed">Paid</span>';
+  if (status === "failed") return '<span class="status-pill new">Failed</span>';
+  if (status === "abandoned") return '<span class="status-pill contacted">Abandoned</span>';
+  return '<span class="status-pill quoted">Pending</span>';
+}
+
+async function loadPaystackSettings(client) {
+  const form = document.getElementById("paystack-settings-form");
+  if (!form) return;
+  const webhook = document.getElementById("paystack-webhook-url");
+  if (webhook) webhook.value = PAYSTACK_WEBHOOK_URL;
+  const { data, error } = await client
+    .from("payment_settings")
+    .select("public_key, updated_at")
+    .eq("id", 1)
+    .maybeSingle();
+  if (error || !data) return;
+  form.elements.public_key.value = data.public_key || "";
+  form.elements.secret_key.value = "";
+  const hint = document.getElementById("paystack-secret-hint");
+  if (hint) {
+    hint.textContent = data.public_key
+      ? "Secret key saved on the server. Leave blank to keep it, or paste a new one."
+      : "Starts with sk_live_ or sk_test_. Paste it once, then save.";
+  }
+}
+
+async function handlePaystackSettingsSubmit(e, client) {
+  e.preventDefault();
+  const form = e.target;
+  const statusEl = document.getElementById("paystack-settings-status");
+  const btn = form.querySelector('button[type="submit"]');
+  btn.disabled = true;
+  try {
+    const patch = {
+      public_key: form.elements.public_key.value.trim() || null,
+      updated_at: new Date().toISOString(),
+    };
+    const secret = form.elements.secret_key.value.trim();
+    if (secret) patch.secret_key = secret;
+    const { error } = await client.from("payment_settings").update(patch).eq("id", 1);
+    if (error) throw error;
+    form.elements.secret_key.value = "";
+    paystackSecretSaved = paystackSecretSaved || !!secret;
+    const hint = document.getElementById("paystack-secret-hint");
+    if (hint && (secret || paystackSecretSaved)) {
+      hint.textContent = "Secret key saved on the server. Leave blank to keep it, or paste a new one.";
+    }
+    statusEl.className = "form-status success";
+    statusEl.textContent = "Paystack keys saved. You can create payment links from this tab or from an order.";
+  } catch (err) {
+    statusEl.className = "form-status error";
+    statusEl.textContent = err.message || "Couldn't save the Paystack keys.";
+  }
+  btn.disabled = false;
+}
+
+async function loadPayments(client) {
+  const body = document.getElementById("payments-body");
+  if (!body) return;
+  body.innerHTML = `<tr><td colspan="5" class="admin-empty">Loading payments…</td></tr>`;
+  const { data, error } = await client
+    .from("payments")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(50);
+  if (error) {
+    body.innerHTML = `<tr><td colspan="5" class="admin-empty">Couldn't load payments: ${escapeHtml(error.message)}</td></tr>`;
+    return;
+  }
+  allPayments = data || [];
+  renderOverview();
+  if (!allPayments.length) {
+    body.innerHTML = `<tr><td colspan="5"><div class="admin-empty"><span class="code">MW · NO PAYMENTS</span>Payment links you create will appear here.</div></td></tr>`;
+    return;
+  }
+  body.innerHTML = allPayments.map((p) => `<tr>
+    <td class="cell-when">${formatDate(p.created_at)}</td>
+    <td>
+      <strong>${escapeHtml(p.customer_name) || "Customer"}</strong><br>
+      <span class="cell-when">${escapeHtml(p.email)}</span>
+    </td>
+    <td>${escapeHtml(formatCedis(p.amount_pesewas))}</td>
+    <td>${paymentStatusLabel(p.status)}</td>
+    <td>${p.authorization_url
+      ? `<a class="chip" href="${escapeAttr(p.authorization_url)}" target="_blank" rel="noopener">Open</a>`
+      : ""}</td>
+  </tr>`).join("");
+}
+
+async function createPaymentLink(client, { request_id, name, phone, email, amount }) {
+  try {
+    const { data, error } = await client.functions.invoke("create-payment", {
+      body: {
+        request_id: request_id || null,
+        name,
+        phone,
+        email,
+        amount,
+        callback_url: `${window.location.origin}/pay`,
+      },
+    });
+    if (error) {
+      let detail = error.message || "Couldn't create the payment link.";
+      try {
+        const extra = await error.context.json();
+        if (extra && extra.error) detail = extra.error;
+      } catch {
+        /* keep detail */
+      }
+      throw new Error(detail);
+    }
+    if (data && data.error) throw new Error(data.error);
+    await loadPayments(client);
+    return {
+      ok: true,
+      authorization_url: data && data.authorization_url,
+      reference: data && data.reference,
+    };
+  } catch (err) {
+    await loadPayments(client);
+    return { ok: false, error: err.message || "Couldn't create the payment link." };
+  }
+}
+
+async function handlePaystackLinkSubmit(e, client) {
+  e.preventDefault();
+  const form = e.target;
+  const statusEl = document.getElementById("paystack-link-status");
+  const resultEl = document.getElementById("paystack-link-result");
+  const btn = form.querySelector('button[type="submit"]');
+  const email = form.elements.email.value.trim();
+  const amount = form.elements.amount.value.trim();
+  if (!email || !amount) {
+    statusEl.className = "form-status error";
+    statusEl.textContent = "Enter an email and a GH₵ amount.";
+    return;
+  }
+  btn.disabled = true;
+  statusEl.className = "form-status";
+  statusEl.textContent = "Creating Paystack link…";
+  if (resultEl) resultEl.hidden = true;
+  const result = await createPaymentLink(client, {
+    name: form.elements.name.value.trim(),
+    phone: form.elements.phone.value.trim(),
+    email,
+    amount,
+  });
+  if (result.ok) {
+    statusEl.className = "form-status success";
+    statusEl.textContent = "Payment link created.";
+    if (resultEl && result.authorization_url) {
+      resultEl.hidden = false;
+      resultEl.innerHTML = `<a class="btn btn-gold" href="${escapeAttr(result.authorization_url)}" target="_blank" rel="noopener">Open Paystack</a>
+        <button type="button" class="chip" id="copy-pay-link">Copy link</button>`;
+      document.getElementById("copy-pay-link")?.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(result.authorization_url);
+          statusEl.textContent = "Link copied. Send it on the official line.";
+        } catch {
+          statusEl.textContent = result.authorization_url;
+        }
+      });
+    }
+  } else {
+    statusEl.className = "form-status error";
+    statusEl.textContent = result.error;
+  }
+  btn.disabled = false;
+}
+

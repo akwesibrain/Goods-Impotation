@@ -402,6 +402,83 @@ create policy "Staff can insert sms messages"
   with check (private.is_staff());
 
 -- ============================================================
+-- Paystack — staff-only keys. Secret is never selected by the browser.
+-- ============================================================
+
+create table if not exists public.payment_settings (
+  id          integer primary key default 1 check (id = 1),
+  public_key  text,
+  secret_key  text,
+  updated_at  timestamptz not null default now()
+);
+
+insert into public.payment_settings (id)
+values (1)
+on conflict (id) do nothing;
+
+alter table public.payment_settings enable row level security;
+
+revoke all on table public.payment_settings from public, anon, authenticated;
+grant select (id, public_key, updated_at) on table public.payment_settings to authenticated;
+grant update (public_key, secret_key, updated_at) on table public.payment_settings to authenticated;
+
+drop policy if exists "Staff can read payment settings" on public.payment_settings;
+create policy "Staff can read payment settings"
+  on public.payment_settings for select to authenticated
+  using (private.is_staff());
+
+drop policy if exists "Staff can update payment settings" on public.payment_settings;
+create policy "Staff can update payment settings"
+  on public.payment_settings for update to authenticated
+  using (private.is_staff())
+  with check (private.is_staff());
+
+create table if not exists public.payments (
+  id                 uuid primary key default gen_random_uuid(),
+  request_id         uuid references public.requests(id) on delete set null,
+  customer_name      text,
+  phone              text,
+  email              text not null,
+  amount_pesewas     integer not null check (amount_pesewas > 0),
+  currency           text not null default 'GHS',
+  reference          text not null unique,
+  authorization_url  text,
+  status             text not null default 'pending',
+  paid_at            timestamptz,
+  created_by         uuid references auth.users(id) on delete set null,
+  created_at         timestamptz not null default now(),
+  constraint payments_status_check
+    check (status in ('pending', 'paid', 'failed', 'abandoned'))
+);
+
+create index if not exists payments_created_at_idx
+  on public.payments (created_at desc);
+
+create index if not exists payments_request_id_idx
+  on public.payments (request_id);
+
+alter table public.payments enable row level security;
+
+revoke all on table public.payments from public, anon;
+grant select, insert, update on table public.payments to authenticated;
+
+drop policy if exists "Staff can read payments" on public.payments;
+create policy "Staff can read payments"
+  on public.payments for select to authenticated
+  using (private.is_staff());
+
+drop policy if exists "Staff can insert payments" on public.payments;
+create policy "Staff can insert payments"
+  on public.payments for insert to authenticated
+  with check (private.is_staff());
+
+drop policy if exists "Staff can update payments" on public.payments;
+create policy "Staff can update payments"
+  on public.payments for update to authenticated
+  using (private.is_staff())
+  with check (private.is_staff());
+
+-- ============================================================
 -- Creating the admin login
 --
 -- Supabase Dashboard > Authentication > Users > "Add user",

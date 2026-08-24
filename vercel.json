@@ -16,7 +16,13 @@
       ]
     },
     {
-      "source": "/admin.html",
+      "source": "/pay",
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow" }
+      ]
+    },
+    {
+      "source": "/pay.html",
       "headers": [
         { "key": "X-Robots-Tag", "value": "noindex, nofollow" }
       ]
