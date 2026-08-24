@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Admin panel — Mwinbarka Imports</title>
 <meta name="description" content="Staff admin panel for Mwinbarka Imports.">
-<link rel="stylesheet" href="styles.css?v=brand19">
+<link rel="stylesheet" href="styles.css?v=brand20">
 </head>
 <body id="admin-page" class="admin-app">
 
@@ -406,6 +406,60 @@
       </div>
 
       <div class="admin-panel" id="tab-settings" hidden>
+        <form id="staff-email-form" class="form-card admin-form" novalidate>
+          <span class="eyebrow">Staff login</span>
+          <h2>Change login email</h2>
+          <p class="form-note">This is the email used to sign in to this admin desk. After you save, open the new inbox and tap the confirm link. Then sign in with the new email.</p>
+
+          <div class="field">
+            <label for="staff-current-email">Current email</label>
+            <input type="email" id="staff-current-email" readonly>
+          </div>
+
+          <div class="field">
+            <label for="staff-new-email">New email</label>
+            <input type="email" id="staff-new-email" name="new_email" required autocomplete="email">
+          </div>
+
+          <div class="field">
+            <label for="staff-confirm-email">Confirm new email</label>
+            <input type="email" id="staff-confirm-email" name="confirm_email" required autocomplete="email">
+          </div>
+
+          <div class="field">
+            <label for="staff-email-password">Current password</label>
+            <input type="password" id="staff-email-password" name="password" required autocomplete="current-password">
+          </div>
+
+          <button type="submit" class="btn btn-gold">Save new email</button>
+          <div id="staff-email-status" class="form-status"></div>
+        </form>
+
+        <form id="staff-password-form" class="form-card admin-form" novalidate>
+          <span class="eyebrow">Staff login</span>
+          <h2>Change password</h2>
+          <p class="form-note">Use a password only you know. After it saves, this desk stays signed in. Next time, log in with the new password.</p>
+
+          <div class="field">
+            <label for="staff-current-password">Current password</label>
+            <input type="password" id="staff-current-password" name="current_password" required autocomplete="current-password">
+          </div>
+
+          <div class="field">
+            <label for="staff-new-password">New password</label>
+            <input type="password" id="staff-new-password" name="new_password" required autocomplete="new-password" minlength="6">
+            <div class="hint">At least 6 characters.</div>
+          </div>
+
+          <div class="field">
+            <label for="staff-confirm-password">Confirm new password</label>
+            <input type="password" id="staff-confirm-password" name="confirm_password" required autocomplete="new-password" minlength="6">
+          </div>
+
+          <button type="submit" class="btn btn-gold">Save new password</button>
+          <div id="staff-password-status" class="form-status"></div>
+        </form>
+
         <form id="settings-form" class="form-card admin-form" novalidate>
           <span class="eyebrow">WhatsApp channel</span>
           <h2>Channel and social links</h2>
@@ -467,7 +521,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-client.js"></script>
-<script src="script.js?v=brand19"></script>
-<script src="admin.js?v=brand19"></script>
+<script src="script.js?v=brand20"></script>
+<script src="admin.js?v=brand20"></script>
 </body>
 </html>

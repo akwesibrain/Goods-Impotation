@@ -65,6 +65,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (staffLine && profile) staffLine.textContent = profile.email || "Staff";
     if (staffName && profile) staffName.textContent = profile.full_name || "Staff";
     if (staffAvatar && profile) staffAvatar.textContent = initials(profile.full_name || profile.email || "MW");
+    fillStaffLogin(profile);
     await Promise.all([
       loadRequests(client),
       loadProducts(client),
@@ -75,7 +76,17 @@ document.addEventListener("DOMContentLoaded", () => {
       loadSmsMessages(client),
     ]);
     fillSmsRecipients();
-    showTab(tabFromHash());
+    if (sessionStorage.getItem("mwinbarka_staff_email_changed")) {
+      sessionStorage.removeItem("mwinbarka_staff_email_changed");
+      showTab("settings");
+      const statusEl = document.getElementById("staff-email-status");
+      if (statusEl) {
+        statusEl.className = "form-status success";
+        statusEl.textContent = "Login email confirmed. Use this new email the next time you sign in.";
+      }
+    } else {
+      showTab(tabFromHash());
+    }
   };
 
   const showSignedOut = () => {
@@ -83,6 +94,10 @@ document.addEventListener("DOMContentLoaded", () => {
     dashboard.style.display = "none";
     if (signOutBtn) signOutBtn.style.display = "none";
   };
+
+  if (/type=email_change/.test(location.hash || "")) {
+    sessionStorage.setItem("mwinbarka_staff_email_changed", "1");
+  }
 
   client.auth.getSession().then(({ data }) => {
     if (data.session) showSignedIn();
@@ -155,6 +170,8 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("product-form").addEventListener("submit", (e) => handleProductSubmit(e, client));
   document.getElementById("review-admin-form").addEventListener("submit", (e) => handleReviewAdminSubmit(e, client));
   document.getElementById("settings-form").addEventListener("submit", (e) => handleSettingsSubmit(e, client));
+  document.getElementById("staff-email-form")?.addEventListener("submit", (e) => handleStaffEmailSubmit(e, client));
+  document.getElementById("staff-password-form")?.addEventListener("submit", (e) => handleStaffPasswordSubmit(e, client));
   document.getElementById("sms-settings-form").addEventListener("submit", (e) => handleSmsSettingsSubmit(e, client));
   document.getElementById("sms-send-form").addEventListener("submit", (e) => handleSmsSend(e, client));
   document.getElementById("sms-broadcast-form")?.addEventListener("submit", (e) => handleSmsBroadcast(e, client));
@@ -218,6 +235,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function tabFromHash() {
   const name = (location.hash || "#overview").replace("#", "");
+  if (!name || name.includes("=") || name.includes("&")) return "overview";
   return TAB_TITLES[name] ? name : "overview";
 }
 
@@ -837,6 +855,113 @@ async function loadSettings(client) {
   ["whatsapp_channel_url", "whatsapp_url", "facebook_url", "instagram_url", "tiktok_url", "advert_video_url"].forEach((key) => {
     if (form.elements[key]) form.elements[key].value = data[key] || "";
   });
+}
+
+function fillStaffLogin(profile) {
+  const emailEl = document.getElementById("staff-current-email");
+  if (emailEl) emailEl.value = (profile && profile.email) || "";
+}
+
+function friendlyAuthError(err) {
+  const raw = String((err && err.message) || err || "");
+  const text = raw.toLowerCase();
+  if (text.includes("invalid login") || text.includes("invalid credentials")) {
+    return "Current password is wrong.";
+  }
+  if (text.includes("already registered") || text.includes("already been registered")) {
+    return "That email is already in use.";
+  }
+  if (text.includes("rate") || text.includes("too many")) {
+    return "Too many tries. Wait a minute, then try again.";
+  }
+  if (text.includes("should be different")) {
+    return "Pick a password that is not the current one.";
+  }
+  return raw || "Couldn't update the login details.";
+}
+
+async function handleStaffEmailSubmit(e, client) {
+  e.preventDefault();
+  const form = e.target;
+  const statusEl = document.getElementById("staff-email-status");
+  const btn = form.querySelector('button[type="submit"]');
+  const next = form.elements.new_email.value.trim().toLowerCase();
+  const confirmEmail = form.elements.confirm_email.value.trim().toLowerCase();
+  const password = form.elements.password.value;
+  if (!next || !confirmEmail || !password) {
+    statusEl.className = "form-status error";
+    statusEl.textContent = "Fill the new email, confirm it, and enter the current password.";
+    return;
+  }
+  if (next !== confirmEmail) {
+    statusEl.className = "form-status error";
+    statusEl.textContent = "The two new email addresses do not match.";
+    return;
+  }
+  btn.disabled = true;
+  statusEl.className = "form-status";
+  statusEl.textContent = "Saving…";
+  try {
+    if (!window.updateMyEmail) throw new Error("Account service is not connected yet.");
+    await window.updateMyEmail({
+      currentPassword: password,
+      newEmail: next,
+      emailRedirectTo: window.location.origin + window.location.pathname,
+    });
+    form.elements.password.value = "";
+    form.elements.new_email.value = "";
+    form.elements.confirm_email.value = "";
+    statusEl.className = "form-status success";
+    statusEl.textContent = `A confirm link was sent to ${next}. Open that inbox, tap the link, then sign in with the new email.`;
+  } catch (err) {
+    statusEl.className = "form-status error";
+    statusEl.textContent = friendlyAuthError(err);
+  }
+  btn.disabled = false;
+}
+
+async function handleStaffPasswordSubmit(e, client) {
+  e.preventDefault();
+  const form = e.target;
+  const statusEl = document.getElementById("staff-password-status");
+  const btn = form.querySelector('button[type="submit"]');
+  const currentPassword = form.elements.current_password.value;
+  const newPassword = form.elements.new_password.value;
+  const confirmPassword = form.elements.confirm_password.value;
+  if (!currentPassword || !newPassword || !confirmPassword) {
+    statusEl.className = "form-status error";
+    statusEl.textContent = "Fill the current password and the new password twice.";
+    return;
+  }
+  if (newPassword.length < 6) {
+    statusEl.className = "form-status error";
+    statusEl.textContent = "The new password must be at least 6 characters.";
+    return;
+  }
+  if (newPassword !== confirmPassword) {
+    statusEl.className = "form-status error";
+    statusEl.textContent = "The two new passwords do not match.";
+    return;
+  }
+  if (newPassword === currentPassword) {
+    statusEl.className = "form-status error";
+    statusEl.textContent = "Pick a password that is not the current one.";
+    return;
+  }
+  btn.disabled = true;
+  statusEl.className = "form-status";
+  statusEl.textContent = "Saving…";
+  try {
+    if (!window.updateMyPassword) throw new Error("Account service is not connected yet.");
+    await window.updateMyPassword({ currentPassword, newPassword });
+    form.reset();
+    statusEl.className = "form-status success";
+    statusEl.textContent = "Password saved. Use the new password the next time you sign in.";
+  } catch (err) {
+    statusEl.className = "form-status error";
+    statusEl.textContent = friendlyAuthError(err);
+  }
+  btn.disabled = false;
 }
 
 async function handleSettingsSubmit(e, client) {

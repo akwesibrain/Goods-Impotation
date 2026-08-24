@@ -97,6 +97,42 @@ window.signOutCustomer = async function () {
   await supabaseClient.auth.signOut();
 };
 
+window.updateMyPassword = async function ({ currentPassword, newPassword }) {
+  if (!supabaseClient) throw new Error("Account service is not connected yet.");
+  const user = await window.getSessionUser();
+  if (!user || !user.email) throw new Error("Please log in first.");
+  const { error: checkError } = await supabaseClient.auth.signInWithPassword({
+    email: user.email,
+    password: currentPassword,
+  });
+  if (checkError) throw new Error("Current password is wrong.");
+  const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
+  if (error) throw error;
+  return true;
+};
+
+window.updateMyEmail = async function ({ currentPassword, newEmail, emailRedirectTo }) {
+  if (!supabaseClient) throw new Error("Account service is not connected yet.");
+  const user = await window.getSessionUser();
+  if (!user || !user.email) throw new Error("Please log in first.");
+  const next = String(newEmail || "").trim().toLowerCase();
+  if (!next || !next.includes("@")) throw new Error("Enter a valid email address.");
+  if (next === String(user.email).toLowerCase()) {
+    throw new Error("That is already the login email.");
+  }
+  const { error: checkError } = await supabaseClient.auth.signInWithPassword({
+    email: user.email,
+    password: currentPassword,
+  });
+  if (checkError) throw new Error("Current password is wrong.");
+  const { error } = await supabaseClient.auth.updateUser(
+    { email: next },
+    { emailRedirectTo: emailRedirectTo || window.location.href.split("#")[0] },
+  );
+  if (error) throw error;
+  return true;
+};
+
 window.updateMyProfile = async function ({ full_name, phone }) {
   const user = await window.getSessionUser();
   if (!user || !supabaseClient) throw new Error("Please log in first.");
