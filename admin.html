@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Admin panel — Mwinbarka Imports</title>
 <meta name="description" content="Staff admin panel for Mwinbarka Imports.">
-<link rel="stylesheet" href="styles.css?v=brand18">
+<link rel="stylesheet" href="styles.css?v=brand19">
 </head>
 <body id="admin-page" class="admin-app">
 
@@ -253,6 +253,33 @@
           <div id="sms-send-status" class="form-status"></div>
         </form>
 
+        <form id="sms-broadcast-form" class="form-card admin-form" novalidate>
+          <span class="eyebrow">All customers</span>
+          <h2>Send one message to many people</h2>
+          <p class="form-note">Tick who should get this text. <strong>Select all</strong> includes every customer with a phone number — accounts and orders. Each person is charged as one SMS on TxtConnect.</p>
+
+          <div class="sms-audience-toolbar">
+            <button type="button" class="chip" id="sms-select-all">Select all</button>
+            <button type="button" class="chip" id="sms-clear-all">Clear</button>
+            <span class="hint" id="sms-audience-count">0 selected</span>
+          </div>
+          <div class="sms-audience" id="sms-audience" role="group" aria-label="Customers to text"></div>
+
+          <div class="sms-templates" id="sms-broadcast-templates">
+            <button type="button" class="chip" data-sms-broadcast="Hello, this is Mwinbarka Imports. We have space on the next sea shipment from China and Turkey. Reply on 054 030 9637 if you want to add an order.">Next shipment</button>
+            <button type="button" class="chip" data-sms-broadcast="Hello from Mwinbarka Imports. Please check the official line 054 030 9637 — we have an update on your importation.">Desk update</button>
+          </div>
+
+          <div class="field">
+            <label for="sms-broadcast-message">Message</label>
+            <textarea id="sms-broadcast-message" name="message" rows="4" required maxlength="480" placeholder="Write the SMS for everyone selected…"></textarea>
+            <div class="hint"><span id="sms-broadcast-count">0</span> / 480 characters · one SMS is about 160</div>
+          </div>
+
+          <button type="submit" class="btn btn-gold" id="sms-broadcast-submit">Send to selected</button>
+          <div id="sms-broadcast-status" class="form-status"></div>
+        </form>
+
         <div class="table-wrap" style="margin-top: var(--space-4);">
           <table class="admin-table">
             <thead>
@@ -440,7 +467,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-client.js"></script>
-<script src="script.js?v=brand18"></script>
-<script src="admin.js?v=brand18"></script>
+<script src="script.js?v=brand19"></script>
+<script src="admin.js?v=brand19"></script>
 </body>
 </html>

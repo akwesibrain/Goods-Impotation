@@ -157,6 +157,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("settings-form").addEventListener("submit", (e) => handleSettingsSubmit(e, client));
   document.getElementById("sms-settings-form").addEventListener("submit", (e) => handleSmsSettingsSubmit(e, client));
   document.getElementById("sms-send-form").addEventListener("submit", (e) => handleSmsSend(e, client));
+  document.getElementById("sms-broadcast-form")?.addEventListener("submit", (e) => handleSmsBroadcast(e, client));
 
   dashboard.addEventListener("click", (e) => {
     const closeBtn = e.target.closest("[data-close-detail]");
@@ -199,6 +200,20 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   document.getElementById("sms-message")?.addEventListener("input", updateSmsCount);
+  document.getElementById("sms-broadcast-message")?.addEventListener("input", updateBroadcastCount);
+
+  document.getElementById("sms-broadcast-templates")?.addEventListener("click", (e) => {
+    const chip = e.target.closest("[data-sms-broadcast]");
+    if (!chip) return;
+    const box = document.getElementById("sms-broadcast-message");
+    box.value = chip.dataset.smsBroadcast;
+    updateBroadcastCount();
+    box.focus();
+  });
+
+  document.getElementById("sms-select-all")?.addEventListener("click", () => setAudienceChecked(true));
+  document.getElementById("sms-clear-all")?.addEventListener("click", () => setAudienceChecked(false));
+  document.getElementById("sms-audience")?.addEventListener("change", updateAudienceCount);
 });
 
 function tabFromHash() {
@@ -596,6 +611,7 @@ async function loadCustomers(client) {
   if (!allCustomers.length) {
     body.innerHTML = `<tr><td colspan="5"><div class="admin-empty"><span class="code">MW · NO CUSTOMERS</span>No customer accounts yet. Guests can still send orders without signing up.</div></td></tr>`;
     if (note) note.textContent = "";
+    fillSmsRecipients();
     renderOverview();
     return;
   }
@@ -914,20 +930,149 @@ function openSmsComposer(phone, name) {
 
 function fillSmsRecipients() {
   const select = document.getElementById("sms-recipient");
-  if (!select) return;
+  const audience = smsAudienceList();
+  if (select) {
+    const current = select.value;
+    select.innerHTML = `<option value="">Choose a customer, or type a number below</option>` +
+      audience.map(({ phone, name }) =>
+        `<option value="${escapeAttr(phone)}" data-name="${escapeAttr(name)}">${escapeHtml(name)} · ${escapeHtml(phone)}</option>`
+      ).join("");
+    if (current && audience.some((item) => item.phone === current)) select.value = current;
+  }
+  fillSmsAudience(audience);
+}
+
+function smsPhoneKey(phone) {
+  let digits = String(phone || "").replace(/\D/g, "");
+  if (digits.startsWith("00")) digits = digits.slice(2);
+  if (digits.startsWith("0")) digits = "233" + digits.slice(1);
+  else if (!digits.startsWith("233") && digits.length === 9) digits = "233" + digits;
+  return digits;
+}
+
+function smsAudienceList() {
   const seen = new Map();
-  allRequests.forEach((r) => {
-    if (r.phone && !seen.has(r.phone)) seen.set(r.phone, r.name || "Customer");
-  });
   allCustomers.forEach((c) => {
-    if (c.phone && !seen.has(c.phone)) seen.set(c.phone, c.full_name || "Customer");
+    const key = smsPhoneKey(c.phone);
+    if (key.length >= 12 && !seen.has(key)) {
+      seen.set(key, { phone: c.phone, name: c.full_name || "Customer" });
+    }
   });
-  const current = select.value;
-  select.innerHTML = `<option value="">Choose a customer, or type a number below</option>` +
-    [...seen.entries()].map(([phone, name]) =>
-      `<option value="${escapeAttr(phone)}" data-name="${escapeAttr(name)}">${escapeHtml(name)} · ${escapeHtml(phone)}</option>`
-    ).join("");
-  if (current && seen.has(current)) select.value = current;
+  allRequests.forEach((r) => {
+    const key = smsPhoneKey(r.phone);
+    if (key.length >= 12 && !seen.has(key)) {
+      seen.set(key, { phone: r.phone, name: r.name || "Customer" });
+    }
+  });
+  return [...seen.values()].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+}
+
+function fillSmsAudience(audience) {
+  const box = document.getElementById("sms-audience");
+  if (!box) return;
+  const previously = new Set(
+    [...box.querySelectorAll("input[type='checkbox']:checked")].map((el) => el.value)
+  );
+  if (!audience.length) {
+    box.innerHTML = `<p class="sms-audience-empty">No customer phone numbers yet. They appear here after someone signs up or sends an order.</p>`;
+    updateAudienceCount();
+    return;
+  }
+  box.innerHTML = audience.map(({ phone, name }) => `<label class="sms-audience-row">
+    <input type="checkbox" name="audience" value="${escapeAttr(phone)}" data-name="${escapeAttr(name)}"${previously.has(phone) ? " checked" : ""}>
+    <span>
+      <strong>${escapeHtml(name)}</strong>
+      <small>${escapeHtml(phone)}</small>
+    </span>
+  </label>`).join("");
+  updateAudienceCount();
+}
+
+function setAudienceChecked(checked) {
+  document.querySelectorAll("#sms-audience input[type='checkbox']").forEach((el) => {
+    el.checked = checked;
+  });
+  updateAudienceCount();
+}
+
+function selectedAudience() {
+  return [...document.querySelectorAll("#sms-audience input[type='checkbox']:checked")].map((el) => ({
+    phone: el.value,
+    name: el.dataset.name || "Customer",
+  }));
+}
+
+function updateAudienceCount() {
+  const el = document.getElementById("sms-audience-count");
+  if (!el) return;
+  const total = document.querySelectorAll("#sms-audience input[type='checkbox']").length;
+  const selected = selectedAudience().length;
+  el.textContent = total
+    ? `${selected} of ${total} selected`
+    : "0 selected";
+}
+
+function updateBroadcastCount() {
+  const box = document.getElementById("sms-broadcast-message");
+  const count = document.getElementById("sms-broadcast-count");
+  if (count && box) count.textContent = String(box.value.length);
+}
+
+async function handleSmsBroadcast(e, client) {
+  e.preventDefault();
+  const statusEl = document.getElementById("sms-broadcast-status");
+  const btn = document.getElementById("sms-broadcast-submit");
+  const message = document.getElementById("sms-broadcast-message")?.value.trim() || "";
+  const people = selectedAudience();
+  if (!people.length) {
+    statusEl.className = "form-status error";
+    statusEl.textContent = "Select at least one customer, or tap Select all.";
+    return;
+  }
+  if (!message) {
+    statusEl.className = "form-status error";
+    statusEl.textContent = "Write the SMS first.";
+    return;
+  }
+  const ok = window.confirm(
+    `Send this SMS to ${people.length} customer${people.length === 1 ? "" : "s"}? This uses TxtConnect credit for each person.`
+  );
+  if (!ok) return;
+
+  btn.disabled = true;
+  document.getElementById("sms-select-all").disabled = true;
+  document.getElementById("sms-clear-all").disabled = true;
+  let sent = 0;
+  const failed = [];
+  for (let i = 0; i < people.length; i += 1) {
+    const person = people[i];
+    statusEl.className = "form-status";
+    statusEl.textContent = `Sending ${i + 1} of ${people.length}…`;
+    const result = await sendSmsMessage(client, {
+      phone: person.phone,
+      name: person.name,
+      message,
+      skipLogRefresh: true,
+    });
+    if (result.ok) sent += 1;
+    else failed.push(`${person.name} (${person.phone}): ${result.error}`);
+  }
+  await loadSmsMessages(client);
+  const box = document.getElementById("sms-broadcast-message");
+  if (sent && failed.length === 0 && box) {
+    box.value = "";
+    updateBroadcastCount();
+  }
+  if (failed.length === 0) {
+    statusEl.className = "form-status success";
+    statusEl.textContent = `Sent to ${sent} customer${sent === 1 ? "" : "s"}.`;
+  } else {
+    statusEl.className = "form-status error";
+    statusEl.textContent = `Sent ${sent} of ${people.length}. Failed: ${failed.slice(0, 3).join(" · ")}${failed.length > 3 ? ` · +${failed.length - 3} more` : ""}`;
+  }
+  btn.disabled = false;
+  document.getElementById("sms-select-all").disabled = false;
+  document.getElementById("sms-clear-all").disabled = false;
 }
 
 async function loadSmsSettings(client) {
@@ -1005,7 +1150,7 @@ async function loadSmsMessages(client) {
   </tr>`).join("");
 }
 
-async function sendSmsMessage(client, { phone, name, message }) {
+async function sendSmsMessage(client, { phone, name, message, skipLogRefresh }) {
   try {
     const { data, error } = await client.functions.invoke("send-sms", {
       body: { phone, name, message },
@@ -1021,10 +1166,10 @@ async function sendSmsMessage(client, { phone, name, message }) {
       throw new Error(detail);
     }
     if (data && data.error) throw new Error(data.error);
-    await loadSmsMessages(client);
+    if (!skipLogRefresh) await loadSmsMessages(client);
     return { ok: true, phone: data && data.phone ? data.phone : phone };
   } catch (err) {
-    await loadSmsMessages(client);
+    if (!skipLogRefresh) await loadSmsMessages(client);
     return { ok: false, error: err.message || "Couldn't send the SMS." };
   }
 }

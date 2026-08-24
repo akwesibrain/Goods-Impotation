@@ -1284,6 +1284,40 @@ body.admin-app .form-card {
 .admin-form h2 { margin: var(--space-2) 0 var(--space-3); font-family: var(--font-body); }
 .admin-form .form-note { margin-top: 0; margin-bottom: var(--space-3); color: var(--ink-500); }
 .sms-templates { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0 0 0.9rem; }
+.sms-audience-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0 0 0.65rem;
+}
+.sms-audience-toolbar .hint { margin: 0 0 0 0.2rem; }
+.sms-audience {
+  max-height: 260px;
+  overflow: auto;
+  margin: 0 0 1rem;
+  padding: 0.25rem;
+  border-radius: 14px;
+  background: #F4F5F7;
+}
+.sms-audience-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.sms-audience-row:hover,
+.sms-audience-row:has(input:checked) { background: #fff; }
+.sms-audience-row input { margin-top: 0.2rem; accent-color: #17181B; }
+.sms-audience-row strong { display: block; font-size: 0.92rem; }
+.sms-audience-row small { display: block; color: var(--ink-500); font-size: 0.78rem; }
+.sms-audience-empty {
+  padding: 0.9rem 0.75rem;
+  color: var(--ink-500);
+  font-size: 0.88rem;
+}
 .admin-person { display: flex; align-items: center; gap: 0.7rem; }
 .admin-person small { display: block; color: var(--ink-500); font-size: 0.78rem; }
 .admin-order-row { cursor: pointer; }
