@@ -336,17 +336,17 @@ create policy "Anyone can upload request photos"
 
 create table if not exists public.sms_settings (
   id           integer primary key default 1 check (id = 1),
-  provider     text not null default 'arkesel',
+  provider     text not null default 'txtconnect',
   api_key      text,
   account_sid  text,
   sender_id    text,
   updated_at   timestamptz not null default now(),
   constraint sms_settings_provider_check
-    check (provider in ('arkesel', 'twilio'))
+    check (provider in ('txtconnect', 'arkesel', 'twilio'))
 );
 
 insert into public.sms_settings (id, provider)
-values (1, 'arkesel')
+values (1, 'txtconnect')
 on conflict (id) do nothing;
 
 alter table public.sms_settings enable row level security;

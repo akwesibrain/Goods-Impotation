@@ -33,6 +33,51 @@ function ghanaMsisdn(raw: string) {
   return digits;
 }
 
+function smsErrorText(payload: Record<string, unknown>, fallback: string) {
+  const nested = payload.data && typeof payload.data === "object"
+    ? payload.data as Record<string, unknown>
+    : null;
+  return String(
+    payload.message ||
+      payload.msg ||
+      payload.error ||
+      payload.reason ||
+      nested?.message ||
+      nested?.reason ||
+      fallback,
+  );
+}
+
+function isUnicodeSms(message: string) {
+  return /[^\x00-\x7F]/.test(message);
+}
+
+async function sendTxtConnect(apiKey: string, sender: string, to: string, message: string) {
+  const res = await fetch("https://api.txtconnect.net/dev/api/sms/send", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      to,
+      from: sender,
+      unicode: isUnicodeSms(message) ? "1" : "0",
+      sms: message,
+    }),
+  });
+  const payload = await res.json().catch(() => ({})) as Record<string, unknown>;
+  const nested = payload.data && typeof payload.data === "object"
+    ? payload.data as Record<string, unknown>
+    : null;
+  const statusCode = String(nested?.status_code || payload.status_code || "");
+  const inError = nested?.in_error === true || payload.in_error === true;
+  if (!res.ok || inError || (statusCode && statusCode !== "000")) {
+    throw new Error(smsErrorText(payload, "TxtConnect did not send the SMS."));
+  }
+  return payload;
+}
+
 async function sendArkesel(apiKey: string, sender: string, to: string, message: string) {
   const res = await fetch("https://sms.arkesel.com/api/v2/sms/send", {
     method: "POST",
@@ -139,8 +184,13 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (settingsError) throw settingsError;
 
-    const provider = settings?.provider || "arkesel";
-    const apiKey = (settings?.api_key || Deno.env.get("ARKESEL_API_KEY") || "").trim();
+    const provider = settings?.provider || "txtconnect";
+    const apiKey = (
+      settings?.api_key ||
+      Deno.env.get("TXTCONNECT_API_KEY") ||
+      Deno.env.get("ARKESEL_API_KEY") ||
+      ""
+    ).trim();
     const senderId = (settings?.sender_id || Deno.env.get("SMS_SENDER_ID") || "Mwinbarka").trim();
     const accountSid = (settings?.account_sid || Deno.env.get("TWILIO_ACCOUNT_SID") || "").trim();
 
@@ -152,13 +202,20 @@ Deno.serve(async (req) => {
           );
         }
         await sendTwilio(accountSid, apiKey, senderId, phone, message);
-      } else {
+      } else if (provider === "arkesel") {
         if (!apiKey || !senderId) {
           throw new Error(
             "Save your Arkesel API key and sender ID in the SMS tab first.",
           );
         }
         await sendArkesel(apiKey, senderId, phone, message);
+      } else {
+        if (!apiKey || !senderId) {
+          throw new Error(
+            "Save your TxtConnect API key and sender ID in the SMS tab first.",
+          );
+        }
+        await sendTxtConnect(apiKey, senderId, phone, message);
       }
 
       await supabase.from("sms_messages").insert([{

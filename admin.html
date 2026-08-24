@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Admin panel — Mwinbarka Imports</title>
 <meta name="description" content="Staff admin panel for Mwinbarka Imports.">
-<link rel="stylesheet" href="styles.css?v=brand17">
+<link rel="stylesheet" href="styles.css?v=brand18">
 </head>
 <body id="admin-page" class="admin-app">
 
@@ -183,11 +183,12 @@
         <form id="sms-settings-form" class="form-card admin-form" novalidate>
           <span class="eyebrow">SMS account</span>
           <h2>Connect SMS</h2>
-          <p class="form-note">Save your SMS account here so the desk can text Ghana numbers. Use <strong>Arkesel</strong> (common in Ghana) or Twilio. Only staff can see this.</p>
+          <p class="form-note">Save your SMS account here so the desk can text Ghana numbers. This desk uses <strong>TxtConnect</strong>. Arkesel and Twilio stay as backups. Only staff can see this.</p>
 
           <div class="field">
             <label for="sms-provider">Provider</label>
             <select id="sms-provider" name="provider">
+              <option value="txtconnect" selected>TxtConnect</option>
               <option value="arkesel">Arkesel</option>
               <option value="twilio">Twilio</option>
             </select>
@@ -199,15 +200,15 @@
           </div>
 
           <div class="field">
-            <label for="sms-api-key" id="sms-api-key-label">Arkesel API key</label>
+            <label for="sms-api-key" id="sms-api-key-label">TxtConnect API key</label>
             <input type="password" id="sms-api-key" name="api_key" autocomplete="new-password" placeholder="Leave blank to keep the saved key">
-            <div class="hint" id="sms-key-hint">Get a key from Arkesel, then paste it here.</div>
+            <div class="hint" id="sms-key-hint">Get a key from TxtConnect, then paste it here. Leave blank to keep a saved key.</div>
           </div>
 
           <div class="field">
             <label for="sms-sender-id" id="sms-sender-label">Sender ID</label>
             <input type="text" id="sms-sender-id" name="sender_id" maxlength="20" placeholder="Mwinbarka">
-            <div class="hint" id="sms-sender-hint">Up to 11 letters. Arkesel must approve this name before it will show on the customer’s phone.</div>
+            <div class="hint" id="sms-sender-hint">Up to 11 letters. TxtConnect must approve this name before it will show on the customer’s phone.</div>
           </div>
 
           <button type="submit" class="btn btn-gold">Save SMS account</button>
@@ -439,7 +440,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-client.js"></script>
-<script src="script.js?v=brand17"></script>
-<script src="admin.js?v=brand17"></script>
+<script src="script.js?v=brand18"></script>
+<script src="admin.js?v=brand18"></script>
 </body>
 </html>

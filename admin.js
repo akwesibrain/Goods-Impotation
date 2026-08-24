@@ -864,25 +864,36 @@ function updateSmsCount() {
 }
 
 function updateSmsProviderLabels() {
-  const provider = document.getElementById("sms-provider")?.value || "arkesel";
+  const provider = document.getElementById("sms-provider")?.value || "txtconnect";
   const sidField = document.getElementById("sms-sid-field");
   const keyLabel = document.getElementById("sms-api-key-label");
   const keyHint = document.getElementById("sms-key-hint");
   const senderLabel = document.getElementById("sms-sender-label");
   const senderHint = document.getElementById("sms-sender-hint");
   const isTwilio = provider === "twilio";
+  const isTxtConnect = provider === "txtconnect";
   if (sidField) sidField.hidden = !isTwilio;
-  if (keyLabel) keyLabel.textContent = isTwilio ? "Twilio Auth Token" : "Arkesel API key";
+  if (keyLabel) {
+    keyLabel.textContent = isTwilio
+      ? "Twilio Auth Token"
+      : isTxtConnect
+        ? "TxtConnect API key"
+        : "Arkesel API key";
+  }
   if (keyHint) {
     keyHint.textContent = isTwilio
       ? "Paste the Auth Token from Twilio. Leave blank to keep a saved token."
-      : "Get a key from Arkesel, then paste it here. Leave blank to keep the saved key.";
+      : isTxtConnect
+        ? "Copy the API key from TxtConnect (Campaigns → SMS API), then paste it here. Leave blank to keep the saved key."
+        : "Get a key from Arkesel, then paste it here. Leave blank to keep the saved key.";
   }
   if (senderLabel) senderLabel.textContent = isTwilio ? "From number" : "Sender ID";
   if (senderHint) {
     senderHint.textContent = isTwilio
       ? "The Twilio number that will send the text, e.g. +233..."
-      : "Up to 11 letters. Arkesel must approve this name before it will show on the customer’s phone.";
+      : isTxtConnect
+        ? "Up to 11 letters. Request this name in TxtConnect first, then type the approved sender ID here."
+        : "Up to 11 letters. Arkesel must approve this name before it will show on the customer’s phone.";
   }
 }
 
@@ -924,7 +935,7 @@ async function loadSmsSettings(client) {
   if (!form) return;
   const { data, error } = await client.from("sms_settings").select("*").eq("id", 1).maybeSingle();
   if (error || !data) return;
-  form.elements.provider.value = data.provider || "arkesel";
+  form.elements.provider.value = data.provider || "txtconnect";
   form.elements.account_sid.value = data.account_sid || "";
   form.elements.sender_id.value = data.sender_id || "";
   smsKeySaved = !!(data.api_key && data.api_key.length);
@@ -941,7 +952,7 @@ async function handleSmsSettingsSubmit(e, client) {
   btn.disabled = true;
   try {
     const patch = {
-      provider: form.elements.provider.value || "arkesel",
+      provider: form.elements.provider.value || "txtconnect",
       account_sid: form.elements.account_sid.value.trim() || null,
       sender_id: form.elements.sender_id.value.trim() || null,
       updated_at: new Date().toISOString(),
