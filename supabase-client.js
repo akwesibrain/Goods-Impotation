@@ -163,7 +163,7 @@ window.saveRequestToSupabase = async function (data) {
     return null;
   }
   const user = await window.getSessionUser();
-  const { data: inserted, error } = await supabaseClient.from("requests").insert([
+  const { error } = await supabaseClient.from("requests").insert([
     {
       name: data.name,
       phone: data.phone,
@@ -179,13 +179,8 @@ window.saveRequestToSupabase = async function (data) {
       photo_url: data.photo_url || null,
       user_id: user ? user.id : null,
     },
-  ]).select("id").maybeSingle();
+  ]);
   if (error) throw error;
-  if (inserted && inserted.id) {
-    supabaseClient.functions.invoke("notify-new-request", {
-      body: { request_id: inserted.id },
-    }).catch(() => {});
-  }
   return true;
 };
 

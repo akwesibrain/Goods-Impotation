@@ -576,10 +576,11 @@ create policy "Staff can read desk settings"
   using (private.is_staff());
 
 drop policy if exists "Owners can update desk settings" on public.desk_settings;
-create policy "Owners can update desk settings"
+drop policy if exists "Staff can update desk settings" on public.desk_settings;
+create policy "Staff can update desk settings"
   on public.desk_settings for update to authenticated
-  using (private.is_owner())
-  with check (private.is_owner());
+  using (private.is_staff())
+  with check (private.is_staff());
 
 create table if not exists public.invoice_seq (
   year integer primary key,
@@ -784,27 +785,26 @@ create policy "Staff can insert activity"
   with check (private.is_staff());
 
 drop policy if exists "Staff can read sms settings" on public.sms_settings;
+drop policy if exists "Owners can write sms settings" on public.sms_settings;
+drop policy if exists "Owners can update sms settings" on public.sms_settings;
 create policy "Staff can read sms settings"
   on public.sms_settings for select to authenticated
-  using (private.is_owner());
-
-drop policy if exists "Staff can write sms settings" on public.sms_settings;
-drop policy if exists "Staff can update sms settings" on public.sms_settings;
-create policy "Owners can write sms settings"
+  using (private.is_staff());
+create policy "Staff can write sms settings"
   on public.sms_settings for insert to authenticated
-  with check (private.is_owner());
-create policy "Owners can update sms settings"
+  with check (private.is_staff());
+create policy "Staff can update sms settings"
   on public.sms_settings for update to authenticated
-  using (private.is_owner())
-  with check (private.is_owner());
+  using (private.is_staff())
+  with check (private.is_staff());
 
 drop policy if exists "Staff can read payment settings" on public.payment_settings;
+drop policy if exists "Owners can update payment settings" on public.payment_settings;
+drop policy if exists "Staff can update payment settings" on public.payment_settings;
 create policy "Staff can read payment settings"
   on public.payment_settings for select to authenticated
-  using (private.is_owner());
-
-drop policy if exists "Staff can update payment settings" on public.payment_settings;
-create policy "Owners can update payment settings"
+  using (private.is_staff());
+create policy "Staff can update payment settings"
   on public.payment_settings for update to authenticated
-  using (private.is_owner())
-  with check (private.is_owner());
+  using (private.is_staff())
+  with check (private.is_staff());

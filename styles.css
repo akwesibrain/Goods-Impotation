@@ -2743,7 +2743,6 @@ body.account-drawer-open { overflow: hidden; }
   color: var(--gold-500);
 }
 
-body:not(.is-owner) .owner-only { display: none !important; }
 .admin-check {
   display: flex;
   align-items: center;
@@ -2752,45 +2751,4 @@ body:not(.is-owner) .owner-only { display: none !important; }
   margin: 0.55rem 0;
 }
 .admin-check input { width: 1.05rem; height: 1.05rem; }
-.quote-items { display: flex; flex-direction: column; gap: 0.55rem; margin: 0.4rem 0 0.7rem; }
-.quote-item-row {
-  display: grid;
-  grid-template-columns: 1.6fr 0.5fr 0.7fr auto;
-  gap: 0.45rem;
-  align-items: center;
-}
-.quote-total {
-  margin: 0.35rem 0 0;
-  font-family: var(--font-body);
-  font-size: 1.35rem;
-  font-weight: 700;
-}
-.admin-stat.is-money strong { font-size: 1.25rem; }
-.doc-page .section { padding-top: 2rem; }
-.doc-sheet {
-  background: #fff;
-  border-radius: 22px;
-  padding: 1.6rem 1.5rem 1.8rem;
-  box-shadow: 0 16px 40px rgba(23,24,27,0.06);
-  max-width: 760px;
-  margin: 0 auto;
-}
-.doc-head {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  align-items: flex-start;
-  margin-bottom: 1.2rem;
-}
-.doc-head h1 { font-size: 1.6rem; margin: 0.2rem 0 0.25rem; }
-.doc-table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
-.doc-table th, .doc-table td { text-align: left; padding: 0.55rem 0.3rem; border-bottom: 1px solid #EEE; }
-.doc-totals { margin: 1rem 0; display: grid; gap: 0.45rem; }
-.doc-totals div { display: flex; justify-content: space-between; gap: 1rem; }
-.doc-totals .is-total { font-weight: 700; font-size: 1.05rem; padding-top: 0.4rem; border-top: 1px solid #EEE; }
-.doc-actions { display: flex; gap: 0.7rem; justify-content: center; margin: 1.2rem 0 2rem; flex-wrap: wrap; }
-@media print {
-  .site-header, .doc-actions, .announce-bar { display: none !important; }
-  .doc-sheet { box-shadow: none; }
-}
 

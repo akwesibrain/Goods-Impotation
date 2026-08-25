@@ -118,7 +118,7 @@ Deno.serve(async (req) => {
 
       const { data: payment } = await admin
         .from("payments")
-        .select("id, request_id, quote_id, status, kind, amount_pesewas, customer_name, phone, invoice_number")
+        .select("id, request_id, status, kind, amount_pesewas, customer_name, phone")
         .eq("reference", reference)
         .maybeSingle();
       if (payment && payment.status !== "paid") {
@@ -126,29 +126,7 @@ Deno.serve(async (req) => {
           status: "paid",
           paid_at: new Date().toISOString(),
         }).eq("id", payment.id);
-
-        let total = 0;
-        let deposit = 0;
-        let invoice = String(payment.invoice_number || "");
-        if (payment.quote_id) {
-          const { data: quote } = await admin
-            .from("quotes")
-            .select("total_pesewas, deposit_pesewas, invoice_number, phone, customer_name")
-            .eq("id", payment.quote_id)
-            .maybeSingle();
-          total = Number(quote?.total_pesewas || 0);
-          deposit = Number(quote?.deposit_pesewas || 0);
-          invoice = invoice || String(quote?.invoice_number || "");
-        }
-
-        const { data: paidRows } = await admin
-          .from("payments")
-          .select("amount_pesewas")
-          .eq(payment.quote_id ? "quote_id" : "request_id", payment.quote_id || payment.request_id)
-          .eq("status", "paid");
-        const paidSum = (paidRows || []).reduce((sum, row) => sum + Number(row.amount_pesewas || 0), 0);
-        const fullyPaid = total > 0 ? paidSum >= total : true;
-        if (payment.request_id && fullyPaid) {
+        if (payment.request_id) {
           await admin.from("requests").update({ status: "Confirmed" }).eq("id", payment.request_id);
         }
 
@@ -158,7 +136,7 @@ Deno.serve(async (req) => {
           .eq("id", 1)
           .maybeSingle();
         if (desk?.auto_sms_on_status && payment.phone) {
-          const trigger = fullyPaid ? "payment:paid" : (payment.kind === "deposit" || (deposit > 0 && paidSum >= deposit) ? "payment:deposit" : "payment:paid");
+          const trigger = payment.kind === "deposit" ? "payment:deposit" : "payment:paid";
           const { data: templates } = await admin
             .from("sms_templates")
             .select("body")
@@ -173,15 +151,23 @@ Deno.serve(async (req) => {
           const sender = String(sms?.sender_id || "Mwinbarka").trim();
           const to = ghanaMsisdn(String(payment.phone || ""));
           if (apiKey && to.length >= 12) {
+            let orderName = String(payment.customer_name || "there");
+            let orderStatus = "Confirmed";
+            if (payment.request_id) {
+              const { data: order } = await admin
+                .from("requests")
+                .select("name, status")
+                .eq("id", payment.request_id)
+                .maybeSingle();
+              if (order?.name) orderName = String(order.name);
+              if (order?.status) orderStatus = String(order.status);
+            }
             for (const tpl of templates || []) {
               const text = fillTemplate(String(tpl.body || ""), {
-                name: String(payment.customer_name || "there"),
+                name: orderName,
                 amount: formatCedis(Number(payment.amount_pesewas || 0)),
-                invoice: invoice || "your order",
-                total: formatCedis(total),
-                deposit: formatCedis(deposit),
-                balance: formatCedis(Math.max(0, total - paidSum)),
                 line: "054 030 9637",
+                status: orderStatus,
               }).slice(0, 480);
               if (!text) continue;
               try {
