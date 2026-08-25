@@ -229,7 +229,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const chip = e.target.closest("[data-sms-template]");
     if (!chip) return;
     const box = document.getElementById("sms-message");
-    box.value = chip.dataset.smsTemplate;
+    box.value = fillTemplate(chip.dataset.smsTemplate, {
+      name: (document.getElementById("sms-name")?.value.trim()) || "there",
+      business: "Mwinbarka Imports",
+      line: OFFICIAL_LINE,
+    });
     updateSmsCount();
     box.focus();
   });
@@ -500,7 +504,7 @@ function openDetail(id, client) {
     smsForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const statusEl = inner.querySelector("[data-detail-sms-status]");
-      const message = smsForm.elements.message.value.trim();
+      const message = fillTemplate(smsForm.elements.message.value.trim(), templateVarsForOrder(record));
       if (!message || !record.phone) return;
       statusEl.className = "form-status";
       statusEl.textContent = "Sending…";
@@ -1388,8 +1392,12 @@ async function handleSmsSend(e, client) {
   const statusEl = document.getElementById("sms-send-status");
   const btn = form.querySelector('button[type="submit"]');
   const phone = form.elements.phone.value.trim();
-  const message = form.elements.message.value.trim();
   const name = form.elements.name.value.trim();
+  const message = fillTemplate(form.elements.message.value.trim(), {
+    name: name || "there",
+    business: "Mwinbarka Imports",
+    line: OFFICIAL_LINE,
+  }).slice(0, 480);
   if (!phone || !message) {
     statusEl.className = "form-status error";
     statusEl.textContent = "Enter a phone number and a message.";
@@ -1422,6 +1430,7 @@ function fillTemplate(body, vars) {
 function templateVarsForOrder(order, extra) {
   const vars = {
     name: (order && order.name) || "there",
+    business: "Mwinbarka Imports",
     line: OFFICIAL_LINE,
     shipment: order ? shipmentLabel(order.shipment_status) : "",
     status: (order && order.status) || "",
@@ -1500,7 +1509,11 @@ function renderSmsTemplates() {
         const tpl = allTemplates.find((t) => t.id === btn.dataset.useTpl);
         const box = document.getElementById("sms-message");
         if (tpl && box) {
-          box.value = tpl.body;
+          box.value = fillTemplate(tpl.body, {
+            name: (document.getElementById("sms-name")?.value.trim()) || "there",
+            business: "Mwinbarka Imports",
+            line: OFFICIAL_LINE,
+          });
           updateSmsCount();
           showTab("sms");
         }
@@ -1515,7 +1528,8 @@ function renderSmsTemplates() {
     });
   }
   if (chips && !chips.dataset.enriched) {
-    chips.insertAdjacentHTML("beforeend", allTemplates.map((t) =>
+    const existing = [...chips.querySelectorAll("button")].map((b) => (b.textContent || "").trim().toLowerCase());
+    chips.insertAdjacentHTML("beforeend", allTemplates.filter((t) => !existing.includes(String(t.name || "").trim().toLowerCase())).map((t) =>
       `<button type="button" class="chip" data-sms-template="${escapeAttr(t.body)}">${escapeHtml(t.name)}</button>`
     ).join(""));
     chips.dataset.enriched = "1";

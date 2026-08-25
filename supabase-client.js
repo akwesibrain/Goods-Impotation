@@ -163,24 +163,32 @@ window.saveRequestToSupabase = async function (data) {
     return null;
   }
   const user = await window.getSessionUser();
-  const { error } = await supabaseClient.from("requests").insert([
-    {
-      name: data.name,
-      phone: data.phone,
-      email: data.email || null,
-      location: data.location || null,
-      request_details: data.request_details,
-      category: data.category || null,
-      reference_url: data.reference_url || null,
-      budget_range: data.budget_range || null,
-      quantity: data.quantity || null,
-      origin: data.origin || null,
-      shipping_method: data.shipping_method || null,
-      photo_url: data.photo_url || null,
-      user_id: user ? user.id : null,
-    },
-  ]);
+  const requestId = (window.crypto && window.crypto.randomUUID)
+    ? window.crypto.randomUUID()
+    : "";
+  const row = {
+    name: data.name,
+    phone: data.phone,
+    email: data.email || null,
+    location: data.location || null,
+    request_details: data.request_details,
+    category: data.category || null,
+    reference_url: data.reference_url || null,
+    budget_range: data.budget_range || null,
+    quantity: data.quantity || null,
+    origin: data.origin || null,
+    shipping_method: data.shipping_method || null,
+    photo_url: data.photo_url || null,
+    user_id: user ? user.id : null,
+  };
+  if (requestId) row.id = requestId;
+  const { error } = await supabaseClient.from("requests").insert([row]);
   if (error) throw error;
+  if (requestId) {
+    supabaseClient.functions.invoke("notify-new-request", {
+      body: { request_id: requestId },
+    }).catch(() => {});
+  }
   return true;
 };
 

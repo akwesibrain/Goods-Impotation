@@ -220,6 +220,11 @@ create policy "Staff can delete sms templates"
 insert into public.sms_templates (name, body, trigger_event)
 select * from (values
   (
+    'Order received',
+    E'Order Received! 🛍️\n\nHello {{name}}, your order has been successfully received and is now being processed. ✅\n\nWe’ll notify you once your goods are ready for delivery/pickup.\n\nThank you for choosing Mwinbarka Imports. We appreciate your business! ❤️',
+    'order:New'
+  ),
+  (
     'Quote ready',
     'Hello {{name}}, your landed quote {{invoice}} is ready: {{total}}. Deposit {{deposit}}. Open {{quote_url}} or call 054 030 9637.',
     'order:Quoted'

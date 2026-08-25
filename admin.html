@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Admin panel — Mwinbarka Imports</title>
 <meta name="description" content="Staff admin panel for Mwinbarka Imports.">
-<link rel="stylesheet" href="styles.css?v=brand26">
+<link rel="stylesheet" href="styles.css?v=brand27">
 </head>
 <body id="admin-page" class="admin-app">
 
@@ -218,7 +218,7 @@
         <form id="sms-template-form" class="form-card admin-form" novalidate>
           <span class="eyebrow">Templates</span>
           <h2>Saved SMS templates</h2>
-          <p class="form-note">Use {{name}}, {{line}}, {{status}}, {{shipment}}. Turn on auto-send below so a matching template goes out when you change order or shipment status.</p>
+          <p class="form-note">Use {{name}}, {{business}}, {{line}}, {{status}}, {{shipment}}. A template set to <strong>New order received</strong> is sent automatically when someone submits the order form.</p>
 
           <div class="field-row">
             <div class="field">
@@ -229,6 +229,7 @@
               <label for="sms-tpl-trigger">Send when</label>
               <select id="sms-tpl-trigger" name="trigger_event">
                 <option value="">Manual only</option>
+                <option value="order:New">New order received</option>
                 <option value="order:Quoted">Order marked Quoted</option>
                 <option value="order:Confirmed">Order marked Confirmed</option>
                 <option value="shipment:sourcing">Shipment: sourcing</option>
@@ -297,7 +298,7 @@
           </div>
 
           <div class="sms-templates" id="sms-templates">
-            <button type="button" class="chip" data-sms-template="Hello, this is Mwinbarka Imports. We received your order and we are checking China / Turkey pricing now.">Order received</button>
+            <button type="button" class="chip" data-sms-template="Order Received! 🛍️&#10;&#10;Hello {{name}}, your order has been successfully received and is now being processed. ✅&#10;&#10;We’ll notify you once your goods are ready for delivery/pickup.&#10;&#10;Thank you for choosing Mwinbarka Imports. We appreciate your business! ❤️">Order received</button>
             <button type="button" class="chip" data-sms-template="Hello, your GH₵ landed quote is ready. Please check the official line 054 030 9637 to confirm.">Quote ready</button>
             <button type="button" class="chip" data-sms-template="Hello, your goods have arrived in Tema. We will arrange delivery. Official line 054 030 9637.">Goods arrived</button>
           </div>
@@ -579,8 +580,8 @@
 </section>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase-client.js?v=brand26"></script>
-<script src="script.js?v=brand26"></script>
-<script src="admin.js?v=brand26"></script>
+<script src="supabase-client.js?v=brand27"></script>
+<script src="script.js?v=brand27"></script>
+<script src="admin.js?v=brand27"></script>
 </body>
 </html>
