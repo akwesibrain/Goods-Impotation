@@ -176,6 +176,18 @@ document.addEventListener("DOMContentLoaded", () => {
     closeAdminMenu();
   });
 
+  document.getElementById("admin-dock")?.addEventListener("click", (e) => {
+    const chip = e.target.closest("[data-tab]");
+    if (!chip) return;
+    if (chip.dataset.tab === "menu") {
+      const shell = document.getElementById("admin-dashboard");
+      setAdminMenuOpen(shell && !shell.classList.contains("nav-open"));
+      return;
+    }
+    showTab(chip.dataset.tab);
+    closeAdminMenu();
+  });
+
   window.addEventListener("hashchange", () => showTab(tabFromHash()));
 
   const menuToggle = document.getElementById("admin-menu-toggle");
@@ -278,7 +290,11 @@ function replayAdminAnim(el) {
 
 function showTab(name) {
   const tab = TAB_TITLES[name] ? name : "overview";
-  document.querySelectorAll("#admin-tabs [data-tab]").forEach((btn) => {
+  document.querySelectorAll("#admin-tabs [data-tab], #admin-dock [data-tab]").forEach((btn) => {
+    if (btn.dataset.tab === "menu") {
+      btn.classList.toggle("active", !["overview", "requests", "sms"].includes(tab));
+      return;
+    }
     btn.classList.toggle("active", btn.dataset.tab === tab);
   });
   document.querySelectorAll(".admin-panel").forEach((panel) => {
@@ -339,17 +355,9 @@ function renderOverview() {
 
   const recent = allRequests.slice(0, 6);
   if (!recent.length) {
-    recentBody.innerHTML = `<tr><td colspan="4"><div class="admin-empty">No requests yet.</div></td></tr>`;
+    recentBody.innerHTML = `<div class="admin-empty">No requests yet.</div>`;
   } else {
-    recentBody.innerHTML = recent.map((r) => {
-      const status = r.status || "New";
-      return `<tr class="admin-order-row" data-request-id="${escapeAttr(r.id)}">
-        <td class="cell-when">${formatDate(r.created_at)}</td>
-        <td><strong>${escapeHtml(r.name)}</strong><br><span class="cell-when">${escapeHtml(r.phone || "")}</span></td>
-        <td class="cell-details">${escapeHtml(r.request_details)}</td>
-        <td><span class="status-pill ${status.toLowerCase()}">${escapeHtml(status)}</span></td>
-      </tr>`;
-    }).join("");
+    recentBody.innerHTML = recent.map((r) => orderCardHtml(r)).join("");
   }
 
   const pending = allReviews.filter((r) => !r.published).slice(0, 5);
@@ -366,7 +374,7 @@ function renderOverview() {
 
 async function loadRequests(client) {
   const body = document.getElementById("requests-body");
-  body.innerHTML = `<tr><td colspan="5" class="admin-empty">Loading orders...</td></tr>`;
+  body.innerHTML = `<div class="admin-empty">Loading orders...</div>`;
 
   const { data, error } = await client
     .from("requests")
@@ -374,7 +382,7 @@ async function loadRequests(client) {
     .order("created_at", { ascending: false });
 
   if (error) {
-    body.innerHTML = `<tr><td colspan="5" class="admin-empty">Couldn't load orders: ${escapeHtml(error.message)}</td></tr>`;
+    body.innerHTML = `<div class="admin-empty">Couldn't load orders: ${escapeHtml(error.message)}</div>`;
     return;
   }
 
@@ -402,9 +410,9 @@ function renderRequests(client) {
   });
 
   if (!rows.length) {
-    body.innerHTML = `<tr><td colspan="5"><div class="admin-empty">
+    body.innerHTML = `<div class="admin-empty">
       ${activeFilter === "All" && !searchQuery ? "No orders yet. They’ll appear here when someone submits the form." : "No orders match this filter."}
-    </div></td></tr>`;
+    </div>`;
     note.textContent = "";
     return;
   }
@@ -419,24 +427,28 @@ function renderRequests(client) {
   }
 }
 
-function rowHtml(r) {
+function orderCardHtml(r, opts = {}) {
   const status = r.status || "New";
   const selected = r.id === selectedRequestId ? " is-selected" : "";
-  return `<tr class="admin-order-row${selected}" data-request-id="${escapeAttr(r.id)}">
-    <td class="cell-when">#${escapeHtml(shortId(r.id))}</td>
-    <td>
-      <div class="admin-person">
-        <span class="admin-avatar">${escapeHtml(initials(r.name))}</span>
-        <span>
-          <strong>${escapeHtml(r.name)}</strong>
-          <small>${escapeHtml(r.phone || r.email || "")}</small>
-        </span>
-      </div>
-    </td>
-    <td><span class="status-pill ${status.toLowerCase()}">${escapeHtml(status)}</span></td>
-    <td>${r.quantity ? escapeHtml(r.quantity) : (r.budget_range ? "GH₵" + escapeHtml(r.budget_range) : "—")}</td>
-    <td class="cell-when">${formatShortDate(r.created_at)}</td>
-  </tr>`;
+  const qty = r.quantity
+    ? escapeHtml(r.quantity)
+    : (r.budget_range ? "GH₵" + escapeHtml(r.budget_range) : "");
+  const when = opts.withId
+    ? `#${escapeHtml(shortId(r.id))} · ${formatShortDate(r.created_at)}`
+    : formatDate(r.created_at);
+  return `<button type="button" class="admin-order-card admin-order-row${selected}" data-request-id="${escapeAttr(r.id)}">
+    <div class="admin-order-card-top">
+      <span class="cell-when">${when}</span>
+      <span class="status-pill ${status.toLowerCase()}">${escapeHtml(status)}</span>
+    </div>
+    <strong>${escapeHtml(r.name)}</strong>
+    <small>${escapeHtml(r.phone || r.email || "")}${qty ? " · " + qty : ""}</small>
+    <p>${escapeHtml(r.request_details || "")}</p>
+  </button>`;
+}
+
+function rowHtml(r) {
+  return orderCardHtml(r, { withId: true });
 }
 
 function shortId(id) {
