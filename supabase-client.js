@@ -48,7 +48,7 @@ window.getMyProfile = async function () {
   if (!user || !supabaseClient) return null;
   const { data } = await supabaseClient
     .from("profiles")
-    .select("id, full_name, phone, is_staff")
+    .select("id, full_name, phone, is_staff, staff_role")
     .eq("id", user.id)
     .maybeSingle();
   return {
@@ -57,6 +57,7 @@ window.getMyProfile = async function () {
     full_name: (data && data.full_name) || user.user_metadata?.full_name || "",
     phone: (data && data.phone) || user.user_metadata?.phone || "",
     is_staff: !!(data && data.is_staff),
+    staff_role: (data && data.staff_role) || (data && data.is_staff ? "owner" : "assistant"),
   };
 };
 
@@ -162,7 +163,7 @@ window.saveRequestToSupabase = async function (data) {
     return null;
   }
   const user = await window.getSessionUser();
-  const { error } = await supabaseClient.from("requests").insert([
+  const { data: inserted, error } = await supabaseClient.from("requests").insert([
     {
       name: data.name,
       phone: data.phone,
@@ -178,8 +179,13 @@ window.saveRequestToSupabase = async function (data) {
       photo_url: data.photo_url || null,
       user_id: user ? user.id : null,
     },
-  ]);
+  ]).select("id").maybeSingle();
   if (error) throw error;
+  if (inserted && inserted.id) {
+    supabaseClient.functions.invoke("notify-new-request", {
+      body: { request_id: inserted.id },
+    }).catch(() => {});
+  }
   return true;
 };
 

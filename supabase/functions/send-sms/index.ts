@@ -177,7 +177,11 @@ Deno.serve(async (req) => {
       return json({ error: "Keep the SMS under 480 characters." }, 400);
     }
 
-    const { data: settings, error: settingsError } = await supabase
+    const admin = createClient(
+      Deno.env.get("SUPABASE_URL") || "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "",
+    );
+    const { data: settings, error: settingsError } = await admin
       .from("sms_settings")
       .select("provider, api_key, account_sid, sender_id")
       .eq("id", 1)

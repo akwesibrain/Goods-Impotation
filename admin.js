@@ -11,6 +11,7 @@ const STATUSES = ["New", "Contacted", "Quoted", "Confirmed", "Closed"];
 const TAB_TITLES = {
   overview: ["Desk", "Dashboard"],
   requests: ["Leads", "Orders"],
+  quotes: ["Quotes", "Quotes"],
   customers: ["Accounts", "Customers"],
   sms: ["SMS", "SMS"],
   payments: ["Pay", "Payments"],
@@ -18,6 +19,16 @@ const TAB_TITLES = {
   reviews: ["Reviews", "Reviews"],
   settings: ["Site", "Settings"],
 };
+
+const SHIPMENT_STAGES = [
+  { id: "", label: "Not started" },
+  { id: "sourcing", label: "Sourcing" },
+  { id: "warehouse", label: "Warehouse" },
+  { id: "vessel", label: "On the vessel" },
+  { id: "tema", label: "Tema" },
+  { id: "ready", label: "Ready for pickup" },
+];
+const OFFICIAL_LINE = "054 030 9637";
 
 let activeFilter = "All";
 let searchQuery = "";
@@ -27,6 +38,15 @@ let allReviews = [];
 let allCustomers = [];
 let allSmsMessages = [];
 let allPayments = [];
+let allQuotes = [];
+let allTemplates = [];
+let allActivity = [];
+let allStaffProfiles = [];
+let deskSettings = {};
+let currentStaffRole = "assistant";
+let currentStaffName = "Staff";
+let currentStaffId = null;
+let customerSearchQuery = "";
 let paystackSecretSaved = false;
 let smsKeySaved = false;
 let selectedRequestId = null;
@@ -60,6 +80,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     loginSection.style.display = "none";
     dashboard.style.display = "flex";
+    dashboard.classList.add("is-ready");
     if (signOutBtn) signOutBtn.style.display = "";
     const profile = window.getMyProfile ? await window.getMyProfile() : null;
     const staffLine = document.getElementById("admin-staff-email");
@@ -68,6 +89,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if (staffLine && profile) staffLine.textContent = profile.email || "Staff";
     if (staffName && profile) staffName.textContent = profile.full_name || "Staff";
     if (staffAvatar && profile) staffAvatar.textContent = initials(profile.full_name || profile.email || "MW");
+    currentStaffRole = profile && profile.staff_role === "owner" ? "owner" : "assistant";
+    currentStaffName = (profile && (profile.full_name || profile.email)) || "Staff";
+    currentStaffId = profile && profile.id;
+    document.body.classList.toggle("is-owner", currentStaffRole === "owner");
     fillStaffLogin(profile);
     await Promise.all([
       loadRequests(client),
@@ -79,6 +104,11 @@ document.addEventListener("DOMContentLoaded", () => {
       loadSmsMessages(client),
       loadPaystackSettings(client),
       loadPayments(client),
+      loadQuotes(client),
+      loadSmsTemplates(client),
+      loadDeskSettings(client),
+      loadActivity(client),
+      loadStaffProfiles(client),
     ]);
     fillSmsRecipients();
     if (sessionStorage.getItem("mwinbarka_staff_email_changed")) {
@@ -97,6 +127,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const showSignedOut = () => {
     loginSection.style.display = "flex";
     dashboard.style.display = "none";
+    dashboard.classList.remove("is-ready");
     if (signOutBtn) signOutBtn.style.display = "none";
   };
 
@@ -182,6 +213,16 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("sms-broadcast-form")?.addEventListener("submit", (e) => handleSmsBroadcast(e, client));
   document.getElementById("paystack-settings-form")?.addEventListener("submit", (e) => handlePaystackSettingsSubmit(e, client));
   document.getElementById("paystack-link-form")?.addEventListener("submit", (e) => handlePaystackLinkSubmit(e, client));
+  document.getElementById("quote-form")?.addEventListener("submit", (e) => handleQuoteSubmit(e, client));
+  document.getElementById("quote-add-item")?.addEventListener("click", () => addQuoteLine());
+  document.getElementById("quote-form")?.addEventListener("input", refreshQuotePreview);
+  document.getElementById("quote-request")?.addEventListener("change", () => fillQuoteFromOrder());
+  document.getElementById("desk-settings-form")?.addEventListener("submit", (e) => handleDeskSettingsSubmit(e, client));
+  document.getElementById("sms-template-form")?.addEventListener("submit", (e) => handleSmsTemplateSubmit(e, client));
+  document.getElementById("customer-search")?.addEventListener("input", (e) => {
+    customerSearchQuery = e.target.value.trim().toLowerCase();
+    renderCustomerLedger();
+  });
   document.getElementById("copy-paystack-webhook")?.addEventListener("click", async () => {
     try {
       await navigator.clipboard.writeText(PAYSTACK_WEBHOOK_URL);
@@ -204,6 +245,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const smsBtn = e.target.closest("[data-sms-phone]");
     if (smsBtn) {
       openSmsComposer(smsBtn.dataset.smsPhone, smsBtn.dataset.smsName || "");
+      return;
+    }
+    const ledger = e.target.closest("[data-ledger-key]");
+    if (ledger && adminClient) {
+      showTab("customers");
+      openLedger(ledger.dataset.ledgerKey, adminClient);
       return;
     }
     const row = e.target.closest("[data-request-id]");
@@ -250,6 +297,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("sms-select-all")?.addEventListener("click", () => setAudienceChecked(true));
   document.getElementById("sms-clear-all")?.addEventListener("click", () => setAudienceChecked(false));
   document.getElementById("sms-audience")?.addEventListener("change", updateAudienceCount);
+  addQuoteLine();
 });
 
 function tabFromHash() {
@@ -258,21 +306,37 @@ function tabFromHash() {
   return TAB_TITLES[name] ? name : "overview";
 }
 
+function prefersReducedMotion() {
+  return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function replayAdminAnim(el) {
+  if (!el) return;
+  el.classList.remove("is-animating");
+  void el.offsetWidth;
+  el.classList.add("is-animating");
+}
+
 function showTab(name) {
   const tab = TAB_TITLES[name] ? name : "overview";
   document.querySelectorAll("#admin-tabs [data-tab]").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.tab === tab);
   });
   document.querySelectorAll(".admin-panel").forEach((panel) => {
-    panel.hidden = panel.id !== "tab-" + tab;
+    const on = panel.id === "tab-" + tab;
+    panel.hidden = !on;
+    if (on) replayAdminAnim(panel);
   });
   const titles = TAB_TITLES[tab];
   const title = document.getElementById("admin-page-title");
-  if (title) title.textContent = titles[1];
+  if (title) {
+    title.textContent = titles[1];
+    replayAdminAnim(title);
+  }
   if (location.hash.replace("#", "") !== tab) {
     history.replaceState(null, "", "#" + tab);
   }
-  if (tab !== "requests") closeDetail();
+  if (tab !== "requests" && tab !== "customers") closeDetail();
 }
 
 function closeAdminMenu() {
@@ -286,20 +350,45 @@ function countByStatus(status) {
 
 function renderOverview() {
   const stats = document.getElementById("overview-stats");
+  const money = document.getElementById("overview-money");
   const recentBody = document.getElementById("overview-requests");
   const reviewBox = document.getElementById("overview-reviews");
   if (!stats || !recentBody || !reviewBox) return;
 
   const pendingReviews = allReviews.filter((r) => !r.published).length;
+  const now = new Date();
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - 7);
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const paid = allPayments.filter((p) => p.status === "paid");
+  const weekCedis = paid.filter((p) => new Date(p.paid_at || p.created_at) >= weekStart)
+    .reduce((s, p) => s + Number(p.amount_pesewas || 0), 0);
+  const monthCedis = paid.filter((p) => new Date(p.paid_at || p.created_at) >= monthStart)
+    .reduce((s, p) => s + Number(p.amount_pesewas || 0), 0);
+  const pendingPay = allPayments.filter((p) => p.status === "pending")
+    .reduce((s, p) => s + Number(p.amount_pesewas || 0), 0);
+  const unpaidQuotes = allQuotes.reduce((s, q) => s + quoteBalance(q), 0);
+  if (money) {
+    money.innerHTML = [
+      ["Collected this week", formatCedis(weekCedis)],
+      ["Collected this month", formatCedis(monthCedis)],
+      ["Paystack pending", formatCedis(pendingPay)],
+      ["Unpaid on quotes", formatCedis(unpaidQuotes)],
+    ].map(([label, value]) => `<article class="admin-stat is-money">
+      <strong>${escapeHtml(value)}</strong>
+      <span>${escapeHtml(label)}</span>
+    </article>`).join("");
+  }
+
   stats.innerHTML = [
     ["New requests", countByStatus("New")],
     ["In progress", countByStatus("Contacted") + countByStatus("Quoted")],
     ["Confirmed", countByStatus("Confirmed")],
     ["Products", allProducts.length],
     ["Pending reviews", pendingReviews],
-    ["Customers", allCustomers.length],
+    ["Customers", buildLedgers().length],
     ["SMS sent", allSmsMessages.filter((m) => m.status === "sent").length],
-    ["Paid", allPayments.filter((p) => p.status === "paid").length],
+    ["Paid links", paid.length],
   ].map(([label, value]) => `<article class="admin-stat">
       <strong>${value}</strong>
       <span>${escapeHtml(label)}</span>
@@ -323,13 +412,14 @@ function renderOverview() {
   const pending = allReviews.filter((r) => !r.published).slice(0, 5);
   if (!pending.length) {
     reviewBox.innerHTML = `<div class="admin-empty">No reviews waiting to be published.</div>`;
-    return;
-  }
-  reviewBox.innerHTML = pending.map((r) => `<article class="admin-review-preview">
+  } else {
+    reviewBox.innerHTML = pending.map((r) => `<article class="admin-review-preview">
       <strong>${escapeHtml(r.author_name)}</strong>
       <span>${escapeHtml(String(r.rating || 5))} / 5</span>
       <p>${escapeHtml(r.quote)}</p>
     </article>`).join("");
+  }
+  renderActivitySnippet();
 }
 
 async function loadRequests(client) {
@@ -349,14 +439,16 @@ async function loadRequests(client) {
   allRequests = data || [];
   renderRequests(client);
   fillSmsRecipients();
+  fillQuoteOrderSelect();
   renderOverview();
 }
 
 function matchesSearch(r) {
   if (!searchQuery) return true;
+  const invoices = quotesForRequest(r.id).map((q) => q.invoice_number).join(" ");
   const hay = [
     r.name, r.phone, r.email, r.location, r.request_details,
-    r.category, r.quantity, r.status,
+    r.category, r.quantity, r.status, r.shipment_status, invoices,
   ].join(" ").toLowerCase();
   return hay.includes(searchQuery);
 }
@@ -418,11 +510,37 @@ function initials(name) {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
+let detailLeaveTimer = null;
+
 function closeDetail() {
   selectedRequestId = null;
   const panel = document.getElementById("admin-detail");
-  if (panel) panel.hidden = true;
   document.querySelectorAll(".admin-order-row.is-selected").forEach((row) => row.classList.remove("is-selected"));
+  if (!panel || panel.hidden) return;
+  clearTimeout(detailLeaveTimer);
+  if (prefersReducedMotion()) {
+    panel.hidden = true;
+    panel.classList.remove("is-leaving");
+    return;
+  }
+  panel.classList.add("is-leaving");
+  detailLeaveTimer = setTimeout(() => {
+    panel.hidden = true;
+    panel.classList.remove("is-leaving");
+  }, 240);
+}
+
+function revealDetail(panel, inner) {
+  clearTimeout(detailLeaveTimer);
+  const wasHidden = panel.hidden;
+  panel.classList.remove("is-leaving");
+  panel.hidden = false;
+  if (wasHidden) replayAdminAnim(panel);
+  if (inner) {
+    inner.classList.remove("is-swap");
+    void inner.offsetWidth;
+    inner.classList.add("is-swap");
+  }
 }
 
 function openDetail(id, client) {
@@ -431,7 +549,7 @@ function openDetail(id, client) {
   const inner = document.getElementById("admin-detail-inner");
   if (!record || !panel || !inner) return;
   selectedRequestId = id;
-  panel.hidden = false;
+  revealDetail(panel, inner);
   document.querySelectorAll(".admin-order-row").forEach((row) => {
     row.classList.toggle("is-selected", row.dataset.requestId === id);
   });
@@ -451,6 +569,12 @@ function openDetail(id, client) {
       record.status = statusSelect.value;
       renderRequests(client);
       renderOverview();
+      await logActivity(client, {
+        action: `Marked ${record.name} as ${record.status}`,
+        entity_type: "request",
+        entity_id: record.id,
+      });
+      await maybeAutoSms(client, record, "order:" + record.status);
       openDetail(record.id, client);
     });
   }
@@ -484,6 +608,8 @@ function openDetail(id, client) {
       if (resultEl) resultEl.hidden = true;
       const result = await createPaymentLink(client, {
         request_id: record.id,
+        quote_id: payForm.elements.quote_id?.value || null,
+        kind: payForm.elements.kind?.value || "full",
         name: record.name,
         phone: record.phone,
         email: payForm.elements.email.value.trim(),
@@ -493,8 +619,10 @@ function openDetail(id, client) {
       statusEl.textContent = result.ok ? "Payment link created." : result.error;
       if (result.ok && resultEl && result.authorization_url) {
         resultEl.hidden = false;
+        const receiptUrl = result.public_token ? receiptShareUrl(result.public_token) : "";
         resultEl.innerHTML = `<a href="${escapeAttr(result.authorization_url)}" target="_blank" rel="noopener">Open Paystack</a>
-          <button type="button" class="chip" data-copy-pay="${escapeAttr(result.authorization_url)}">Copy link</button>`;
+          <button type="button" class="chip" data-copy-pay>Copy link</button>
+          ${receiptUrl ? `<a class="chip" href="${escapeAttr(receiptUrl)}" target="_blank" rel="noopener">Receipt</a>` : ""}`;
         resultEl.querySelector("[data-copy-pay]")?.addEventListener("click", async () => {
           try {
             await navigator.clipboard.writeText(result.authorization_url);
@@ -504,6 +632,50 @@ function openDetail(id, client) {
           }
         });
       }
+    });
+  }
+  const shipSelect = inner.querySelector("[data-detail-shipment]");
+  if (shipSelect) {
+    shipSelect.addEventListener("change", async () => {
+      const previous = record.shipment_status || "";
+      shipSelect.disabled = true;
+      const { error } = await client.from("requests").update({ shipment_status: shipSelect.value }).eq("id", record.id);
+      shipSelect.disabled = false;
+      if (error) {
+        shipSelect.value = previous;
+        alert(`Couldn't update shipment: ${error.message}`);
+        return;
+      }
+      record.shipment_status = shipSelect.value;
+      await logActivity(client, {
+        action: `Shipment for ${record.name}: ${shipmentLabel(shipSelect.value)}`,
+        entity_type: "request",
+        entity_id: record.id,
+      });
+      if (shipSelect.value) await maybeAutoSms(client, record, "shipment:" + shipSelect.value);
+    });
+  }
+  const costForm = inner.querySelector("[data-detail-costs]");
+  if (costForm) {
+    costForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const statusEl = inner.querySelector("[data-detail-costs-status]");
+      const patch = {
+        source_cost_pesewas: pesewasFromCedis(costForm.elements.source_cost.value),
+        freight_pesewas: pesewasFromCedis(costForm.elements.freight.value),
+        duty_pesewas: pesewasFromCedis(costForm.elements.duty.value),
+        agent_fee_pesewas: pesewasFromCedis(costForm.elements.agent_fee.value),
+      };
+      const { error } = await client.from("requests").update(patch).eq("id", record.id);
+      if (error) {
+        statusEl.className = "form-status error";
+        statusEl.textContent = error.message;
+        return;
+      }
+      Object.assign(record, patch);
+      statusEl.className = "form-status success";
+      statusEl.textContent = "Costs saved.";
+      openDetail(record.id, client);
     });
   }
 }
@@ -556,7 +728,15 @@ function detailHtml(r) {
         <dt>Status</dt>
         <dd><select data-detail-status>${options}</select></dd>
       </div>
+      <div>
+        <dt>Shipment</dt>
+        <dd><select data-detail-shipment>${SHIPMENT_STAGES.map((s) =>
+          `<option value="${escapeAttr(s.id)}"${(r.shipment_status || "") === s.id ? " selected" : ""}>${escapeHtml(s.label)}</option>`
+        ).join("")}</select></dd>
+      </div>
     </dl>
+    ${orderQuoteHtml(r)}
+    ${ownerCostsHtml(r)}
     ${r.photo_url ? `<img class="admin-detail-photo" src="${escapeAttr(r.photo_url)}" alt="Order photo">` : ""}
     ${referenceHtml(r.reference_url)}
     ${r.phone ? `<form class="admin-detail-sms" data-detail-sms>
@@ -566,8 +746,11 @@ function detailHtml(r) {
       <div class="form-status" data-detail-sms-status></div>
     </form>` : ""}
     <form class="admin-detail-sms" data-detail-pay>
+      ${latestQuote(r.id) ? `<input type="hidden" name="quote_id" value="${escapeAttr(latestQuote(r.id).id)}">` : ""}
       <label for="detail-pay-amount">Paystack — amount in GH₵</label>
-      <input type="text" id="detail-pay-amount" name="amount" inputmode="decimal" required placeholder="e.g. 450">
+      <input type="text" id="detail-pay-amount" name="amount" inputmode="decimal" required placeholder="e.g. 450" value="${escapeAttr(suggestedPayAmount(r.id))}">
+      <label for="detail-pay-kind" style="margin-top:0.7rem;">This payment is</label>
+      <select id="detail-pay-kind" name="kind">${payKindOptions(r.id)}</select>
       <label for="detail-pay-email" style="margin-top:0.7rem;">Email for the receipt</label>
       <input type="email" id="detail-pay-email" name="email" required value="${escapeAttr(r.email || "")}" placeholder="customer@email.com">
       <button type="submit" class="btn btn-gold" style="width:100%; justify-content:center; margin-top:0.6rem;">Create payment link</button>
@@ -671,48 +854,13 @@ async function uploadMedia(client, file, folder) {
 }
 
 async function loadCustomers(client) {
-  const body = document.getElementById("customers-body");
-  const note = document.getElementById("customers-note");
-  if (!body) return;
-  body.innerHTML = `<tr><td colspan="5" class="admin-empty">Loading customers...</td></tr>`;
-
-  const { data, error } = await client
+  const { data } = await client
     .from("profiles")
-    .select("id, full_name, phone, is_staff, created_at")
+    .select("id, full_name, phone, is_staff, staff_role, created_at")
     .eq("is_staff", false)
     .order("created_at", { ascending: false });
-
-  if (error) {
-    body.innerHTML = `<tr><td colspan="5" class="admin-empty">Couldn't load customers: ${escapeHtml(error.message)}</td></tr>`;
-    return;
-  }
-
   allCustomers = data || [];
-  if (!allCustomers.length) {
-    body.innerHTML = `<tr><td colspan="5"><div class="admin-empty"><span class="code">MW · NO CUSTOMERS</span>No customer accounts yet. Guests can still send orders without signing up.</div></td></tr>`;
-    if (note) note.textContent = "";
-    fillSmsRecipients();
-    renderOverview();
-    return;
-  }
-
-  const counts = {};
-  allRequests.forEach((r) => {
-    if (r.user_id) counts[r.user_id] = (counts[r.user_id] || 0) + 1;
-  });
-
-  body.innerHTML = allCustomers.map((c) => `<tr>
-    <td class="cell-when">${formatDate(c.created_at)}</td>
-    <td><strong>${escapeHtml(c.full_name) || '<span class="muted">—</span>'}</strong></td>
-    <td>${escapeHtml(c.phone) || '<span class="muted">—</span>'}</td>
-    <td>${counts[c.id] || 0}</td>
-    <td>
-      <div class="row-actions">
-        ${c.phone ? `<button type="button" class="chip" data-sms-phone="${escapeAttr(c.phone)}" data-sms-name="${escapeAttr(c.full_name || "")}">Send SMS</button>` : '<span class="muted">No number</span>'}
-      </div>
-    </td>
-  </tr>`).join("");
-  if (note) note.textContent = `${allCustomers.length} customer account${allCustomers.length === 1 ? "" : "s"}.`;
+  renderCustomerLedger();
   fillSmsRecipients();
   renderOverview();
 }
@@ -1490,21 +1638,24 @@ async function loadPayments(client) {
     <td class="cell-when">${formatDate(p.created_at)}</td>
     <td>
       <strong>${escapeHtml(p.customer_name) || "Customer"}</strong><br>
-      <span class="cell-when">${escapeHtml(p.email)}</span>
+      <span class="cell-when">${escapeHtml(p.invoice_number || p.email)}</span>
     </td>
-    <td>${escapeHtml(formatCedis(p.amount_pesewas))}</td>
+    <td>${escapeHtml(formatCedis(p.amount_pesewas))}${p.kind && p.kind !== "full" ? `<br><span class="cell-when">${escapeHtml(p.kind)}</span>` : ""}</td>
     <td>${paymentStatusLabel(p.status)}</td>
-    <td>${p.authorization_url
-      ? `<a class="chip" href="${escapeAttr(p.authorization_url)}" target="_blank" rel="noopener">Open</a>`
-      : ""}</td>
+    <td>
+      ${p.authorization_url ? `<a class="chip" href="${escapeAttr(p.authorization_url)}" target="_blank" rel="noopener">Open</a>` : ""}
+      ${p.public_token ? `<a class="chip" href="${escapeAttr(receiptShareUrl(p.public_token))}" target="_blank" rel="noopener">Receipt</a>` : ""}
+    </td>
   </tr>`).join("");
 }
 
-async function createPaymentLink(client, { request_id, name, phone, email, amount }) {
+async function createPaymentLink(client, { request_id, quote_id, kind, name, phone, email, amount }) {
   try {
     const { data, error } = await client.functions.invoke("create-payment", {
       body: {
         request_id: request_id || null,
+        quote_id: quote_id || null,
+        kind: kind || "full",
         name,
         phone,
         email,
@@ -1528,6 +1679,7 @@ async function createPaymentLink(client, { request_id, name, phone, email, amoun
       ok: true,
       authorization_url: data && data.authorization_url,
       reference: data && data.reference,
+      public_token: data && data.public_token,
     };
   } catch (err) {
     await loadPayments(client);
@@ -1557,6 +1709,7 @@ async function handlePaystackLinkSubmit(e, client) {
     phone: form.elements.phone.value.trim(),
     email,
     amount,
+    kind: form.elements.kind?.value || "full",
   });
   if (result.ok) {
     statusEl.className = "form-status success";
@@ -1580,4 +1733,671 @@ async function handlePaystackLinkSubmit(e, client) {
   }
   btn.disabled = false;
 }
+
+function pesewasFromCedis(raw) {
+  const text = String(raw ?? "").replace(/,/g, "").replace(/[^\d.]/g, "");
+  const cedis = Number(text);
+  if (!Number.isFinite(cedis) || cedis < 0) return 0;
+  return Math.round(cedis * 100);
+}
+
+function cedisInput(pesewas) {
+  if (!pesewas) return "";
+  return String(Number(pesewas) / 100);
+}
+
+function quoteShareUrl(token) {
+  return `${window.location.origin}/quote?t=${encodeURIComponent(token)}`;
+}
+
+function receiptShareUrl(token) {
+  return `${window.location.origin}/receipt?t=${encodeURIComponent(token)}`;
+}
+
+function shipmentLabel(id) {
+  return (SHIPMENT_STAGES.find((s) => s.id === id) || {}).label || "Not started";
+}
+
+function quotesForRequest(requestId) {
+  return allQuotes.filter((q) => q.request_id === requestId);
+}
+
+function latestQuote(requestId) {
+  return quotesForRequest(requestId)[0] || null;
+}
+
+function paidForQuote(quote) {
+  if (!quote) return 0;
+  return allPayments
+    .filter((p) => p.quote_id === quote.id && p.status === "paid")
+    .reduce((sum, p) => sum + Number(p.amount_pesewas || 0), 0);
+}
+
+function quoteBalance(quote) {
+  if (!quote) return 0;
+  return Math.max(0, Number(quote.total_pesewas || 0) - paidForQuote(quote));
+}
+
+function quoteDepositLeft(quote) {
+  if (!quote) return 0;
+  return Math.max(0, Number(quote.deposit_pesewas || 0) - paidForQuote(quote));
+}
+
+function suggestedPayAmount(requestId) {
+  const quote = latestQuote(requestId);
+  if (!quote) return "";
+  const depositLeft = quoteDepositLeft(quote);
+  if (depositLeft > 0) return String(depositLeft / 100);
+  const bal = quoteBalance(quote);
+  return bal ? String(bal / 100) : "";
+}
+
+function payKindOptions(requestId) {
+  const quote = latestQuote(requestId);
+  const depositLeft = quote ? quoteDepositLeft(quote) : 0;
+  const selected = depositLeft > 0 ? "deposit" : (quote && quoteBalance(quote) > 0 ? "balance" : "full");
+  return ["full", "deposit", "balance"].map((k) =>
+    `<option value="${k}"${k === selected ? " selected" : ""}>${k === "full" ? "Full amount" : k[0].toUpperCase() + k.slice(1)}</option>`
+  ).join("");
+}
+
+function orderQuoteHtml(r) {
+  const quote = latestQuote(r.id);
+  if (!quote) {
+    return `<p class="form-note">No quote yet. Open Quotes, pick this order, and save a proforma.</p>`;
+  }
+  const paid = paidForQuote(quote);
+  const bal = quoteBalance(quote);
+  return `<div class="admin-card" style="margin:0.8rem 0; padding:0.9rem;">
+    <strong>${escapeHtml(quote.invoice_number)}</strong>
+    <p class="hint">${escapeHtml(formatCedis(quote.total_pesewas))} · paid ${escapeHtml(formatCedis(paid))} · due ${escapeHtml(formatCedis(bal))}</p>
+    <p>
+      <a class="chip" href="${escapeAttr(quoteShareUrl(quote.public_token))}" target="_blank" rel="noopener">Open quote</a>
+      <button type="button" class="chip" data-copy-quote="${escapeAttr(quoteShareUrl(quote.public_token))}">Copy quote link</button>
+    </p>
+  </div>`;
+}
+
+function ownerCostsHtml(r) {
+  const source = Number(r.source_cost_pesewas || 0);
+  const freight = Number(r.freight_pesewas || 0);
+  const duty = Number(r.duty_pesewas || 0);
+  const fee = Number(r.agent_fee_pesewas || 0);
+  const quote = latestQuote(r.id);
+  const total = quote ? Number(quote.total_pesewas || 0) : (source + freight + duty + fee);
+  const margin = total - source - freight - duty;
+  return `<form class="admin-detail-sms owner-only" data-detail-costs>
+    <label>Profit on this order</label>
+    <p class="hint">Customer total ${escapeHtml(formatCedis(total))} · margin ${escapeHtml(formatCedis(margin))}</p>
+    <label for="detail-source">China / Turkey cost GH₵</label>
+    <input type="text" id="detail-source" name="source_cost" inputmode="decimal" value="${escapeAttr(cedisInput(source))}">
+    <label for="detail-freight" style="margin-top:0.5rem;">Freight GH₵</label>
+    <input type="text" id="detail-freight" name="freight" inputmode="decimal" value="${escapeAttr(cedisInput(freight))}">
+    <label for="detail-duty" style="margin-top:0.5rem;">Duty GH₵</label>
+    <input type="text" id="detail-duty" name="duty" inputmode="decimal" value="${escapeAttr(cedisInput(duty))}">
+    <label for="detail-fee" style="margin-top:0.5rem;">Agent fee GH₵</label>
+    <input type="text" id="detail-fee" name="agent_fee" inputmode="decimal" value="${escapeAttr(cedisInput(fee))}">
+    <button type="submit" class="btn btn-gold" style="width:100%; justify-content:center; margin-top:0.6rem;">Save costs</button>
+    <div class="form-status" data-detail-costs-status></div>
+  </form>`;
+}
+
+function fillTemplate(body, vars) {
+  return String(body || "").replace(/\{\{\s*(\w+)\s*\}\}/g, (_, key) => vars[key] || "");
+}
+
+function templateVarsForOrder(order, extra) {
+  const quote = order ? latestQuote(order.id) : null;
+  const vars = {
+    name: (order && order.name) || "there",
+    invoice: (quote && quote.invoice_number) || "your order",
+    total: quote ? formatCedis(quote.total_pesewas) : "",
+    deposit: quote ? formatCedis(quote.deposit_pesewas) : "",
+    balance: quote ? formatCedis(quoteBalance(quote)) : "",
+    amount: extra && extra.amount ? extra.amount : "",
+    quote_url: quote ? quoteShareUrl(quote.public_token) : "",
+    line: OFFICIAL_LINE,
+    shipment: order ? shipmentLabel(order.shipment_status) : "",
+    status: (order && order.status) || "",
+  };
+  return Object.assign(vars, extra || {});
+}
+
+async function maybeAutoSms(client, order, eventName) {
+  const autoStatus = !!deskSettings.auto_sms_on_status;
+  const autoShip = !!deskSettings.auto_sms_on_shipment;
+  const isShip = String(eventName || "").startsWith("shipment:");
+  if (isShip && !autoShip) return;
+  if (!isShip && !autoStatus) return;
+  if (!order || !order.phone) return;
+  const matches = allTemplates.filter((t) => t.active !== false && t.trigger_event === eventName);
+  for (const tpl of matches) {
+    const message = fillTemplate(tpl.body, templateVarsForOrder(order)).slice(0, 480);
+    if (!message) continue;
+    await sendSmsMessage(client, { phone: order.phone, name: order.name, message });
+  }
+}
+
+async function logActivity(client, { action, entity_type, entity_id, detail }) {
+  try {
+    await client.from("activity_log").insert([{
+      actor_id: currentStaffId,
+      actor_name: currentStaffName,
+      action,
+      entity_type: entity_type || null,
+      entity_id: entity_id ? String(entity_id) : null,
+      detail: detail || null,
+    }]);
+    await loadActivity(client);
+  } catch {
+    /* non-blocking */
+  }
+}
+
+function renderActivitySnippet() {
+  const box = document.getElementById("overview-activity");
+  const body = document.getElementById("activity-body");
+  const rows = allActivity.slice(0, 12);
+  const html = !rows.length
+    ? `<div class="admin-empty">Desk actions will appear here.</div>`
+    : rows.map((a) => `<p class="hint" style="margin:0.35rem 0;"><strong>${escapeHtml(a.actor_name || "Staff")}</strong> ${escapeHtml(a.action)} · ${escapeHtml(formatDate(a.created_at))}</p>`).join("");
+  if (box) box.innerHTML = html;
+  if (body) {
+    body.innerHTML = !allActivity.length
+      ? `<tr><td colspan="3"><div class="admin-empty">Nothing logged yet.</div></td></tr>`
+      : allActivity.slice(0, 40).map((a) => `<tr>
+          <td class="cell-when">${formatDate(a.created_at)}</td>
+          <td>${escapeHtml(a.actor_name || "Staff")}</td>
+          <td>${escapeHtml(a.action)}</td>
+        </tr>`).join("");
+  }
+}
+
+async function loadActivity(client) {
+  const { data } = await client.from("activity_log").select("*").order("created_at", { ascending: false }).limit(50);
+  allActivity = data || [];
+  renderActivitySnippet();
+}
+
+async function loadDeskSettings(client) {
+  const form = document.getElementById("desk-settings-form");
+  if (!form) return;
+  const { data } = await client.from("desk_settings").select("*").eq("id", 1).maybeSingle();
+  deskSettings = data || {};
+  if (!data) return;
+  form.elements.notify_phone.value = data.notify_phone || "";
+  form.elements.notify_on_new_request.checked = data.notify_on_new_request !== false;
+  form.elements.auto_sms_on_status.checked = !!data.auto_sms_on_status;
+  form.elements.auto_sms_on_shipment.checked = !!data.auto_sms_on_shipment;
+}
+
+async function handleDeskSettingsSubmit(e, client) {
+  e.preventDefault();
+  const form = e.target;
+  const statusEl = document.getElementById("desk-settings-status");
+  const btn = form.querySelector('button[type="submit"]');
+  btn.disabled = true;
+  const patch = {
+    notify_phone: form.elements.notify_phone.value.trim() || null,
+    notify_on_new_request: form.elements.notify_on_new_request.checked,
+    auto_sms_on_status: form.elements.auto_sms_on_status.checked,
+    auto_sms_on_shipment: form.elements.auto_sms_on_shipment.checked,
+    updated_at: new Date().toISOString(),
+  };
+  const { error } = await client.from("desk_settings").update(patch).eq("id", 1).select("id");
+  btn.disabled = false;
+  if (error) {
+    statusEl.className = "form-status error";
+    statusEl.textContent = error.message;
+    return;
+  }
+  deskSettings = Object.assign({}, deskSettings, patch);
+  statusEl.className = "form-status success";
+  statusEl.textContent = "Desk alerts saved.";
+}
+
+async function loadStaffProfiles(client) {
+  const body = document.getElementById("staff-body");
+  if (!body) return;
+  const { data, error } = await client
+    .from("profiles")
+    .select("id, full_name, phone, is_staff, staff_role, created_at")
+    .order("created_at", { ascending: false });
+  if (error) {
+    body.innerHTML = `<tr><td colspan="3" class="admin-empty">${escapeHtml(error.message)}</td></tr>`;
+    return;
+  }
+  allStaffProfiles = data || [];
+  body.innerHTML = allStaffProfiles.map((p) => {
+    const role = p.is_staff ? (p.staff_role === "owner" ? "owner" : "assistant") : "customer";
+    return `<tr>
+      <td><strong>${escapeHtml(p.full_name) || "—"}</strong></td>
+      <td>${escapeHtml(p.phone) || "—"}</td>
+      <td>
+        <select data-staff-role="${escapeAttr(p.id)}">
+          <option value="customer"${role === "customer" ? " selected" : ""}>Customer</option>
+          <option value="assistant"${role === "assistant" ? " selected" : ""}>Assistant</option>
+          <option value="owner"${role === "owner" ? " selected" : ""}>Owner</option>
+        </select>
+      </td>
+    </tr>`;
+  }).join("");
+  body.querySelectorAll("[data-staff-role]").forEach((select) => {
+    select.addEventListener("change", async () => {
+      const statusEl = document.getElementById("staff-role-status");
+      const id = select.dataset.staffRole;
+      const value = select.value;
+      const owners = allStaffProfiles.filter((p) => p.is_staff && p.staff_role === "owner");
+      if (value !== "owner" && owners.length === 1 && owners[0].id === id) {
+        select.value = "owner";
+        statusEl.className = "form-status error";
+        statusEl.textContent = "Keep at least one owner.";
+        return;
+      }
+      const patch = value === "customer"
+        ? { is_staff: false, staff_role: "assistant" }
+        : { is_staff: true, staff_role: value };
+      const { error: err } = await client.from("profiles").update(patch).eq("id", id);
+      if (err) {
+        statusEl.className = "form-status error";
+        statusEl.textContent = err.message;
+        return;
+      }
+      statusEl.className = "form-status success";
+      statusEl.textContent = "Staff role saved.";
+      await loadStaffProfiles(client);
+    });
+  });
+}
+
+async function loadQuotes(client) {
+  const { data } = await client.from("quotes").select("*").order("created_at", { ascending: false });
+  allQuotes = data || [];
+  renderQuotes();
+  fillQuoteOrderSelect();
+  renderOverview();
+}
+
+function fillQuoteOrderSelect() {
+  const select = document.getElementById("quote-request");
+  if (!select) return;
+  const current = select.value;
+  select.innerHTML = `<option value="">No linked order</option>` + allRequests.map((r) =>
+    `<option value="${escapeAttr(r.id)}">${escapeHtml(r.name)} — ${escapeHtml((r.request_details || "").slice(0, 42))}</option>`
+  ).join("");
+  select.value = current;
+}
+
+function fillQuoteFromOrder() {
+  const id = document.getElementById("quote-request")?.value;
+  const order = allRequests.find((r) => r.id === id);
+  if (!order) return;
+  const form = document.getElementById("quote-form");
+  form.elements.name.value = order.name || "";
+  form.elements.phone.value = order.phone || "";
+  form.elements.email.value = order.email || "";
+  form.elements.location.value = order.location || "";
+  if (order.request_details) {
+    const first = document.querySelector("[data-quote-desc]");
+    if (first && !first.value) first.value = order.request_details;
+  }
+  form.elements.freight.value = cedisInput(order.freight_pesewas);
+  form.elements.duty.value = cedisInput(order.duty_pesewas);
+  form.elements.agent_fee.value = cedisInput(order.agent_fee_pesewas);
+  if (form.elements.source_cost) form.elements.source_cost.value = cedisInput(order.source_cost_pesewas);
+  refreshQuotePreview();
+}
+
+function addQuoteLine(desc, qty, unit) {
+  const wrap = document.getElementById("quote-items");
+  if (!wrap) return;
+  const row = document.createElement("div");
+  row.className = "quote-item-row";
+  row.innerHTML = `
+    <input type="text" data-quote-desc placeholder="Item" value="${escapeAttr(desc || "")}">
+    <input type="text" data-quote-qty inputmode="decimal" placeholder="Qty" value="${escapeAttr(qty || "1")}">
+    <input type="text" data-quote-unit inputmode="decimal" placeholder="GH₵" value="${escapeAttr(unit || "")}">
+    <button type="button" class="chip" data-quote-remove>Remove</button>
+  `;
+  row.querySelector("[data-quote-remove]").addEventListener("click", () => {
+    row.remove();
+    refreshQuotePreview();
+  });
+  wrap.appendChild(row);
+}
+
+function collectQuoteItems() {
+  return [...document.querySelectorAll("#quote-items .quote-item-row")].map((row) => {
+    const description = row.querySelector("[data-quote-desc]")?.value.trim() || "";
+    const qty = Number(String(row.querySelector("[data-quote-qty]")?.value || "1").replace(/[^\d.]/g, "")) || 1;
+    const unit_pesewas = pesewasFromCedis(row.querySelector("[data-quote-unit]")?.value);
+    return { description, qty, unit_pesewas };
+  }).filter((item) => item.description || item.unit_pesewas);
+}
+
+function refreshQuotePreview() {
+  const items = collectQuoteItems();
+  const goods = items.reduce((s, i) => s + i.qty * i.unit_pesewas, 0);
+  const freight = pesewasFromCedis(document.getElementById("quote-freight")?.value);
+  const duty = pesewasFromCedis(document.getElementById("quote-duty")?.value);
+  const fee = pesewasFromCedis(document.getElementById("quote-agent")?.value);
+  const source = pesewasFromCedis(document.getElementById("quote-source")?.value);
+  const total = goods + freight + duty + fee;
+  const el = document.getElementById("quote-total-preview");
+  if (el) el.textContent = formatCedis(total);
+  const margin = document.getElementById("quote-margin-preview");
+  if (margin) margin.textContent = total ? `Margin ${formatCedis(total - source - freight - duty)} (hides China/Turkey cost from the customer)` : "";
+}
+
+function renderQuotes() {
+  const body = document.getElementById("quotes-body");
+  if (!body) return;
+  if (!allQuotes.length) {
+    body.innerHTML = `<tr><td colspan="5"><div class="admin-empty">Quotes you save will appear here with an MW invoice number.</div></td></tr>`;
+    return;
+  }
+  body.innerHTML = allQuotes.map((q) => {
+    const paid = paidForQuote(q);
+    const bal = quoteBalance(q);
+    return `<tr>
+      <td><strong>${escapeHtml(q.invoice_number)}</strong></td>
+      <td>${escapeHtml(q.customer_name) || "Customer"}<br><span class="cell-when">${escapeHtml(q.phone || "")}</span></td>
+      <td>${escapeHtml(formatCedis(q.total_pesewas))}</td>
+      <td>${escapeHtml(formatCedis(paid))} / ${escapeHtml(formatCedis(bal))}</td>
+      <td>
+        <a class="chip" href="${escapeAttr(quoteShareUrl(q.public_token))}" target="_blank" rel="noopener">Open</a>
+        ${q.request_id ? `<button type="button" class="chip" data-request-id="${escapeAttr(q.request_id)}">Order</button>` : ""}
+      </td>
+    </tr>`;
+  }).join("");
+}
+
+async function handleQuoteSubmit(e, client) {
+  e.preventDefault();
+  const form = e.target;
+  const statusEl = document.getElementById("quote-form-status");
+  const resultEl = document.getElementById("quote-form-result");
+  const btn = form.querySelector('button[type="submit"]');
+  const items = collectQuoteItems();
+  const goods = items.reduce((s, i) => s + i.qty * i.unit_pesewas, 0);
+  const freight = pesewasFromCedis(form.elements.freight.value);
+  const duty = pesewasFromCedis(form.elements.duty.value);
+  const fee = pesewasFromCedis(form.elements.agent_fee.value);
+  const source = pesewasFromCedis(form.elements.source_cost?.value);
+  const total = goods + freight + duty + fee;
+  if (!form.elements.name.value.trim()) {
+    statusEl.className = "form-status error";
+    statusEl.textContent = "Enter the customer name.";
+    return;
+  }
+  if (total <= 0) {
+    statusEl.className = "form-status error";
+    statusEl.textContent = "Add a line or a fee so the quote has a GH₵ total.";
+    return;
+  }
+  const depositRaw = form.elements.deposit.value.trim();
+  const deposit = depositRaw ? pesewasFromCedis(depositRaw) : Math.round(total * 0.5);
+  btn.disabled = true;
+  statusEl.className = "form-status";
+  statusEl.textContent = "Saving quote…";
+  try {
+    const { data: invoiceData, error: invoiceError } = await client.rpc("next_invoice_number");
+    if (invoiceError) throw invoiceError;
+    const invoice = invoiceData;
+    const requestId = form.elements.request_id.value || null;
+    const { data, error } = await client.from("quotes").insert([{
+      request_id: requestId,
+      invoice_number: invoice,
+      customer_name: form.elements.name.value.trim(),
+      phone: form.elements.phone.value.trim() || null,
+      email: form.elements.email.value.trim() || null,
+      location: form.elements.location.value.trim() || null,
+      line_items: items,
+      source_cost_pesewas: source,
+      freight_pesewas: freight,
+      duty_pesewas: duty,
+      agent_fee_pesewas: fee,
+      total_pesewas: total,
+      deposit_pesewas: deposit,
+      notes: form.elements.notes.value.trim() || null,
+      status: "sent",
+      created_by: currentStaffId,
+    }]).select("*").maybeSingle();
+    if (error) throw error;
+    if (requestId) {
+      await client.from("requests").update({
+        status: "Quoted",
+        freight_pesewas: freight,
+        duty_pesewas: duty,
+        agent_fee_pesewas: fee,
+        source_cost_pesewas: source,
+      }).eq("id", requestId);
+      const order = allRequests.find((r) => r.id === requestId);
+      if (order) {
+        order.status = "Quoted";
+        order.freight_pesewas = freight;
+        order.duty_pesewas = duty;
+        order.agent_fee_pesewas = fee;
+        order.source_cost_pesewas = source;
+      }
+    }
+    await logActivity(client, {
+      action: `Created quote ${invoice} for ${form.elements.name.value.trim()}`,
+      entity_type: "quote",
+      entity_id: data && data.id,
+    });
+    await loadQuotes(client);
+    await loadRequests(client);
+    const url = data ? quoteShareUrl(data.public_token) : "";
+    statusEl.className = "form-status success";
+    statusEl.textContent = `${invoice} saved.`;
+    if (resultEl && url) {
+      resultEl.hidden = false;
+      resultEl.innerHTML = `<a class="btn btn-gold" href="${escapeAttr(url)}" target="_blank" rel="noopener">Open quote</a>
+        <button type="button" class="chip" id="copy-quote-link">Copy link</button>`;
+      document.getElementById("copy-quote-link")?.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(url);
+          statusEl.textContent = "Quote link copied. Send it on the official line.";
+        } catch {
+          statusEl.textContent = url;
+        }
+      });
+    }
+    const order = requestId ? allRequests.find((r) => r.id === requestId) : {
+      name: form.elements.name.value.trim(),
+      phone: form.elements.phone.value.trim(),
+      id: requestId,
+    };
+    if (order) await maybeAutoSms(client, order, "order:Quoted");
+  } catch (err) {
+    statusEl.className = "form-status error";
+    statusEl.textContent = err.message || "Couldn't save the quote.";
+  }
+  btn.disabled = false;
+}
+
+function phoneKey(phone) {
+  let digits = String(phone || "").replace(/\D/g, "");
+  if (digits.startsWith("00")) digits = digits.slice(2);
+  if (digits.startsWith("0") && digits.length === 10) digits = "233" + digits.slice(1);
+  if (digits.startsWith("233")) return digits;
+  return digits || "";
+}
+
+function buildLedgers() {
+  const map = new Map();
+  function take(key, patch) {
+    if (!key) return;
+    const row = map.get(key) || {
+      key,
+      name: "",
+      phone: "",
+      email: "",
+      orders: [],
+      quotes: [],
+      payments: [],
+      sms: [],
+      paid: 0,
+    };
+    if (patch.name && !row.name) row.name = patch.name;
+    if (patch.phone && !row.phone) row.phone = patch.phone;
+    if (patch.email && !row.email) row.email = patch.email;
+    if (patch.order) row.orders.push(patch.order);
+    if (patch.quote) row.quotes.push(patch.quote);
+    if (patch.payment) {
+      row.payments.push(patch.payment);
+      if (patch.payment.status === "paid") row.paid += Number(patch.payment.amount_pesewas || 0);
+    }
+    if (patch.sms) row.sms.push(patch.sms);
+    map.set(key, row);
+  }
+  allRequests.forEach((r) => take(phoneKey(r.phone) || r.id, { name: r.name, phone: r.phone, email: r.email, order: r }));
+  allCustomers.forEach((c) => take(phoneKey(c.phone) || c.id, { name: c.full_name, phone: c.phone }));
+  allQuotes.forEach((q) => take(phoneKey(q.phone) || q.id, { name: q.customer_name, phone: q.phone, email: q.email, quote: q }));
+  allPayments.forEach((p) => take(phoneKey(p.phone) || p.email || p.id, { name: p.customer_name, phone: p.phone, email: p.email, payment: p }));
+  allSmsMessages.forEach((m) => {
+    if (m.customer_name === "Desk alert") return;
+    take(phoneKey(m.phone) || m.id, { name: m.customer_name, phone: m.phone, sms: m });
+  });
+  return [...map.values()].sort((a, b) => b.paid - a.paid || String(b.orders[0]?.created_at || "").localeCompare(String(a.orders[0]?.created_at || "")));
+}
+
+function renderCustomerLedger() {
+  const body = document.getElementById("customers-body");
+  const note = document.getElementById("customers-note");
+  if (!body) return;
+  let rows = buildLedgers();
+  if (customerSearchQuery) {
+    rows = rows.filter((r) => {
+      const invoices = r.quotes.map((q) => q.invoice_number).join(" ");
+      return [r.name, r.phone, r.email, invoices].join(" ").toLowerCase().includes(customerSearchQuery);
+    });
+  }
+  if (!rows.length) {
+    body.innerHTML = `<tr><td colspan="5"><div class="admin-empty">Customers from orders and accounts will appear here.</div></td></tr>`;
+    if (note) note.textContent = "";
+    return;
+  }
+  body.innerHTML = rows.map((r) => `<tr class="admin-order-row" data-ledger-key="${escapeAttr(r.key)}">
+    <td>
+      <div class="admin-person">
+        <span class="admin-avatar">${escapeHtml(initials(r.name || "CU"))}</span>
+        <span><strong>${escapeHtml(r.name) || "Customer"}</strong></span>
+      </div>
+    </td>
+    <td>${escapeHtml(r.phone) || "—"}</td>
+    <td>${r.orders.length}</td>
+    <td>${escapeHtml(formatCedis(r.paid))}</td>
+    <td>${r.phone ? `<button type="button" class="chip" data-sms-phone="${escapeAttr(r.phone)}" data-sms-name="${escapeAttr(r.name || "")}">SMS</button>` : ""}</td>
+  </tr>`).join("");
+  if (note) note.textContent = `${rows.length} customer${rows.length === 1 ? "" : "s"} in the ledger.`;
+}
+
+function openLedger(key) {
+  const row = buildLedgers().find((r) => r.key === key);
+  const panel = document.getElementById("admin-detail");
+  const inner = document.getElementById("admin-detail-inner");
+  if (!row || !panel || !inner) return;
+  selectedRequestId = null;
+  revealDetail(panel, inner);
+  inner.innerHTML = `
+    <div class="admin-detail-head">
+      <div>
+        <h2>${escapeHtml(row.name) || "Customer"}</h2>
+        <span class="muted">${escapeHtml(row.phone || "")}</span>
+      </div>
+      <button type="button" class="admin-detail-close" data-close-detail aria-label="Close">×</button>
+    </div>
+    <p><strong>Lifetime paid</strong> ${escapeHtml(formatCedis(row.paid))}</p>
+    <h3 style="font-size:0.95rem;">Orders</h3>
+    ${row.orders.map((o) => `<p class="hint"><button type="button" class="chip" data-request-id="${escapeAttr(o.id)}">${escapeHtml(o.status)}</button> ${escapeHtml((o.request_details || "").slice(0, 80))}</p>`).join("") || "<p class='hint'>No orders.</p>"}
+    <h3 style="font-size:0.95rem;">Quotes</h3>
+    ${row.quotes.map((q) => `<p class="hint"><a href="${escapeAttr(quoteShareUrl(q.public_token))}" target="_blank" rel="noopener">${escapeHtml(q.invoice_number)}</a> · ${escapeHtml(formatCedis(q.total_pesewas))}</p>`).join("") || "<p class='hint'>No quotes.</p>"}
+    <h3 style="font-size:0.95rem;">Payments</h3>
+    ${row.payments.map((p) => `<p class="hint">${escapeHtml(formatCedis(p.amount_pesewas))} · ${escapeHtml(p.status)}${p.public_token ? ` · <a href="${escapeAttr(receiptShareUrl(p.public_token))}" target="_blank" rel="noopener">Receipt</a>` : ""}</p>`).join("") || "<p class='hint'>No payments.</p>"}
+    <h3 style="font-size:0.95rem;">SMS</h3>
+    ${row.sms.slice(0, 8).map((m) => `<p class="hint">${escapeHtml((m.body || "").slice(0, 120))}</p>`).join("") || "<p class='hint'>No texts.</p>"}
+  `;
+}
+
+async function loadSmsTemplates(client) {
+  const { data } = await client.from("sms_templates").select("*").order("created_at", { ascending: true });
+  allTemplates = data || [];
+  renderSmsTemplates();
+}
+
+function renderSmsTemplates() {
+  const body = document.getElementById("sms-templates-body");
+  const chips = document.getElementById("sms-templates");
+  if (body) {
+    body.innerHTML = allTemplates.map((t) => `<tr>
+      <td><strong>${escapeHtml(t.name)}</strong><br><span class="cell-when">${escapeHtml((t.body || "").slice(0, 72))}</span></td>
+      <td>${escapeHtml(t.trigger_event || "Manual")}${t.active === false ? " · off" : ""}</td>
+      <td>
+        <button type="button" class="chip" data-use-tpl="${escapeAttr(t.id)}">Use</button>
+        <button type="button" class="chip" data-del-tpl="${escapeAttr(t.id)}">Delete</button>
+      </td>
+    </tr>`).join("") || `<tr><td colspan="3"><div class="admin-empty">No templates yet.</div></td></tr>`;
+    body.querySelectorAll("[data-use-tpl]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const tpl = allTemplates.find((t) => t.id === btn.dataset.useTpl);
+        const box = document.getElementById("sms-message");
+        if (tpl && box) {
+          box.value = tpl.body;
+          updateSmsCount();
+          showTab("sms");
+        }
+      });
+    });
+    body.querySelectorAll("[data-del-tpl]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!adminClient) return;
+        await adminClient.from("sms_templates").delete().eq("id", btn.dataset.delTpl);
+        await loadSmsTemplates(adminClient);
+      });
+    });
+  }
+  if (chips && !chips.dataset.enriched) {
+    chips.insertAdjacentHTML("beforeend", allTemplates.map((t) =>
+      `<button type="button" class="chip" data-sms-template="${escapeAttr(t.body)}">${escapeHtml(t.name)}</button>`
+    ).join(""));
+    chips.dataset.enriched = "1";
+  }
+}
+
+async function handleSmsTemplateSubmit(e, client) {
+  e.preventDefault();
+  const form = e.target;
+  const statusEl = document.getElementById("sms-template-status");
+  const { error } = await client.from("sms_templates").insert([{
+    name: form.elements.name.value.trim(),
+    body: form.elements.body.value.trim(),
+    trigger_event: form.elements.trigger_event.value || null,
+    active: form.elements.active.checked,
+  }]);
+  if (error) {
+    statusEl.className = "form-status error";
+    statusEl.textContent = error.message;
+    return;
+  }
+  form.reset();
+  form.elements.active.checked = true;
+  statusEl.className = "form-status success";
+  statusEl.textContent = "Template saved.";
+  const chips = document.getElementById("sms-templates");
+  if (chips) delete chips.dataset.enriched;
+  await loadSmsTemplates(client);
+}
+
+document.getElementById("admin-detail")?.addEventListener("click", async (e) => {
+  const copy = e.target.closest("[data-copy-quote]");
+  if (!copy) return;
+  try {
+    await navigator.clipboard.writeText(copy.dataset.copyQuote);
+  } catch {
+    /* ignore */
+  }
+});
+
 
