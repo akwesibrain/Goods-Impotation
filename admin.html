@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <title>Admin panel — Mwinbarka Imports</title>
 <meta name="description" content="Staff admin panel for Mwinbarka Imports.">
-<link rel="stylesheet" href="styles.css?v=brand27">
+<link rel="stylesheet" href="styles.css?v=brand28">
 </head>
 <body id="admin-page" class="admin-app">
 
@@ -81,18 +81,20 @@
     </nav>
 
     <div class="admin-sidebar-foot">
+      <a href="index.html" class="admin-side-link">View site</a>
       <button id="signout-btn" class="admin-logout" type="button">Log out</button>
     </div>
   </aside>
+  <button type="button" class="admin-nav-scrim" id="admin-nav-scrim" aria-label="Close menu"></button>
 
   <div class="admin-workspace">
     <header class="admin-top">
-      <button type="button" class="admin-menu-toggle" id="admin-menu-toggle" aria-label="Open menu">☰</button>
+      <button type="button" class="admin-menu-toggle" id="admin-menu-toggle" aria-label="Open menu" aria-expanded="false">☰</button>
       <h1 id="admin-page-title">Dashboard</h1>
       <a href="index.html" class="admin-top-link">View site</a>
       <div class="admin-user">
         <span class="admin-avatar" id="admin-user-avatar">MW</span>
-        <span>
+        <span class="admin-user-copy">
           <strong id="admin-user-name">Staff</strong>
           <small id="admin-staff-email">Sign in</small>
         </span>
@@ -580,8 +582,8 @@
 </section>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase-client.js?v=brand27"></script>
-<script src="script.js?v=brand27"></script>
-<script src="admin.js?v=brand27"></script>
+<script src="supabase-client.js?v=brand28"></script>
+<script src="script.js?v=brand28"></script>
+<script src="admin.js?v=brand28"></script>
 </body>
 </html>

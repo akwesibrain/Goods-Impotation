@@ -105,6 +105,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const showSignedOut = () => {
+    closeAdminMenu();
     loginSection.style.display = "flex";
     dashboard.style.display = "none";
     dashboard.classList.remove("is-ready");
@@ -144,6 +145,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   signOutBtn.addEventListener("click", async () => {
+    closeAdminMenu();
     await client.auth.signOut();
     showSignedOut();
   });
@@ -179,9 +181,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const menuToggle = document.getElementById("admin-menu-toggle");
   if (menuToggle) {
     menuToggle.addEventListener("click", () => {
-      document.getElementById("admin-dashboard").classList.toggle("nav-open");
+      const shell = document.getElementById("admin-dashboard");
+      setAdminMenuOpen(shell && !shell.classList.contains("nav-open"));
     });
   }
+  document.getElementById("admin-nav-scrim")?.addEventListener("click", closeAdminMenu);
 
   document.getElementById("product-form").addEventListener("submit", (e) => handleProductSubmit(e, client));
   document.getElementById("review-admin-form").addEventListener("submit", (e) => handleReviewAdminSubmit(e, client));
@@ -294,9 +298,19 @@ function showTab(name) {
   if (tab !== "requests") closeDetail();
 }
 
-function closeAdminMenu() {
+function setAdminMenuOpen(open) {
   const shell = document.getElementById("admin-dashboard");
-  if (shell) shell.classList.remove("nav-open");
+  const btn = document.getElementById("admin-menu-toggle");
+  if (shell) shell.classList.toggle("nav-open", !!open);
+  if (btn) {
+    btn.setAttribute("aria-expanded", open ? "true" : "false");
+    btn.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+  }
+  document.body.classList.toggle("admin-nav-open", !!open);
+}
+
+function closeAdminMenu() {
+  setAdminMenuOpen(false);
 }
 
 function countByStatus(status) {
