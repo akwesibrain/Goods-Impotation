@@ -468,8 +468,15 @@ async function openaiChat(apiKey: string, payload: Record<string, unknown>) {
     },
     body: JSON.stringify(payload),
   });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error("openai_unavailable");
+  const data = await res.json().catch(() => ({})) as Record<string, unknown>;
+  if (!res.ok) {
+    const err = data.error && typeof data.error === "object"
+      ? data.error as Record<string, unknown>
+      : {};
+    const code = String(err.code || err.type || res.status);
+    console.error("ai-chat openai_error", res.status, code);
+    throw new Error("openai_unavailable");
+  }
   return data as {
     choices?: Array<{
       message?: {
@@ -572,8 +579,14 @@ Deno.serve(async (req) => {
     });
   }
 
-  const apiKey = (Deno.env.get("OPENAI_API_KEY") || "").trim();
+  let apiKey = (Deno.env.get("OPENAI_API_KEY") || "").trim();
   if (!apiKey) {
+    const { data: vaultKey, error: vaultError } = await admin.rpc("ai_openai_key");
+    if (vaultError) console.error("ai-chat vault_error", vaultError.message);
+    apiKey = String(vaultKey || "").trim();
+  }
+  if (!apiKey) {
+    console.error("ai-chat missing_openai_key");
     return json({
       reply: UNAVAILABLE,
       enabled: true,

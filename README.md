@@ -30,9 +30,12 @@ Add this in the **Supabase Dashboard → Edge Functions → Secrets** (or
 | `SUPABASE_SERVICE_ROLE_KEY` | Provided automatically to Edge Functions | Never expose this to the browser |
 | `SUPABASE_ANON_KEY` / publishable key | Already in `supabase-client.js` | Public; RLS protects data |
 
-Until `OPENAI_API_KEY` is set, the chat UI still opens and the welcome message
-still shows, but replies will say the assistant is temporarily unavailable and
-point the customer to the official line **054 030 9637**.
+Until `OPENAI_API_KEY` is set **and the OpenAI account has prepaid credits**, the chat UI
+still opens and the welcome message still shows, but replies will say the assistant is
+temporarily unavailable and point the customer to the official line **054 030 9637**.
+
+The Edge Function also reads a Vault secret named `OPENAI_API_KEY` if the hosted
+function secret is empty. Do not put this key in `supabase-client.js` or git.
 
 Admin copy for the assistant (welcome, FAQs, hours, official line, extra
 instructions) is edited at `/admin#ai`. That form does **not** accept an API key.

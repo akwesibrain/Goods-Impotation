@@ -921,3 +921,22 @@ create policy "Staff can read AI messages"
   on public.ai_messages for select
   to authenticated
   using (private.is_staff());
+
+-- Service-role only: ai-chat reads the OpenAI key from Vault.
+-- The key itself is NEVER stored in this file.
+create or replace function public.ai_openai_key()
+returns text
+language sql
+stable
+security definer
+set search_path = vault
+as $$
+  select decrypted_secret
+  from vault.decrypted_secrets
+  where name = 'OPENAI_API_KEY'
+  limit 1;
+$$;
+
+revoke all on function public.ai_openai_key() from public;
+revoke all on function public.ai_openai_key() from anon, authenticated;
+grant execute on function public.ai_openai_key() to service_role;
