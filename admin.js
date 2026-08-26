@@ -15,7 +15,6 @@ const TAB_TITLES = {
   sms: ["SMS", "SMS"],
   products: ["Catalog", "Products"],
   reviews: ["Reviews", "Reviews"],
-  ai: ["AI", "AI Assistant"],
   settings: ["Site", "Settings"],
 };
 
@@ -90,7 +89,6 @@ document.addEventListener("DOMContentLoaded", () => {
       loadSmsMessages(client),
       loadSmsTemplates(client),
       loadDeskSettings(client),
-      loadAiSettings(client),
     ]);
     fillSmsRecipients();
     if (sessionStorage.getItem("mwinbarka_staff_email_changed")) {
@@ -211,7 +209,6 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("sms-broadcast-form")?.addEventListener("submit", (e) => handleSmsBroadcast(e, client));
   document.getElementById("desk-settings-form")?.addEventListener("submit", (e) => handleDeskSettingsSubmit(e, client));
   document.getElementById("sms-template-form")?.addEventListener("submit", (e) => handleSmsTemplateSubmit(e, client));
-  document.getElementById("ai-settings-form")?.addEventListener("submit", (e) => handleAiSettingsSubmit(e, client));
 
   dashboard.addEventListener("click", (e) => {
     const closeBtn = e.target.closest("[data-close-detail]");
@@ -1587,63 +1584,4 @@ async function handleSmsTemplateSubmit(e, client) {
   const chips = document.getElementById("sms-templates");
   if (chips) delete chips.dataset.enriched;
   await loadSmsTemplates(client);
-}
-
-async function loadAiSettings(client) {
-  const form = document.getElementById("ai-settings-form");
-  if (!form) return;
-  const { data, error } = await client.from("ai_settings").select("*").eq("id", 1).maybeSingle();
-  if (error || !data) return;
-  form.elements.enabled.checked = data.enabled !== false;
-  ["welcome_message", "business_description", "faqs", "importation_instructions", "business_hours", "support_contact", "whatsapp_number", "extra_instructions"].forEach((key) => {
-    if (form.elements[key]) form.elements[key].value = data[key] || "";
-  });
-  const { data: messages } = await client
-    .from("ai_messages")
-    .select("id, role, content, created_at, session_id")
-    .order("created_at", { ascending: false })
-    .limit(20);
-  const log = document.getElementById("ai-messages-log");
-  if (!log) return;
-  if (!messages || !messages.length) {
-    log.innerHTML = "<p class=\"muted\">No assistant chats yet.</p>";
-    return;
-  }
-  log.innerHTML = messages.map((row) => {
-    const when = row.created_at ? new Date(row.created_at).toLocaleString() : "";
-    const who = row.role === "user" ? "Customer" : "Assistant";
-    const text = String(row.content || "").slice(0, 220);
-    return `<div class="admin-review-preview"><strong>${who}</strong><span>${when}</span><p>${text.replace(/</g, "&lt;")}</p></div>`;
-  }).join("");
-}
-
-async function handleAiSettingsSubmit(e, client) {
-  e.preventDefault();
-  const form = e.target;
-  const statusEl = document.getElementById("ai-settings-status");
-  const btn = form.querySelector('button[type="submit"]');
-  btn.disabled = true;
-  statusEl.className = "form-status";
-  statusEl.textContent = "Saving…";
-  try {
-    const { error } = await client.from("ai_settings").update({
-      enabled: form.elements.enabled.checked,
-      welcome_message: form.elements.welcome_message.value.trim(),
-      business_description: form.elements.business_description.value.trim(),
-      faqs: form.elements.faqs.value.trim(),
-      importation_instructions: form.elements.importation_instructions.value.trim(),
-      business_hours: form.elements.business_hours.value.trim(),
-      support_contact: form.elements.support_contact.value.trim(),
-      whatsapp_number: form.elements.whatsapp_number.value.trim() || "054 030 9637",
-      extra_instructions: form.elements.extra_instructions.value.trim(),
-      updated_at: new Date().toISOString(),
-    }).eq("id", 1);
-    if (error) throw error;
-    statusEl.className = "form-status success";
-    statusEl.textContent = "AI settings saved. The website assistant will use this on the next message.";
-  } catch (err) {
-    statusEl.className = "form-status error";
-    statusEl.textContent = err.message || "Couldn't save AI settings.";
-  }
-  btn.disabled = false;
 }

@@ -74,10 +74,6 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 4 2.1 4.6L19 9.3l-3.5 3.3.9 4.9L12 15.8 7.6 17.5l.9-4.9L5 9.3l4.9-.7L12 4Z"/></svg>
         Reviews
       </button>
-      <button type="button" class="admin-nav-btn" data-tab="ai">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5 13.6 8l4.6.4-3.5 3.1 1.1 4.5L12 13.8 8.2 16l1.1-4.5L5.8 8.4 10.4 8 12 3.5Z"/><circle cx="12" cy="12" r="9"/></svg>
-        AI Assistant
-      </button>
       <button type="button" class="admin-nav-btn admin-nav-secondary" data-tab="settings">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a7.7 7.7 0 0 0 .1-1 7.7 7.7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7.4 7.4 0 0 0-1.7-1L15 3h-4l-.3 2.5a7.4 7.4 0 0 0-1.7 1L6.6 5.5l-2 3.5 2 1.5a7.7 7.7 0 0 0-.1 1 7.7 7.7 0 0 0 .1 1l-2 1.5 2 3.5 2.4-1a7.4 7.4 0 0 0 1.7 1L11 21h4l.3-2.5a7.4 7.4 0 0 0 1.7-1l2.4 1 2-3.5-2-1.5Z"/></svg>
         Settings
@@ -443,69 +439,6 @@
             </thead>
             <tbody id="reviews-body"></tbody>
           </table>
-        </div>
-      </div>
-
-      <div class="admin-panel" id="tab-ai" hidden>
-        <form id="ai-settings-form" class="form-card admin-form" novalidate>
-          <span class="eyebrow">Website assistant</span>
-          <h2>AI Assistant</h2>
-          <p class="form-note">These fields are the assistant's knowledge. The OpenAI API key is a Supabase Edge Function secret — it is never shown here and must not be pasted into this form.</p>
-
-          <label class="admin-check">
-            <input type="checkbox" id="ai-enabled" name="enabled">
-            Enable the floating AI assistant on the website
-          </label>
-
-          <div class="field">
-            <label for="ai-welcome">Welcome message</label>
-            <textarea id="ai-welcome" name="welcome_message" rows="4"></textarea>
-          </div>
-
-          <div class="field">
-            <label for="ai-business">Business description</label>
-            <textarea id="ai-business" name="business_description" rows="5"></textarea>
-          </div>
-
-          <div class="field">
-            <label for="ai-faqs">Frequently asked questions</label>
-            <textarea id="ai-faqs" name="faqs" rows="8"></textarea>
-          </div>
-
-          <div class="field">
-            <label for="ai-import">Importation instructions</label>
-            <textarea id="ai-import" name="importation_instructions" rows="6"></textarea>
-          </div>
-
-          <div class="field">
-            <label for="ai-hours">Business hours</label>
-            <input type="text" id="ai-hours" name="business_hours">
-          </div>
-
-          <div class="field">
-            <label for="ai-support">Support contact</label>
-            <input type="text" id="ai-support" name="support_contact">
-          </div>
-
-          <div class="field">
-            <label for="ai-whatsapp">Official line / WhatsApp number</label>
-            <input type="text" id="ai-whatsapp" name="whatsapp_number" placeholder="054 030 9637">
-            <div class="hint">Use the existing official line. Do not invent a different number.</div>
-          </div>
-
-          <div class="field">
-            <label for="ai-extra">Extra AI instructions</label>
-            <textarea id="ai-extra" name="extra_instructions" rows="4" placeholder="Optional extra guidance for the assistant"></textarea>
-          </div>
-
-          <button type="submit" class="btn btn-gold">Save AI settings</button>
-          <div id="ai-settings-status" class="form-status"></div>
-        </form>
-
-        <div class="admin-card" style="margin-top: 1rem;">
-          <h2>Recent assistant chats</h2>
-          <p class="form-note">Staff-only log. Customers cannot read this table.</p>
-          <div id="ai-messages-log"></div>
         </div>
       </div>
 

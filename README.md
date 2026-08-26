@@ -12,59 +12,6 @@ All monetary values on the site are in **Ghana Cedis (GH₵)**.
 
 ---
 
-## AI sales assistant
-
-The floating chatbot on public pages talks to a Supabase Edge Function
-(`ai-chat`). That function calls OpenAI and looks up the existing `products`
-and `requests` tables. The OpenAI API key never ships in the browser.
-
-### Required secret
-
-Add this in the **Supabase Dashboard → Edge Functions → Secrets** (or
-`supabase secrets set`):
-
-| Name | Where it lives | Notes |
-|------|----------------|-------|
-| `OPENAI_API_KEY` | Supabase Edge Function secret only | Do **not** put this in `supabase-client.js`, Netlify, or Vercel frontend env vars |
-| `SUPABASE_URL` | Provided automatically to Edge Functions | Already set by Supabase |
-| `SUPABASE_SERVICE_ROLE_KEY` | Provided automatically to Edge Functions | Never expose this to the browser |
-| `SUPABASE_ANON_KEY` / publishable key | Already in `supabase-client.js` | Public; RLS protects data |
-
-Until `OPENAI_API_KEY` is set **and the OpenAI account has prepaid credits**, the chat UI
-still opens and the welcome message still shows, but replies will say the assistant is
-temporarily unavailable and point the customer to the official line **054 030 9637**.
-
-The Edge Function also reads a Vault secret named `OPENAI_API_KEY` if the hosted
-function secret is empty. Do not put this key in `supabase-client.js` or git.
-
-Admin copy for the assistant (welcome, FAQs, hours, official line, extra
-instructions) is edited at `/admin#ai`. That form does **not** accept an API key.
-
-### How to test locally
-
-```bash
-python3 -m http.server 8000
-```
-
-Open http://localhost:8000, click the navy ✦ button (left of the gold floating
-button on desktop), send a message, and watch the Network tab: the browser
-should only call `.../functions/v1/ai-chat`. There must be no request to
-`api.openai.com` from the page.
-
-### Deploy notes
-
-Production for this repo is **Vercel** (`goods-impotation`). Pushing `main`
-updates the static site. `netlify.toml` is still valid if you publish the
-same folder on Netlify — there is no frontend build step and no OpenAI key
-to add there.
-
-After adding `OPENAI_API_KEY` in Supabase, redeploy is not required for the
-secret to take effect on the next chat message. You do need the `ai-chat`
-Edge Function deployed (`verify_jwt` is off because guests can chat; the
-function authenticates signed-in customers itself).
-
----
-
 ## Pages
 
 | File | Route | Purpose |
