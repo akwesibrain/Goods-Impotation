@@ -1809,8 +1809,6 @@ function fillProfileForms(profile, orderCount) {
     setVal("city", profile.city);
     setVal("address", profile.address);
     setVal("landmark", profile.landmark);
-    setVal("preferred_origin", profile.preferred_origin || "either");
-    setVal("desk_notes", profile.desk_notes);
     const same = document.getElementById("profile-whatsapp-same");
     if (same) same.checked = !profile.whatsapp || profile.whatsapp === profile.phone;
   }
@@ -1996,8 +1994,6 @@ async function mountAccountPage() {
           city: profileForm.elements.city.value.trim(),
           address: profileForm.elements.address.value.trim(),
           landmark: profileForm.elements.landmark.value.trim(),
-          preferred_origin: profileForm.elements.preferred_origin.value || "either",
-          desk_notes: profileForm.elements.desk_notes.value.trim(),
         });
         showStatus(status, "success", "Profile saved. The desk will use this on the next quote.");
         await refreshAccountChrome();

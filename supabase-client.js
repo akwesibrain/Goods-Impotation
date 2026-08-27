@@ -48,7 +48,7 @@ window.getMyProfile = async function () {
   if (!user || !supabaseClient) return null;
   const { data } = await supabaseClient
     .from("profiles")
-    .select("id, full_name, phone, company_name, whatsapp, region, city, address, landmark, preferred_origin, desk_notes, notify_sms, notify_whatsapp, notify_email, is_staff, staff_role, created_at")
+    .select("id, full_name, phone, company_name, whatsapp, region, city, address, landmark, notify_sms, notify_whatsapp, notify_email, is_staff, staff_role, created_at")
     .eq("id", user.id)
     .maybeSingle();
   return {
@@ -159,8 +159,6 @@ window.updateMyProfile = async function (fields) {
     city: fields.city || "",
     address: fields.address || "",
     landmark: fields.landmark || "",
-    preferred_origin: fields.preferred_origin || "either",
-    desk_notes: fields.desk_notes || "",
     updated_at: new Date().toISOString(),
   };
   if (typeof fields.notify_sms === "boolean") payload.notify_sms = fields.notify_sms;
