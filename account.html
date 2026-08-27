@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Account — Mwinbarka Imports</title>
 <meta name="description" content="Sign up or log in to Mwinbarka Imports to keep your orders on one account.">
-<link rel="stylesheet" href="styles.css?v=brand31">
+<link rel="stylesheet" href="styles.css?v=brand32">
 </head>
 <body class="account-page">
 <header class="site-header">
@@ -186,22 +186,111 @@
       </section>
 
       <section class="udash-panel" data-udash-panel="profile" hidden>
-        <form id="account-profile-form" class="form-card udash-card-form" novalidate>
-          <span class="eyebrow">My Account</span>
-          <h2 id="account-hello">Signed in</h2>
-          <p class="muted" id="account-email"></p>
-          <div class="field">
-            <label for="profile-name">Full name</label>
-            <input type="text" id="profile-name" name="full_name" required autocomplete="name">
+        <div class="udash-hero">
+          <div class="udash-hero-avatar" id="profile-hero-avatar">MW</div>
+          <div class="udash-hero-copy">
+            <h2 id="account-hello">Signed in</h2>
+            <p class="muted" id="account-email"></p>
+            <p class="udash-hero-tags">
+              <span id="profile-member-since">Member</span>
+              <span id="profile-order-count">0 orders</span>
+            </p>
           </div>
-          <div class="field">
-            <label for="profile-phone">Phone number</label>
-            <input type="tel" id="profile-phone" name="phone" required autocomplete="tel">
+          <a class="btn btn-gold" href="request.html">Order Now</a>
+        </div>
+
+        <form id="account-profile-form" novalidate>
+          <div class="form-card udash-card-form">
+            <span class="eyebrow">Personal</span>
+            <h2>Identity</h2>
+            <p class="muted">This is the name and numbers the desk will use on quotes and WhatsApp.</p>
+            <div class="udash-fields">
+              <div class="field">
+                <label for="profile-name">Full name</label>
+                <input type="text" id="profile-name" name="full_name" required autocomplete="name">
+              </div>
+              <div class="field">
+                <label for="profile-company">Business / company</label>
+                <input type="text" id="profile-company" name="company_name" autocomplete="organization" placeholder="Optional">
+              </div>
+              <div class="field">
+                <label for="profile-phone">Phone number</label>
+                <input type="tel" id="profile-phone" name="phone" required autocomplete="tel" placeholder="0XX XXX XXXX">
+              </div>
+              <div class="field">
+                <label for="profile-whatsapp">WhatsApp number</label>
+                <input type="tel" id="profile-whatsapp" name="whatsapp" autocomplete="tel" placeholder="Same as phone if empty">
+              </div>
+            </div>
+            <label class="udash-check">
+              <input type="checkbox" id="profile-whatsapp-same">
+              WhatsApp is the same as my phone number
+            </label>
           </div>
-          <div class="hero-actions">
-            <button type="submit" class="btn btn-gold">Save details</button>
+
+          <div class="form-card udash-card-form">
+            <span class="eyebrow">Ghana</span>
+            <h2>Delivery address</h2>
+            <p class="muted">Used when a shipment is ready for pickup or delivery.</p>
+            <div class="udash-fields">
+              <div class="field">
+                <label for="profile-region">Region</label>
+                <select id="profile-region" name="region">
+                  <option value="">Select region</option>
+                  <option>Greater Accra</option>
+                  <option>Ashanti</option>
+                  <option>Western</option>
+                  <option>Eastern</option>
+                  <option>Central</option>
+                  <option>Volta</option>
+                  <option>Northern</option>
+                  <option>Upper East</option>
+                  <option>Upper West</option>
+                  <option>Bono</option>
+                  <option>Bono East</option>
+                  <option>Ahafo</option>
+                  <option>Oti</option>
+                  <option>Savannah</option>
+                  <option>North East</option>
+                  <option>Western North</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="profile-city">City / area</label>
+                <input type="text" id="profile-city" name="city" autocomplete="address-level2" placeholder="e.g. East Legon">
+              </div>
+            </div>
+            <div class="field">
+              <label for="profile-address">Street address</label>
+              <input type="text" id="profile-address" name="address" autocomplete="street-address" placeholder="House number, street">
+            </div>
+            <div class="field">
+              <label for="profile-landmark">Landmark</label>
+              <input type="text" id="profile-landmark" name="landmark" placeholder="Near a school, church, or junction">
+            </div>
           </div>
-          <div id="profile-status" class="form-status"></div>
+
+          <div class="form-card udash-card-form">
+            <span class="eyebrow">Sourcing</span>
+            <h2>Import preferences</h2>
+            <p class="muted">The desk still quotes one landed GH₵ price. Sea freight to Tema is the default lane.</p>
+            <div class="field">
+              <label for="profile-origin">Preferred origin</label>
+              <select id="profile-origin" name="preferred_origin">
+                <option value="either">China or Turkey — whichever fits</option>
+                <option value="china">China</option>
+                <option value="turkey">Turkey</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="profile-notes">Notes for the desk</label>
+              <textarea id="profile-notes" name="desk_notes" rows="4" placeholder="Sizes, brands, budget range, or anything we should remember"></textarea>
+            </div>
+            <div class="hero-actions">
+              <button type="submit" class="btn btn-gold">Save profile</button>
+            </div>
+            <div id="profile-status" class="form-status"></div>
+          </div>
         </form>
       </section>
 
@@ -222,24 +311,105 @@
       </section>
 
       <section class="udash-panel" data-udash-panel="settings" hidden>
+        <div class="udash-hero">
+          <div class="udash-hero-copy">
+            <span class="eyebrow">Setting</span>
+            <h2>Account security</h2>
+            <p class="muted" id="settings-last-signin">Signed in</p>
+          </div>
+        </div>
+
+        <div class="form-card udash-card-form">
+          <span class="eyebrow">Login</span>
+          <h2>Email address</h2>
+          <p class="muted">This is the email you use to sign in. We send a confirm link to the new inbox before it changes.</p>
+          <form id="account-email-form" novalidate>
+            <div class="field">
+              <label for="settings-current-email">Current email</label>
+              <input type="email" id="settings-current-email" name="current_email" readonly>
+            </div>
+            <div class="udash-fields">
+              <div class="field">
+                <label for="settings-new-email">New email</label>
+                <input type="email" id="settings-new-email" name="new_email" required autocomplete="email">
+              </div>
+              <div class="field">
+                <label for="settings-confirm-email">Confirm new email</label>
+                <input type="email" id="settings-confirm-email" name="confirm_email" required autocomplete="email">
+              </div>
+            </div>
+            <div class="field">
+              <label for="settings-email-password">Current password</label>
+              <input type="password" id="settings-email-password" name="current_password" required autocomplete="current-password">
+            </div>
+            <button type="submit" class="btn btn-gold">Change email</button>
+            <div id="account-email-status" class="form-status"></div>
+          </form>
+        </div>
+
         <form id="account-password-form" class="form-card udash-card-form" novalidate>
-          <span class="eyebrow">Setting</span>
-          <h2>Password</h2>
+          <span class="eyebrow">Password</span>
+          <h2>Change password</h2>
+          <p class="muted">Use at least 6 characters. You will need this the next time you sign in.</p>
           <div class="field">
             <label for="account-current-password">Current password</label>
             <input type="password" id="account-current-password" name="current_password" required autocomplete="current-password">
           </div>
-          <div class="field">
-            <label for="account-new-password">New password</label>
-            <input type="password" id="account-new-password" name="new_password" required autocomplete="new-password" minlength="6">
+          <div class="udash-fields">
+            <div class="field">
+              <label for="account-new-password">New password</label>
+              <input type="password" id="account-new-password" name="new_password" required autocomplete="new-password" minlength="6">
+            </div>
+            <div class="field">
+              <label for="account-confirm-password">Confirm new password</label>
+              <input type="password" id="account-confirm-password" name="confirm_password" required autocomplete="new-password" minlength="6">
+            </div>
           </div>
           <button type="submit" class="btn btn-gold">Save password</button>
           <div id="account-password-status" class="form-status"></div>
         </form>
+
+        <form id="account-notify-form" class="form-card udash-card-form" novalidate>
+          <span class="eyebrow">Alerts</span>
+          <h2>How we reach you</h2>
+          <p class="muted">The desk still quotes and confirms on the official line 054 030 9637. These ticks only say how you prefer updates.</p>
+          <label class="udash-check">
+            <input type="checkbox" id="notify-sms" name="notify_sms">
+            SMS updates on my Ghana number
+          </label>
+          <label class="udash-check">
+            <input type="checkbox" id="notify-whatsapp" name="notify_whatsapp">
+            WhatsApp on the official line
+          </label>
+          <label class="udash-check">
+            <input type="checkbox" id="notify-email" name="notify_email">
+            Email copies to my login inbox
+          </label>
+          <div class="hero-actions">
+            <button type="submit" class="btn btn-gold">Save alerts</button>
+          </div>
+          <div id="account-notify-status" class="form-status"></div>
+        </form>
+
         <div class="form-card udash-card-form">
-          <h2>Session</h2>
-          <p class="muted">Sign out of this browser. Your orders stay on the account.</p>
-          <button type="button" class="btn btn-outline-dark" id="account-signout">Sign out</button>
+          <span class="eyebrow">Desk</span>
+          <h2>Official line</h2>
+          <p class="muted">Pricing, payment, and confirmation happen here only. If another number asks for a private fee, it is not Mwinbarka.</p>
+          <p class="udash-line">054 030 9637</p>
+          <div class="hero-actions">
+            <a class="btn btn-gold" href="https://wa.me/233540309637" target="_blank" rel="noopener">WhatsApp the desk</a>
+            <a class="btn btn-outline-dark" href="contact.html">Contact</a>
+          </div>
+        </div>
+
+        <div class="form-card udash-card-form">
+          <span class="eyebrow">Session</span>
+          <h2>Devices</h2>
+          <p class="muted">Sign out of this browser, or every device using this account. Your orders stay on the file.</p>
+          <div class="hero-actions">
+            <button type="button" class="btn btn-outline-dark" id="account-signout">Sign out</button>
+            <button type="button" class="btn btn-outline-dark" id="account-signout-all">Sign out everywhere</button>
+          </div>
         </div>
       </section>
     </div>
@@ -258,6 +428,6 @@
 <a href="https://wa.me/233540309637" class="wa-float" target="_blank" rel="noopener" aria-label="Join our channel">💬</a>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-client.js"></script>
-<script src="script.js?v=brand14"></script>
+<script src="script.js?v=brand15"></script>
 </body>
 </html>

@@ -533,6 +533,29 @@ grant execute on function private.is_owner() to anon, authenticated;
 
 grant update (is_staff, staff_role) on table public.profiles to authenticated;
 
+alter table public.profiles
+  add column if not exists company_name text not null default '',
+  add column if not exists whatsapp text not null default '',
+  add column if not exists region text not null default '',
+  add column if not exists city text not null default '',
+  add column if not exists address text not null default '',
+  add column if not exists landmark text not null default '',
+  add column if not exists preferred_origin text not null default 'either',
+  add column if not exists desk_notes text not null default '',
+  add column if not exists notify_sms boolean not null default true,
+  add column if not exists notify_whatsapp boolean not null default true,
+  add column if not exists notify_email boolean not null default true,
+  add column if not exists updated_at timestamptz not null default now();
+
+alter table public.profiles drop constraint if exists profiles_preferred_origin_check;
+alter table public.profiles add constraint profiles_preferred_origin_check
+  check (preferred_origin in ('china', 'turkey', 'either'));
+
+grant update (
+  full_name, phone, company_name, whatsapp, region, city, address, landmark,
+  preferred_origin, desk_notes, notify_sms, notify_whatsapp, notify_email, updated_at
+) on table public.profiles to authenticated;
+
 drop policy if exists "Owners can manage staff profiles" on public.profiles;
 create policy "Owners can manage staff profiles"
   on public.profiles for update to authenticated

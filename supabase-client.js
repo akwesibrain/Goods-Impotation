@@ -48,7 +48,7 @@ window.getMyProfile = async function () {
   if (!user || !supabaseClient) return null;
   const { data } = await supabaseClient
     .from("profiles")
-    .select("id, full_name, phone, is_staff, staff_role")
+    .select("id, full_name, phone, company_name, whatsapp, region, city, address, landmark, preferred_origin, desk_notes, notify_sms, notify_whatsapp, notify_email, is_staff, staff_role, created_at")
     .eq("id", user.id)
     .maybeSingle();
   return {
@@ -56,8 +56,21 @@ window.getMyProfile = async function () {
     email: user.email || "",
     full_name: (data && data.full_name) || user.user_metadata?.full_name || "",
     phone: (data && data.phone) || user.user_metadata?.phone || "",
+    company_name: (data && data.company_name) || "",
+    whatsapp: (data && data.whatsapp) || "",
+    region: (data && data.region) || "",
+    city: (data && data.city) || "",
+    address: (data && data.address) || "",
+    landmark: (data && data.landmark) || "",
+    preferred_origin: (data && data.preferred_origin) || "either",
+    desk_notes: (data && data.desk_notes) || "",
+    notify_sms: !data || data.notify_sms !== false,
+    notify_whatsapp: !data || data.notify_whatsapp !== false,
+    notify_email: !data || data.notify_email !== false,
     is_staff: !!(data && data.is_staff),
     staff_role: (data && data.staff_role) || (data && data.is_staff ? "owner" : "assistant"),
+    created_at: (data && data.created_at) || user.created_at || "",
+    last_sign_in_at: user.last_sign_in_at || "",
   };
 };
 
@@ -93,9 +106,9 @@ window.signUpCustomer = async function ({ email, password, fullName, phone }) {
   return { needsConfirm: !!(data.user && !data.session) };
 };
 
-window.signOutCustomer = async function () {
+window.signOutCustomer = async function (everywhere) {
   if (!supabaseClient) return;
-  await supabaseClient.auth.signOut();
+  await supabaseClient.auth.signOut({ scope: everywhere ? "global" : "local" });
 };
 
 window.updateMyPassword = async function ({ currentPassword, newPassword }) {
@@ -134,12 +147,44 @@ window.updateMyEmail = async function ({ currentPassword, newEmail, emailRedirec
   return true;
 };
 
-window.updateMyProfile = async function ({ full_name, phone }) {
+window.updateMyProfile = async function (fields) {
+  const user = await window.getSessionUser();
+  if (!user || !supabaseClient) throw new Error("Please log in first.");
+  const payload = {
+    full_name: fields.full_name || "",
+    phone: fields.phone || "",
+    company_name: fields.company_name || "",
+    whatsapp: fields.whatsapp || "",
+    region: fields.region || "",
+    city: fields.city || "",
+    address: fields.address || "",
+    landmark: fields.landmark || "",
+    preferred_origin: fields.preferred_origin || "either",
+    desk_notes: fields.desk_notes || "",
+    updated_at: new Date().toISOString(),
+  };
+  if (typeof fields.notify_sms === "boolean") payload.notify_sms = fields.notify_sms;
+  if (typeof fields.notify_whatsapp === "boolean") payload.notify_whatsapp = fields.notify_whatsapp;
+  if (typeof fields.notify_email === "boolean") payload.notify_email = fields.notify_email;
+  const { error } = await supabaseClient
+    .from("profiles")
+    .update(payload)
+    .eq("id", user.id);
+  if (error) throw error;
+  return true;
+};
+
+window.updateMyAlerts = async function ({ notify_sms, notify_whatsapp, notify_email }) {
   const user = await window.getSessionUser();
   if (!user || !supabaseClient) throw new Error("Please log in first.");
   const { error } = await supabaseClient
     .from("profiles")
-    .update({ full_name: full_name || "", phone: phone || "" })
+    .update({
+      notify_sms: !!notify_sms,
+      notify_whatsapp: !!notify_whatsapp,
+      notify_email: !!notify_email,
+      updated_at: new Date().toISOString(),
+    })
     .eq("id", user.id);
   if (error) throw error;
   return true;

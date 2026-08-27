@@ -1612,11 +1612,15 @@ async function prefillRequestFromAccount() {
   if (form.elements.name && !form.elements.name.value && profile.full_name) {
     form.elements.name.value = profile.full_name;
   }
-  if (form.elements.phone && !form.elements.phone.value && profile.phone) {
-    form.elements.phone.value = profile.phone;
+  if (form.elements.phone && !form.elements.phone.value && (profile.whatsapp || profile.phone)) {
+    form.elements.phone.value = profile.whatsapp || profile.phone;
   }
   if (form.elements.email && !form.elements.email.value && profile.email) {
     form.elements.email.value = profile.email;
+  }
+  if (form.elements.location && !form.elements.location.value) {
+    const place = [profile.city, profile.region].filter(Boolean).join(", ");
+    if (place) form.elements.location.value = place;
   }
 }
 
@@ -1765,6 +1769,60 @@ function filterAccountOrders(rows, query) {
   });
 }
 
+function formatAccountDate(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+}
+
+function fillProfileForms(profile, orderCount) {
+  const hello = document.getElementById("account-hello");
+  const email = document.getElementById("account-email");
+  const heroAvatar = document.getElementById("profile-hero-avatar");
+  const member = document.getElementById("profile-member-since");
+  const orderEl = document.getElementById("profile-order-count");
+  const lastSeen = document.getElementById("settings-last-signin");
+  const currentEmail = document.getElementById("settings-current-email");
+  if (hello) hello.textContent = profile.full_name || "Signed in";
+  if (email) email.textContent = profile.email || "";
+  if (heroAvatar) heroAvatar.textContent = accountInitials(profile.full_name) || "MW";
+  if (member) member.textContent = profile.created_at ? `Member since ${formatAccountDate(profile.created_at)}` : "Member";
+  if (orderEl) orderEl.textContent = `${orderCount} order${orderCount === 1 ? "" : "s"}`;
+  if (lastSeen) {
+    lastSeen.textContent = profile.last_sign_in_at
+      ? `Last sign-in ${formatAccountDate(profile.last_sign_in_at)}`
+      : "Signed in on this device";
+  }
+  if (currentEmail) currentEmail.value = profile.email || "";
+
+  const form = document.getElementById("account-profile-form");
+  if (form) {
+    const setVal = (name, value) => {
+      if (form.elements[name]) form.elements[name].value = value || "";
+    };
+    setVal("full_name", profile.full_name);
+    setVal("company_name", profile.company_name);
+    setVal("phone", profile.phone);
+    setVal("whatsapp", profile.whatsapp);
+    setVal("region", profile.region);
+    setVal("city", profile.city);
+    setVal("address", profile.address);
+    setVal("landmark", profile.landmark);
+    setVal("preferred_origin", profile.preferred_origin || "either");
+    setVal("desk_notes", profile.desk_notes);
+    const same = document.getElementById("profile-whatsapp-same");
+    if (same) same.checked = !profile.whatsapp || profile.whatsapp === profile.phone;
+  }
+
+  const notify = document.getElementById("account-notify-form");
+  if (notify) {
+    if (notify.elements.notify_sms) notify.elements.notify_sms.checked = profile.notify_sms !== false;
+    if (notify.elements.notify_whatsapp) notify.elements.notify_whatsapp.checked = profile.notify_whatsapp !== false;
+    if (notify.elements.notify_email) notify.elements.notify_email.checked = profile.notify_email !== false;
+  }
+}
+
 async function mountAccountPage() {
   const authBox = document.getElementById("account-auth");
   const signedBox = document.getElementById("account-signed");
@@ -1845,18 +1903,11 @@ async function mountAccountPage() {
     signedBox.hidden = false;
     const displayName = profile.full_name || "Customer";
     if (nameEl) nameEl.textContent = displayName;
-    if (roleEl) roleEl.textContent = "Mwinbarka customer";
+    if (roleEl) roleEl.textContent = profile.company_name || "Mwinbarka customer";
     if (avatar) avatar.textContent = accountInitials(displayName) || "MW";
-    const hello = document.getElementById("account-hello");
-    const email = document.getElementById("account-email");
-    const name = document.getElementById("profile-name");
-    const phone = document.getElementById("profile-phone");
-    if (hello) hello.textContent = profile.full_name ? `Hello, ${profile.full_name}` : "Signed in";
-    if (email) email.textContent = profile.email || "";
-    if (name) name.value = profile.full_name || "";
-    if (phone) phone.value = profile.phone || "";
 
     accountRows = window.fetchMyOrders ? await window.fetchMyOrders() : [];
+    fillProfileForms(profile, accountRows.length);
     paintAccountDashboard(accountRows);
     renderLists(searchInput && searchInput.value);
     showAccountPanel(accountPanelFromHash());
@@ -1915,6 +1966,17 @@ async function mountAccountPage() {
     });
   }
 
+  const whatsappSame = document.getElementById("profile-whatsapp-same");
+  const phoneInput = document.getElementById("profile-phone");
+  const whatsappInput = document.getElementById("profile-whatsapp");
+  if (whatsappSame && phoneInput && whatsappInput) {
+    const syncWhatsapp = () => {
+      if (whatsappSame.checked) whatsappInput.value = phoneInput.value;
+    };
+    whatsappSame.addEventListener("change", syncWhatsapp);
+    phoneInput.addEventListener("input", syncWhatsapp);
+  }
+
   const profileForm = document.getElementById("account-profile-form");
   if (profileForm) {
     profileForm.addEventListener("submit", async (e) => {
@@ -1922,15 +1984,54 @@ async function mountAccountPage() {
       const status = document.getElementById("profile-status");
       try {
         if (!window.updateMyProfile) throw new Error("Account service is not connected yet.");
+        const whatsapp = whatsappSame && whatsappSame.checked
+          ? profileForm.elements.phone.value.trim()
+          : profileForm.elements.whatsapp.value.trim();
         await window.updateMyProfile({
           full_name: profileForm.elements.full_name.value.trim(),
+          company_name: profileForm.elements.company_name.value.trim(),
           phone: profileForm.elements.phone.value.trim(),
+          whatsapp,
+          region: profileForm.elements.region.value,
+          city: profileForm.elements.city.value.trim(),
+          address: profileForm.elements.address.value.trim(),
+          landmark: profileForm.elements.landmark.value.trim(),
+          preferred_origin: profileForm.elements.preferred_origin.value || "either",
+          desk_notes: profileForm.elements.desk_notes.value.trim(),
         });
-        showStatus(status, "success", "Details saved.");
+        showStatus(status, "success", "Profile saved. The desk will use this on the next quote.");
         await refreshAccountChrome();
         await paint();
       } catch (err) {
         showStatus(status, "error", err.message || "Could not save details.");
+      }
+    });
+  }
+
+  const emailForm = document.getElementById("account-email-form");
+  if (emailForm) {
+    emailForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const status = document.getElementById("account-email-status");
+      const next = emailForm.elements.new_email.value.trim();
+      const confirm = emailForm.elements.confirm_email.value.trim();
+      if (next.toLowerCase() !== confirm.toLowerCase()) {
+        showStatus(status, "error", "The two new email addresses do not match.");
+        return;
+      }
+      try {
+        if (!window.updateMyEmail) throw new Error("Account service is not connected yet.");
+        await window.updateMyEmail({
+          currentPassword: emailForm.elements.current_password.value,
+          newEmail: next,
+          emailRedirectTo: window.location.origin + "/account.html",
+        });
+        emailForm.elements.new_email.value = "";
+        emailForm.elements.confirm_email.value = "";
+        emailForm.elements.current_password.value = "";
+        showStatus(status, "success", "Confirm link sent. Open the new inbox, tap the link, then sign in with the new email.");
+      } catch (err) {
+        showStatus(status, "error", err.message || "Could not change the email.");
       }
     });
   }
@@ -1942,9 +2043,13 @@ async function mountAccountPage() {
       const status = document.getElementById("account-password-status");
       try {
         if (!window.updateMyPassword) throw new Error("Account service is not connected yet.");
+        const next = passwordForm.elements.new_password.value;
+        const confirm = passwordForm.elements.confirm_password.value;
+        if (next.length < 6) throw new Error("The new password must be at least 6 characters.");
+        if (next !== confirm) throw new Error("The two new passwords do not match.");
         await window.updateMyPassword({
           currentPassword: passwordForm.elements.current_password.value,
-          newPassword: passwordForm.elements.new_password.value,
+          newPassword: next,
         });
         passwordForm.reset();
         showStatus(status, "success", "Password saved. Use it the next time you sign in.");
@@ -1954,10 +2059,37 @@ async function mountAccountPage() {
     });
   }
 
+  const notifyForm = document.getElementById("account-notify-form");
+  if (notifyForm) {
+    notifyForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const status = document.getElementById("account-notify-status");
+      try {
+        if (!window.updateMyAlerts) throw new Error("Account service is not connected yet.");
+        await window.updateMyAlerts({
+          notify_sms: notifyForm.elements.notify_sms.checked,
+          notify_whatsapp: notifyForm.elements.notify_whatsapp.checked,
+          notify_email: notifyForm.elements.notify_email.checked,
+        });
+        showStatus(status, "success", "Alert preferences saved.");
+      } catch (err) {
+        showStatus(status, "error", err.message || "Could not save alerts.");
+      }
+    });
+  }
+
   const signOut = document.getElementById("account-signout");
   if (signOut) {
     signOut.addEventListener("click", async () => {
       if (window.signOutCustomer) await window.signOutCustomer();
+      window.location.href = "account.html";
+    });
+  }
+  const signOutAll = document.getElementById("account-signout-all");
+  if (signOutAll) {
+    signOutAll.addEventListener("click", async () => {
+      if (!window.confirm("Sign out of every device using this account?")) return;
+      if (window.signOutCustomer) await window.signOutCustomer(true);
       window.location.href = "account.html";
     });
   }
