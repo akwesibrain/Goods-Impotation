@@ -62,8 +62,6 @@ window.getMyProfile = async function () {
     city: (data && data.city) || "",
     address: (data && data.address) || "",
     landmark: (data && data.landmark) || "",
-    preferred_origin: (data && data.preferred_origin) || "either",
-    desk_notes: (data && data.desk_notes) || "",
     notify_sms: !data || data.notify_sms !== false,
     notify_whatsapp: !data || data.notify_whatsapp !== false,
     notify_email: !data || data.notify_email !== false,
