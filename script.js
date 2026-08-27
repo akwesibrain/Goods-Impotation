@@ -603,6 +603,7 @@ function enhanceSearch() {
 
 function mountMobileChrome() {
   if (document.body && document.body.id === "admin-page") return;
+  if (document.body && document.body.classList.contains("account-page")) return;
   document.body.classList.add("has-tabbar");
 
   if (!document.querySelector(".header-phone")) {
@@ -1619,6 +1620,15 @@ async function prefillRequestFromAccount() {
   }
 }
 
+const ACCOUNT_SHIPMENT = {
+  sourcing: "Sourcing",
+  warehouse: "Warehouse",
+  vessel: "On the vessel",
+  tema: "Tema",
+  ready: "Ready for pickup",
+};
+const ACCOUNT_PANEL_ALIASES = { orders: "stats", transit: "notification", signup: "home", login: "home" };
+
 function showAccountTab(name) {
   const login = document.getElementById("account-login-form");
   const signup = document.getElementById("account-signup-form");
@@ -1630,16 +1640,129 @@ function showAccountTab(name) {
   });
 }
 
+function accountPanelFromHash() {
+  const raw = (location.hash || "").replace("#", "");
+  if (raw === "signup" || raw === "login") return "home";
+  return ACCOUNT_PANEL_ALIASES[raw] || raw || "home";
+}
+
+function setAccountMenuOpen(open) {
+  const shell = document.getElementById("account-shell");
+  const scrim = document.getElementById("udash-scrim");
+  if (shell) shell.classList.toggle("is-open", !!open);
+  if (scrim) scrim.hidden = !open;
+}
+
+function showAccountPanel(name) {
+  const panel = ACCOUNT_PANEL_ALIASES[name] || name || "home";
+  document.querySelectorAll("[data-udash-panel]").forEach((el) => {
+    el.hidden = el.dataset.udashPanel !== panel;
+  });
+  document.querySelectorAll("[data-udash]").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.udash === panel);
+  });
+  setAccountMenuOpen(false);
+}
+
 function orderCardHtml(row) {
   const when = row.created_at ? new Date(row.created_at).toLocaleDateString() : "";
+  const ship = ACCOUNT_SHIPMENT[row.shipment_status] || "";
+  const bits = [row.category, row.quantity, row.location].filter(Boolean).join(" · ");
   return `<article class="account-order">
     <div>
       <strong>${escapeHtml(row.request_details || "Import request")}</strong>
-      <span>${escapeHtml(row.category || "")} · ${escapeHtml(row.quantity || "")}</span>
+      <span>${escapeHtml(bits)}</span>
     </div>
-    <em>${escapeHtml(row.status || "New")}</em>
+    <em>${escapeHtml(row.status || "New")}${ship ? " · " + ship : ""}</em>
     <small>${escapeHtml(when)}</small>
   </article>`;
+}
+
+function accountInitials(name) {
+  const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "";
+  return ((parts[0][0] || "") + (parts[1]?.[0] || "")).toUpperCase();
+}
+
+function countByStatus(rows) {
+  const counts = { New: 0, Contacted: 0, Quoted: 0, Confirmed: 0, Closed: 0 };
+  rows.forEach((row) => {
+    const status = row.status || "New";
+    if (counts[status] != null) counts[status] += 1;
+  });
+  return counts;
+}
+
+function paintAccountDashboard(rows) {
+  const total = rows.length;
+  const active = rows.filter((row) => row.status !== "Closed").length;
+  const transit = rows.filter((row) => row.shipment_status || ["Quoted", "Confirmed"].includes(row.status)).length;
+  const counts = countByStatus(rows);
+  const setText = (id, value) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+  };
+  setText("stat-total", String(total));
+  setText("stat-active", String(active));
+  setText("stat-active-note", active ? "Open files" : "No open files");
+  setText("stat-transit", String(transit));
+  setText("stat-transit-note", transit ? "Moving to Ghana" : "Nothing moving yet");
+  setText("pill-new", String(counts.New));
+  setText("pill-quoted", String(counts.Quoted));
+  setText("pill-confirmed", String(counts.Confirmed));
+
+  const mix = [
+    ["New", counts.New, "#8ec5ff"],
+    ["Contacted", counts.Contacted, "#5aa6ff"],
+    ["Quoted", counts.Quoted, "#3b82f6"],
+    ["Confirmed", counts.Confirmed, "#1d4ed8"],
+  ];
+  document.querySelectorAll(".udash-ring").forEach((ring, i) => {
+    const count = mix[i] ? mix[i][1] : 0;
+    ring.style.setProperty("--p", total ? Math.round((count / total) * 100) : 0);
+  });
+  const legend = document.getElementById("udash-legend");
+  if (legend) {
+    legend.innerHTML = mix.map(([label, count, color]) =>
+      `<li><i style="background:${color}"></i>${label} · ${count}</li>`
+    ).join("");
+  }
+
+  const bars = document.getElementById("udash-bars");
+  if (bars) {
+    const now = new Date();
+    const months = [];
+    for (let i = 6; i >= 0; i -= 1) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push({
+        key: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`,
+        label: date.toLocaleString("en", { month: "short" }),
+        count: 0,
+      });
+    }
+    rows.forEach((row) => {
+      if (!row.created_at) return;
+      const key = String(row.created_at).slice(0, 7);
+      const bucket = months.find((month) => month.key === key);
+      if (bucket) bucket.count += 1;
+    });
+    const max = Math.max(1, ...months.map((month) => month.count));
+    bars.innerHTML = months.map((month) => {
+      const height = Math.max(8, Math.round((month.count / max) * 140));
+      return `<div class="udash-bar" title="${month.count} order${month.count === 1 ? "" : "s"}"><i style="height:${height}px"></i><small>${escapeHtml(month.label)}</small></div>`;
+    }).join("");
+  }
+}
+
+function filterAccountOrders(rows, query) {
+  const needle = String(query || "").trim().toLowerCase();
+  if (!needle) return rows;
+  return rows.filter((row) => {
+    const hay = [row.request_details, row.category, row.status, row.location, ACCOUNT_SHIPMENT[row.shipment_status]]
+      .join(" ")
+      .toLowerCase();
+    return hay.includes(needle);
+  });
 }
 
 async function mountAccountPage() {
@@ -1653,16 +1776,77 @@ async function mountAccountPage() {
   document.querySelectorAll("[data-account-tab]").forEach((btn) => {
     btn.addEventListener("click", () => showAccountTab(btn.dataset.accountTab));
   });
+  document.querySelectorAll("[data-udash]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const panel = btn.dataset.udash;
+      if (signedBox.hidden && panel !== "home") {
+        showAccountPanel("home");
+        return;
+      }
+      showAccountPanel(panel);
+      history.replaceState(null, "", "#" + panel);
+    });
+  });
+  document.getElementById("udash-menu")?.addEventListener("click", () => {
+    const shell = document.getElementById("account-shell");
+    setAccountMenuOpen(!(shell && shell.classList.contains("is-open")));
+  });
+  document.getElementById("udash-scrim")?.addEventListener("click", () => setAccountMenuOpen(false));
+
+  let accountRows = [];
+  const renderLists = (query) => {
+    const rows = filterAccountOrders(accountRows, query);
+    const ordersEl = document.getElementById("account-orders");
+    const transitEl = document.getElementById("account-transit");
+    if (ordersEl) {
+      ordersEl.innerHTML = rows.length
+        ? rows.map(orderCardHtml).join("")
+        : `<p class="empty-note">No orders on this account yet. <a href="request.html">Order Now</a></p>`;
+    }
+    const transit = rows.filter((row) => row.shipment_status || ["Quoted", "Confirmed"].includes(row.status));
+    if (transitEl) {
+      transitEl.innerHTML = transit.length
+        ? transit.map(orderCardHtml).join("")
+        : `<p class="empty-note">Nothing in transit yet. Quoted and confirmed files show here.</p>`;
+    }
+  };
+
+  const searchForm = document.getElementById("udash-search");
+  const searchInput = document.getElementById("udash-search-input");
+  if (searchForm) {
+    searchForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      renderLists(searchInput && searchInput.value);
+      if (signedBox && !signedBox.hidden) showAccountPanel("stats");
+    });
+  }
+  if (searchInput) {
+    searchInput.addEventListener("input", () => renderLists(searchInput.value));
+  }
 
   const paint = async () => {
     const profile = window.getMyProfile ? await window.getMyProfile() : null;
+    const nameEl = document.getElementById("udash-name");
+    const roleEl = document.getElementById("udash-role");
+    const avatar = document.getElementById("udash-avatar");
     if (!profile) {
       authBox.hidden = false;
       signedBox.hidden = true;
+      if (nameEl) nameEl.textContent = "Guest";
+      if (roleEl) roleEl.textContent = "Log in to your desk file";
+      if (avatar) {
+        avatar.textContent = "";
+        avatar.innerHTML = '<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 19.2c1.2-3.3 3.5-5 6.5-5s5.3 1.7 6.5 5"/></svg>';
+      }
+      showAccountPanel("home");
       return;
     }
     authBox.hidden = true;
     signedBox.hidden = false;
+    const displayName = profile.full_name || "Customer";
+    if (nameEl) nameEl.textContent = displayName;
+    if (roleEl) roleEl.textContent = "Mwinbarka customer";
+    if (avatar) avatar.textContent = accountInitials(displayName) || "MW";
     const hello = document.getElementById("account-hello");
     const email = document.getElementById("account-email");
     const name = document.getElementById("profile-name");
@@ -1672,20 +1856,10 @@ async function mountAccountPage() {
     if (name) name.value = profile.full_name || "";
     if (phone) phone.value = profile.phone || "";
 
-    const ordersEl = document.getElementById("account-orders");
-    const transitEl = document.getElementById("account-transit");
-    const rows = window.fetchMyOrders ? await window.fetchMyOrders() : [];
-    if (ordersEl) {
-      ordersEl.innerHTML = rows.length
-        ? rows.map(orderCardHtml).join("")
-        : `<p class="empty-note">No orders on this account yet. <a href="request.html">Order Now</a></p>`;
-    }
-    const transit = rows.filter((row) => ["Quoted", "Confirmed"].includes(row.status));
-    if (transitEl) {
-      transitEl.innerHTML = transit.length
-        ? transit.map(orderCardHtml).join("")
-        : `<p class="empty-note">Nothing in transit yet. Quoted and confirmed files show here.</p>`;
-    }
+    accountRows = window.fetchMyOrders ? await window.fetchMyOrders() : [];
+    paintAccountDashboard(accountRows);
+    renderLists(searchInput && searchInput.value);
+    showAccountPanel(accountPanelFromHash());
   };
 
   const loginForm = document.getElementById("account-login-form");
@@ -1754,8 +1928,28 @@ async function mountAccountPage() {
         });
         showStatus(status, "success", "Details saved.");
         await refreshAccountChrome();
+        await paint();
       } catch (err) {
         showStatus(status, "error", err.message || "Could not save details.");
+      }
+    });
+  }
+
+  const passwordForm = document.getElementById("account-password-form");
+  if (passwordForm) {
+    passwordForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const status = document.getElementById("account-password-status");
+      try {
+        if (!window.updateMyPassword) throw new Error("Account service is not connected yet.");
+        await window.updateMyPassword({
+          currentPassword: passwordForm.elements.current_password.value,
+          newPassword: passwordForm.elements.new_password.value,
+        });
+        passwordForm.reset();
+        showStatus(status, "success", "Password saved. Use it the next time you sign in.");
+      } catch (err) {
+        showStatus(status, "error", err.message || "Could not save the password.");
       }
     });
   }
@@ -1769,10 +1963,6 @@ async function mountAccountPage() {
   }
 
   await paint();
-  if (hash === "orders" || hash === "transit") {
-    const target = document.getElementById(hash);
-    if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
 }
 
 function escapeHtml(value) {

@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Account — Mwinbarka Imports</title>
 <meta name="description" content="Sign up or log in to Mwinbarka Imports to keep your orders on one account.">
-<link rel="stylesheet" href="styles.css?v=brand30">
+<link rel="stylesheet" href="styles.css?v=brand31">
 </head>
-<body>
+<body class="account-page">
 <header class="site-header">
   <div class="announce-bar">Accra desk · Landed quotes in GH₵ · Official line 054 030 9637 only</div>
   <div class="header-main container">
@@ -15,146 +15,239 @@
       <img src="assets/logo.png" alt="Mwinbarka Imports logo">
       <span class="logo-lockup">Mwinbarka <em>Imports</em><small>China · Turkey → Ghana</small></span>
     </a>
-    <form class="site-search" action="request.html" method="get" role="search">
-      <input type="search" name="q" placeholder="What do you want imported?" aria-label="Search what to import">
-      <button type="submit" class="btn btn-gold">Look up</button>
-    </form>
     <a href="request.html" class="btn btn-gold nav-cta">Order Now</a>
     <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">☰</button>
   </div>
   <nav class="nav container">
     <ul class="nav-links">
       <li><a href="index.html">Desk</a></li>
-      <li><a href="how-it-works.html">Process</a></li>
-      <li><a href="categories.html">What we bring</a></li>
-      <li><a href="shipping.html">Freight</a></li>
-      <li><a href="about.html">The desk</a></li>
-      <li><a href="faq.html">FAQ</a></li>
-      <li><a href="contact.html">Contact</a></li>
       <li><a href="account.html" class="active">Account</a></li>
       <li class="nav-request"><a href="request.html">Order Now</a></li>
     </ul>
   </nav>
 </header>
 
-<section class="page-hero">
-  <div class="container">
-    <span class="eyebrow">MW–ACCOUNT</span>
-    <h1>Your desk file.</h1>
-    <p>Sign up or log in to keep orders on one account. Guests can still Order Now without signing in.</p>
-  </div>
-</section>
+<div class="udash" id="account-shell">
+  <div class="udash-scrim" id="udash-scrim" hidden></div>
+  <aside class="udash-side" id="udash-side">
+    <div class="udash-profile">
+      <div class="udash-avatar" id="udash-avatar" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 19.2c1.2-3.3 3.5-5 6.5-5s5.3 1.7 6.5 5"/></svg>
+      </div>
+      <strong id="udash-name">Guest</strong>
+      <small id="udash-role">Log in to your desk file</small>
+    </div>
+    <nav class="udash-nav" aria-label="Account">
+      <button type="button" class="udash-link active" data-udash="home">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.2 12 4l8 7.2V20H15v-6H9v6H4z"/></svg>
+        Home
+      </button>
+      <button type="button" class="udash-link" data-udash="profile">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 19.2c1.2-3.3 3.5-5 6.5-5s5.3 1.7 6.5 5"/></svg>
+        Profile
+      </button>
+      <button type="button" class="udash-link" data-udash="stats">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9h-9z"/><path d="M13 3.2A9 9 0 0 1 20.8 11H13z"/></svg>
+        Stats
+      </button>
+      <a class="udash-link" href="https://wa.me/233540309637" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h16v11H4z"/><path d="m4 7 8 6 8-6"/></svg>
+        Messages
+      </a>
+      <button type="button" class="udash-link" data-udash="notification">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 17h12v-1.2c0-2.2 1.4-3.4 1.4-5.4C19.4 7.6 16.5 5 12 5S4.6 7.6 4.6 10.4c0 2 1.4 3.2 1.4 5.4V17z"/><path d="M10 19a2 2 0 0 0 4 0"/></svg>
+        Notification
+      </button>
+    </nav>
+    <div class="udash-side-foot">
+      <button type="button" class="udash-link" data-udash="settings">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a7.6 7.6 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.8-1L13 3h-2l-.2 2.6a7.6 7.6 0 0 0-1.8 1l-2.4-1-2 3.4 2 1.6a7.6 7.6 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 1.8 1L11 21h2l.2-2.6a7.6 7.6 0 0 0 1.8-1l2.4 1 2-3.4z"/></svg>
+        Setting
+      </button>
+      <a class="udash-site" href="index.html">View site</a>
+    </div>
+  </aside>
 
-<section class="section" id="account-auth">
-  <div class="container account-wrap">
-    <div class="account-tabs" role="tablist">
-      <button type="button" class="chip active" data-account-tab="login">Log in</button>
-      <button type="button" class="chip" data-account-tab="signup">Sign up</button>
+  <div class="udash-main">
+    <header class="udash-head">
+      <button type="button" class="udash-menu" id="udash-menu" aria-label="Open account menu">☰</button>
+      <h1>Dashboard user</h1>
+      <form class="udash-search" id="udash-search" role="search">
+        <input type="search" id="udash-search-input" placeholder="Search your orders" aria-label="Search your orders">
+        <button type="submit" aria-label="Search">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="m20 20-4.2-4.2"/></svg>
+        </button>
+      </form>
+    </header>
+
+    <div id="account-auth">
+      <div class="udash-auth">
+        <div class="account-tabs" role="tablist">
+          <button type="button" class="chip active" data-account-tab="login">Log in</button>
+          <button type="button" class="chip" data-account-tab="signup">Sign up</button>
+        </div>
+
+        <form id="account-login-form" class="form-card udash-card-form" novalidate>
+          <span class="eyebrow">Returning customer</span>
+          <h2>Log in</h2>
+          <p class="muted">Keep orders, quotes, and transit on one desk file. Guests can still Order Now without signing in.</p>
+          <div class="field">
+            <label for="login-email">Email</label>
+            <input type="email" id="login-email" name="email" required autocomplete="email">
+          </div>
+          <div class="field">
+            <label for="login-password">Password</label>
+            <input type="password" id="login-password" name="password" required autocomplete="current-password">
+          </div>
+          <button type="submit" class="btn btn-gold">Log in</button>
+          <div id="login-status" class="form-status"></div>
+        </form>
+
+        <form id="account-signup-form" class="form-card udash-card-form" hidden novalidate>
+          <span class="eyebrow">New customer</span>
+          <h2>Create an account</h2>
+          <div class="field">
+            <label for="signup-name">Full name</label>
+            <input type="text" id="signup-name" name="full_name" required autocomplete="name">
+          </div>
+          <div class="field">
+            <label for="signup-phone">Phone number</label>
+            <input type="tel" id="signup-phone" name="phone" required autocomplete="tel" placeholder="0XX XXX XXXX">
+          </div>
+          <div class="field">
+            <label for="signup-email">Email</label>
+            <input type="email" id="signup-email" name="email" required autocomplete="email">
+          </div>
+          <div class="field">
+            <label for="signup-password">Password</label>
+            <input type="password" id="signup-password" name="password" required autocomplete="new-password" minlength="6">
+            <div class="hint">At least 6 characters.</div>
+          </div>
+          <button type="submit" class="btn btn-gold">Sign up</button>
+          <div id="signup-status" class="form-status"></div>
+        </form>
+      </div>
     </div>
 
-    <form id="account-login-form" class="form-card" novalidate>
-      <span class="eyebrow">Returning customer</span>
-      <h2>Log in</h2>
-      <div class="field">
-        <label for="login-email">Email</label>
-        <input type="email" id="login-email" name="email" required autocomplete="email">
-      </div>
-      <div class="field">
-        <label for="login-password">Password</label>
-        <input type="password" id="login-password" name="password" required autocomplete="current-password">
-      </div>
-      <button type="submit" class="btn btn-gold">Log in</button>
-      <div id="login-status" class="form-status"></div>
-    </form>
+    <div id="account-signed" hidden>
+      <section class="udash-panel" data-udash-panel="home">
+        <div class="udash-metrics">
+          <article class="udash-metric udash-metric-blue">
+            <span id="stat-total">0</span>
+            <small>Total orders</small>
+          </article>
+          <article class="udash-metric">
+            <div>
+              <strong id="stat-active">0</strong>
+              <em id="stat-active-note">Open files</em>
+            </div>
+            <svg class="udash-mini-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>
+          </article>
+          <article class="udash-metric">
+            <div>
+              <strong id="stat-transit">0</strong>
+              <em id="stat-transit-note">In transit</em>
+            </div>
+            <svg class="udash-mini-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 16h13V8H3z"/><path d="M16 11h3.5L21 14v2h-5"/><circle cx="7" cy="17.5" r="1.5"/><circle cx="17.5" cy="17.5" r="1.5"/></svg>
+          </article>
+        </div>
 
-    <form id="account-signup-form" class="form-card" hidden novalidate>
-      <span class="eyebrow">New customer</span>
-      <h2>Create an account</h2>
-      <div class="field">
-        <label for="signup-name">Full name</label>
-        <input type="text" id="signup-name" name="full_name" required autocomplete="name">
-      </div>
-      <div class="field">
-        <label for="signup-phone">Phone number</label>
-        <input type="tel" id="signup-phone" name="phone" required autocomplete="tel" placeholder="0XX XXX XXXX">
-      </div>
-      <div class="field">
-        <label for="signup-email">Email</label>
-        <input type="email" id="signup-email" name="email" required autocomplete="email">
-      </div>
-      <div class="field">
-        <label for="signup-password">Password</label>
-        <input type="password" id="signup-password" name="password" required autocomplete="new-password" minlength="6">
-        <div class="hint">At least 6 characters.</div>
-      </div>
-      <button type="submit" class="btn btn-gold">Sign up</button>
-      <div id="signup-status" class="form-status"></div>
-    </form>
-  </div>
-</section>
+        <div class="udash-charts">
+          <article class="udash-chart-card">
+            <h2>Order mix</h2>
+            <div class="udash-rings" id="udash-rings" aria-hidden="true">
+              <span class="udash-ring" data-ring="0"></span>
+              <span class="udash-ring" data-ring="1"></span>
+              <span class="udash-ring" data-ring="2"></span>
+              <span class="udash-ring" data-ring="3"></span>
+            </div>
+            <ul class="udash-legend" id="udash-legend"></ul>
+          </article>
+          <article class="udash-chart-card">
+            <h2>Orders this year</h2>
+            <div class="udash-bars" id="udash-bars"></div>
+          </article>
+        </div>
 
-<section class="section" id="account-signed" hidden>
-  <div class="container account-wrap">
-    <form id="account-profile-form" class="form-card" novalidate>
-      <span class="eyebrow">My Account</span>
-      <h2 id="account-hello">Signed in</h2>
-      <p class="muted" id="account-email"></p>
-      <div class="field">
-        <label for="profile-name">Full name</label>
-        <input type="text" id="profile-name" name="full_name" required autocomplete="name">
-      </div>
-      <div class="field">
-        <label for="profile-phone">Phone number</label>
-        <input type="tel" id="profile-phone" name="phone" required autocomplete="tel">
-      </div>
-      <div class="hero-actions">
-        <button type="submit" class="btn btn-gold">Save details</button>
-        <button type="button" class="btn btn-outline-dark" id="account-signout">Sign out</button>
-      </div>
-      <div id="profile-status" class="form-status"></div>
-    </form>
+        <div class="udash-pills">
+          <article class="udash-pill udash-pill-1">
+            <span>New</span>
+            <strong id="pill-new">0</strong>
+          </article>
+          <article class="udash-pill udash-pill-2">
+            <span>Quoted</span>
+            <strong id="pill-quoted">0</strong>
+          </article>
+          <article class="udash-pill udash-pill-3">
+            <span>Confirmed</span>
+            <strong id="pill-confirmed">0</strong>
+          </article>
+        </div>
+      </section>
 
-    <div class="form-card" id="orders">
-      <span class="eyebrow">My Orders</span>
-      <h2>Requests on this account</h2>
-      <div id="account-orders" class="account-order-list">Loading…</div>
+      <section class="udash-panel" data-udash-panel="profile" hidden>
+        <form id="account-profile-form" class="form-card udash-card-form" novalidate>
+          <span class="eyebrow">My Account</span>
+          <h2 id="account-hello">Signed in</h2>
+          <p class="muted" id="account-email"></p>
+          <div class="field">
+            <label for="profile-name">Full name</label>
+            <input type="text" id="profile-name" name="full_name" required autocomplete="name">
+          </div>
+          <div class="field">
+            <label for="profile-phone">Phone number</label>
+            <input type="tel" id="profile-phone" name="phone" required autocomplete="tel">
+          </div>
+          <div class="hero-actions">
+            <button type="submit" class="btn btn-gold">Save details</button>
+          </div>
+          <div id="profile-status" class="form-status"></div>
+        </form>
+      </section>
+
+      <section class="udash-panel" data-udash-panel="stats" hidden id="orders">
+        <div class="form-card udash-card-form">
+          <span class="eyebrow">My Orders</span>
+          <h2>Requests on this account</h2>
+          <div id="account-orders" class="account-order-list">Loading…</div>
+        </div>
+      </section>
+
+      <section class="udash-panel" data-udash-panel="notification" hidden id="transit">
+        <div class="form-card udash-card-form">
+          <span class="eyebrow">My Transit</span>
+          <h2>Quoted, confirmed, and moving files</h2>
+          <div id="account-transit" class="account-order-list">Loading…</div>
+        </div>
+      </section>
+
+      <section class="udash-panel" data-udash-panel="settings" hidden>
+        <form id="account-password-form" class="form-card udash-card-form" novalidate>
+          <span class="eyebrow">Setting</span>
+          <h2>Password</h2>
+          <div class="field">
+            <label for="account-current-password">Current password</label>
+            <input type="password" id="account-current-password" name="current_password" required autocomplete="current-password">
+          </div>
+          <div class="field">
+            <label for="account-new-password">New password</label>
+            <input type="password" id="account-new-password" name="new_password" required autocomplete="new-password" minlength="6">
+          </div>
+          <button type="submit" class="btn btn-gold">Save password</button>
+          <div id="account-password-status" class="form-status"></div>
+        </form>
+        <div class="form-card udash-card-form">
+          <h2>Session</h2>
+          <p class="muted">Sign out of this browser. Your orders stay on the account.</p>
+          <button type="button" class="btn btn-outline-dark" id="account-signout">Sign out</button>
+        </div>
+      </section>
     </div>
-
-    <div class="form-card" id="transit">
-      <span class="eyebrow">My Transit</span>
-      <h2>Quoted or confirmed files</h2>
-      <div id="account-transit" class="account-order-list">Loading…</div>
-    </div>
   </div>
-</section>
+</div>
 
 <footer class="site-footer">
   <div class="container">
-    <div class="footer-grid">
-      <div>
-        <div class="footer-brand">Mwinbarka Imports</div>
-        <p>Accra import desk. We source from China and Turkey, clear through Ghana, and deliver nationwide.</p>
-        <p class="bill-meta">MANIFEST MW–DESK–ACC</p>
-      </div>
-      <div>
-        <h4>The desk</h4>
-        <ul>
-          <li><a href="how-it-works.html">Process</a></li>
-          <li><a href="categories.html">What we bring</a></li>
-          <li><a href="shipping.html">Freight</a></li>
-          <li><a href="about.html">About</a></li>
-          <li><a href="faq.html">FAQ</a></li>
-        </ul>
-      </div>
-      <div>
-        <h4>Official line</h4>
-        <ul>
-          <li><a href="https://wa.me/233540309637" target="_blank" rel="noopener">054 030 9637</a></li>
-          <li><a href="request.html">Order Now</a></li>
-          <li><a href="contact.html">Contact</a></li>
-        </ul>
-      </div>
-    </div>
     <div class="footer-bottom">
       <span>© 2026 Mwinbarka Imports. All rights reserved.</span>
       <span>Accra, Ghana · No cart · No on-site payment</span>
@@ -165,6 +258,6 @@
 <a href="https://wa.me/233540309637" class="wa-float" target="_blank" rel="noopener" aria-label="Join our channel">💬</a>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-client.js"></script>
-<script src="script.js?v=brand13"></script>
+<script src="script.js?v=brand14"></script>
 </body>
 </html>

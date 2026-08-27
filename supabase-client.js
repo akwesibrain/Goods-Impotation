@@ -150,7 +150,7 @@ window.fetchMyOrders = async function () {
   if (!user || !supabaseClient) return [];
   const { data, error } = await supabaseClient
     .from("requests")
-    .select("id, request_details, category, quantity, status, created_at")
+    .select("id, request_details, category, quantity, status, shipment_status, created_at, location")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
   if (error) throw error;
