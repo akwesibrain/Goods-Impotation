@@ -1,17 +1,11 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { corsHeadersFor } from "../_shared/cors.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
-
-function json(body: Record<string, unknown>, status = 200) {
+function json(req: Request, body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...corsHeadersFor(req), "Content-Type": "application/json" },
   });
 }
 
@@ -133,10 +127,10 @@ async function sendTwilio(
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeadersFor(req) });
   }
   if (req.method !== "POST") {
-    return json({ error: "Method not allowed" }, 405);
+    return json(req, { error: "Method not allowed" }, 405);
   }
 
   try {
@@ -150,7 +144,7 @@ Deno.serve(async (req) => {
     const token = authHeader.replace(/^Bearer\s+/i, "");
     const { data: userData, error: userError } = await supabase.auth.getUser(token);
     if (userError || !userData.user) {
-      return json({ error: "Sign in as staff to send SMS." }, 401);
+      return json(req, { error: "Sign in as staff to send SMS." }, 401);
     }
 
     const { data: profile } = await supabase
@@ -159,22 +153,22 @@ Deno.serve(async (req) => {
       .eq("id", userData.user.id)
       .maybeSingle();
     if (!profile?.is_staff) {
-      return json({ error: "This desk is for staff only." }, 403);
+      return json(req, { error: "This desk is for staff only." }, 403);
     }
 
     const body = await req.json().catch(() => ({}));
-    const name = String(body.name || "").trim();
-    const message = String(body.message || "").trim();
+    const name = String(body.name || "").replace(/<[^>]+>/g, "").trim().slice(0, 100);
+    const message = String(body.message || "").replace(/<[^>]+>/g, "").trim();
     const phone = ghanaMsisdn(String(body.phone || ""));
 
     if (!phone || phone.length < 12) {
-      return json({ error: "Enter a valid Ghana phone number." }, 400);
+      return json(req, { error: "Enter a valid Ghana phone number." }, 400);
     }
     if (!message) {
-      return json({ error: "Write the SMS first." }, 400);
+      return json(req, { error: "Write the SMS first." }, 400);
     }
     if (message.length > 480) {
-      return json({ error: "Keep the SMS under 480 characters." }, 400);
+      return json(req, { error: "Keep the SMS under 480 characters." }, 400);
     }
 
     const admin = createClient(
@@ -230,7 +224,7 @@ Deno.serve(async (req) => {
         created_by: userData.user.id,
       }]);
 
-      return json({ ok: true, phone });
+      return json(req, { ok: true, phone });
     } catch (sendErr) {
       const errMessage = sendErr instanceof Error ? sendErr.message : "Couldn't send the SMS.";
       await supabase.from("sms_messages").insert([{
@@ -241,10 +235,10 @@ Deno.serve(async (req) => {
         error: errMessage,
         created_by: userData.user.id,
       }]);
-      return json({ error: errMessage }, 400);
+      return json(req, { error: errMessage }, 400);
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : "Couldn't send the SMS.";
-    return json({ error: message }, 500);
+    return json(req, { error: message }, 500);
   }
 });

@@ -95,10 +95,11 @@ window.signUpCustomer = async function ({ email, password, fullName, phone }) {
   if (error) throw error;
   if (window.markAdvertSkippedForAccount) window.markAdvertSkippedForAccount();
   if (data.session && data.user) {
+    const forms = window.MwinbarkaForms;
     await supabaseClient.from("profiles").upsert({
       id: data.user.id,
-      full_name: fullName || "",
-      phone: phone || "",
+      full_name: forms ? forms.sanitize(fullName || "").slice(0, 100) : (fullName || ""),
+      phone: forms ? forms.sanitizePhone(phone || "").slice(0, 20) : (phone || ""),
     }, { onConflict: "id" });
   }
   return { needsConfirm: !!(data.user && !data.session) };
@@ -148,15 +149,18 @@ window.updateMyEmail = async function ({ currentPassword, newEmail, emailRedirec
 window.updateMyProfile = async function (fields) {
   const user = await window.getSessionUser();
   if (!user || !supabaseClient) throw new Error("Please log in first.");
+  const forms = window.MwinbarkaForms;
+  const clean = forms ? forms.parseProfile(fields) : { ok: true, data: fields, errors: {} };
+  if (!clean.ok) throw new Error(forms.firstError(clean.errors));
   const payload = {
-    full_name: fields.full_name || "",
-    phone: fields.phone || "",
-    company_name: fields.company_name || "",
-    whatsapp: fields.whatsapp || "",
-    region: fields.region || "",
-    city: fields.city || "",
-    address: fields.address || "",
-    landmark: fields.landmark || "",
+    full_name: clean.data.full_name || "",
+    phone: clean.data.phone || "",
+    company_name: clean.data.company_name || "",
+    whatsapp: clean.data.whatsapp || "",
+    region: clean.data.region || "",
+    city: clean.data.city || "",
+    address: clean.data.address || "",
+    landmark: clean.data.landmark || "",
     updated_at: new Date().toISOString(),
   };
   if (typeof fields.notify_sms === "boolean") payload.notify_sms = fields.notify_sms;
@@ -204,22 +208,26 @@ window.saveRequestToSupabase = async function (data) {
     return null;
   }
   const user = await window.getSessionUser();
+  const forms = window.MwinbarkaForms;
+  const parsed = forms ? forms.parseImportRequest(data) : { ok: true, data, errors: {} };
+  if (!parsed.ok) throw new Error(forms.firstError(parsed.errors));
+  const clean = parsed.data;
   const requestId = (window.crypto && window.crypto.randomUUID)
     ? window.crypto.randomUUID()
     : "";
   const row = {
-    name: data.name,
-    phone: data.phone,
-    email: data.email || null,
-    location: data.location || null,
-    request_details: data.request_details,
-    category: data.category || null,
-    reference_url: data.reference_url || null,
+    name: clean.name,
+    phone: clean.phone,
+    email: clean.email || null,
+    location: clean.location || null,
+    request_details: clean.request_details,
+    category: clean.category || null,
+    reference_url: clean.reference_url || null,
     budget_range: data.budget_range || null,
-    quantity: data.quantity || null,
-    origin: data.origin || null,
+    quantity: clean.quantity || null,
+    origin: clean.origin || null,
     shipping_method: data.shipping_method || null,
-    photo_url: data.photo_url || null,
+    photo_url: clean.photo_url || data.photo_url || null,
     user_id: user ? user.id : null,
   };
   if (requestId) row.id = requestId;

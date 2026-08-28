@@ -1,17 +1,11 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { corsHeadersFor } from "../_shared/cors.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
-
-function json(body: Record<string, unknown>, status = 200) {
+function json(req: Request, body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...corsHeadersFor(req), "Content-Type": "application/json" },
   });
 }
 
@@ -58,16 +52,16 @@ async function sendTxtConnect(apiKey: string, sender: string, to: string, messag
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeadersFor(req) });
   }
   if (req.method !== "POST") {
-    return json({ error: "Method not allowed" }, 405);
+    return json(req, { error: "Method not allowed" }, 405);
   }
 
   try {
     const body = await req.json().catch(() => ({}));
     const requestId = String(body.request_id || "").trim();
-    if (!requestId) return json({ ok: true });
+    if (!requestId) return json(req, { ok: true });
 
     const admin = createClient(
       Deno.env.get("SUPABASE_URL") || "",
@@ -79,11 +73,11 @@ Deno.serve(async (req) => {
       .select("id, name, phone, status, shipment_status, created_at")
       .eq("id", requestId)
       .maybeSingle();
-    if (!order?.phone) return json({ ok: true });
+    if (!order?.phone) return json(req, { ok: true });
 
     const created = order.created_at ? new Date(String(order.created_at)).getTime() : 0;
     if (created && Date.now() - created > 5 * 60 * 1000) {
-      return json({ ok: true, skipped: true });
+      return json(req, { ok: true, skipped: true });
     }
 
     const { data: templates } = await admin
@@ -91,7 +85,7 @@ Deno.serve(async (req) => {
       .select("body")
       .eq("active", true)
       .eq("trigger_event", "order:New");
-    if (!templates?.length) return json({ ok: true });
+    if (!templates?.length) return json(req, { ok: true });
 
     const { data: sms } = await admin
       .from("sms_settings")
@@ -101,7 +95,7 @@ Deno.serve(async (req) => {
     const apiKey = String(sms?.api_key || "").trim();
     const sender = String(sms?.sender_id || "Mwinbarka").trim();
     const to = ghanaMsisdn(String(order.phone || ""));
-    if (!apiKey || to.length < 12) return json({ ok: true });
+    if (!apiKey || to.length < 12) return json(req, { ok: true });
 
     const vars = {
       name: String(order.name || "there"),
@@ -136,8 +130,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    return json({ ok: true });
+    return json(req, { ok: true });
   } catch (_err) {
-    return json({ ok: true });
+    return json(req, { ok: true });
   }
 });

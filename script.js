@@ -81,6 +81,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("request-form");
   if (form) {
     form.addEventListener("submit", handleRequestSubmit);
+    bindRequestLiveValidation(form);
     fillCategorySelects();
     prefillCategoryFromQuery(form);
     setupPhotoPreview(form);
@@ -192,8 +193,39 @@ function setFieldError(form, name, message) {
 }
 
 function clearFieldErrors(form) {
-  ["name", "phone", "email", "product", "category", "location", "quantity"].forEach((name) => {
+  ["name", "phone", "email", "product", "category", "location", "quantity", "reference_url", "origin"].forEach((name) => {
     setFieldError(form, name, "");
+  });
+}
+
+function readRequestForm(form) {
+  const fields = form.elements;
+  const product = (fields.product || fields.request_details);
+  return {
+    name: fields.name.value,
+    phone: fields.phone.value,
+    email: fields.email ? fields.email.value : "",
+    location: fields.location ? fields.location.value : "",
+    category: fields.category ? fields.category.value : "",
+    request_details: product ? product.value : "",
+    product: product ? product.value : "",
+    quantity: fields.quantity ? fields.quantity.value : "",
+    reference_url: fields.reference_url ? fields.reference_url.value : "",
+    origin: fields.origin ? fields.origin.value : "",
+  };
+}
+
+function bindRequestLiveValidation(form) {
+  const names = ["name", "phone", "email", "product", "category", "quantity", "location", "reference_url", "origin"];
+  names.forEach((name) => {
+    const el = form.elements[name];
+    if (!el) return;
+    const run = () => {
+      const parsed = window.MwinbarkaForms.parseImportRequest(readRequestForm(form));
+      setFieldError(form, name, parsed.errors[name] || "");
+    };
+    el.addEventListener("blur", run);
+    el.addEventListener("change", run);
   });
 }
 
@@ -212,52 +244,22 @@ async function handleRequestSubmit(e) {
   e.preventDefault();
 
   const form = e.target;
-  const fields = form.elements;
   const statusEl = document.getElementById("form-status");
   const submitBtn = form.querySelector('button[type="submit"]');
   const stickyBtn = document.querySelector('.request-sticky button[type="submit"]');
 
   clearFieldErrors(form);
 
-  const product = (fields.product || fields.request_details).value.trim();
-  const data = {
-    name: fields.name.value.trim(),
-    phone: fields.phone.value.trim(),
-    email: fields.email ? fields.email.value.trim() : "",
-    location: fields.location.value.trim(),
-    category: fields.category.value,
-    request_details: product,
-    quantity: fields.quantity ? fields.quantity.value.trim() : "",
-    reference_url: fields.reference_url ? fields.reference_url.value.trim() : "",
-    origin: fields.origin ? fields.origin.value.trim() : "",
-    photo_url: "",
-  };
-
-  let firstInvalid = null;
-  const need = [
-    ["name", data.name, "Enter your name."],
-    ["phone", data.phone, "Enter a phone number."],
-    ["email", data.email, "Enter your email address."],
-    ["product", data.request_details, "Describe the product or paste what you want sourced."],
-    ["category", data.category, "Select a category."],
-    ["quantity", data.quantity, "Enter a quantity."],
-    ["location", data.location, "Enter a delivery location in Ghana."],
-  ];
-  need.forEach(([name, value, message]) => {
-    if (!value) {
-      setFieldError(form, name, message);
-      if (!firstInvalid) firstInvalid = form.elements[name];
-    }
-  });
-  if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
-    setFieldError(form, "email", "Enter a valid email address.");
-    if (!firstInvalid) firstInvalid = fields.email;
-  }
-  if (firstInvalid) {
-    showStatus(statusEl, "error", "Please fix the highlighted fields and try again.");
-    firstInvalid.focus();
+  const parsed = window.MwinbarkaForms.parseImportRequest(readRequestForm(form));
+  Object.entries(parsed.errors).forEach(([name, message]) => setFieldError(form, name, message));
+  if (!parsed.ok) {
+    const firstName = Object.keys(parsed.errors)[0];
+    const firstInvalid = form.elements[firstName];
+    showStatus(statusEl, "error", window.MwinbarkaForms.firstError(parsed.errors));
+    if (firstInvalid && firstInvalid.focus) firstInvalid.focus();
     return;
   }
+  const data = Object.assign({ photo_url: "" }, parsed.data);
 
   if (cachedAdvertUrl && !hasWatchedAdvert()) {
     showStatus(statusEl, "error", "Watch the full advert first — then place your order.");
@@ -1477,14 +1479,20 @@ async function bindReviewForm(client) {
     e.preventDefault();
     const statusEl = document.getElementById("review-status");
     const btn = form.querySelector('button[type="submit"]');
-    const author_name = form.elements.author_name.value.trim();
-    const quote = form.elements.quote.value.trim();
-    const location = form.elements.location.value.trim();
-    const rating = Number(form.elements.rating.value) || 5;
-    if (!author_name || !quote || !location) {
-      showStatus(statusEl, "error", "Please fill in name, location, and your review.");
+    const parsed = window.MwinbarkaForms.parseReview({
+      author_name: form.elements.author_name.value,
+      quote: form.elements.quote.value,
+      location: form.elements.location.value,
+      rating: form.elements.rating.value,
+    });
+    ["author_name", "location", "quote", "rating"].forEach((name) => {
+      setFieldError(form, name, parsed.errors[name] || "");
+    });
+    if (!parsed.ok) {
+      showStatus(statusEl, "error", window.MwinbarkaForms.firstError(parsed.errors));
       return;
     }
+    const { author_name, quote, location, rating } = parsed.data;
     if (!client) {
       showStatus(statusEl, "error", "Reviews are not connected yet. Write the desk on the official line.");
       return;
@@ -2054,9 +2062,14 @@ async function mountAccountPage() {
       btn.disabled = true;
       try {
         if (!window.signInCustomer) throw new Error("Account service is not connected yet.");
-        await window.signInCustomer({
-          email: loginForm.elements.email.value.trim(),
+        const parsed = window.MwinbarkaForms.parseLogin({
+          email: loginForm.elements.email.value,
           password: loginForm.elements.password.value,
+        });
+        if (!parsed.ok) throw new Error(window.MwinbarkaForms.firstError(parsed.errors));
+        await window.signInCustomer({
+          email: parsed.data.email,
+          password: parsed.data.password,
         });
         await refreshAccountChrome();
         await paint();
@@ -2077,11 +2090,18 @@ async function mountAccountPage() {
       btn.disabled = true;
       try {
         if (!window.signUpCustomer) throw new Error("Account service is not connected yet.");
-        const result = await window.signUpCustomer({
-          fullName: signupForm.elements.full_name.value.trim(),
-          phone: signupForm.elements.phone.value.trim(),
-          email: signupForm.elements.email.value.trim(),
+        const parsed = window.MwinbarkaForms.parseSignup({
+          fullName: signupForm.elements.full_name.value,
+          phone: signupForm.elements.phone.value,
+          email: signupForm.elements.email.value,
           password: signupForm.elements.password.value,
+        });
+        if (!parsed.ok) throw new Error(window.MwinbarkaForms.firstError(parsed.errors));
+        const result = await window.signUpCustomer({
+          fullName: parsed.data.fullName,
+          phone: parsed.data.phone,
+          email: parsed.data.email,
+          password: parsed.data.password,
         });
         if (result && result.needsConfirm) {
           showStatus(status, "success", "Account created. Check your email to confirm, then log in.");
@@ -2116,19 +2136,21 @@ async function mountAccountPage() {
       const status = document.getElementById("profile-status");
       try {
         if (!window.updateMyProfile) throw new Error("Account service is not connected yet.");
-        const whatsapp = whatsappSame && whatsappSame.checked
-          ? profileForm.elements.phone.value.trim()
-          : profileForm.elements.whatsapp.value.trim();
-        await window.updateMyProfile({
-          full_name: profileForm.elements.full_name.value.trim(),
-          company_name: profileForm.elements.company_name.value.trim(),
-          phone: profileForm.elements.phone.value.trim(),
-          whatsapp,
+        const whatsappRaw = whatsappSame && whatsappSame.checked
+          ? profileForm.elements.phone.value
+          : profileForm.elements.whatsapp.value;
+        const parsed = window.MwinbarkaForms.parseProfile({
+          full_name: profileForm.elements.full_name.value,
+          company_name: profileForm.elements.company_name.value,
+          phone: profileForm.elements.phone.value,
+          whatsapp: whatsappRaw,
           region: profileForm.elements.region.value,
-          city: profileForm.elements.city.value.trim(),
-          address: profileForm.elements.address.value.trim(),
-          landmark: profileForm.elements.landmark.value.trim(),
+          city: profileForm.elements.city.value,
+          address: profileForm.elements.address.value,
+          landmark: profileForm.elements.landmark.value,
         });
+        if (!parsed.ok) throw new Error(window.MwinbarkaForms.firstError(parsed.errors));
+        await window.updateMyProfile(parsed.data);
         showStatus(status, "success", "Profile saved. The desk will use this on the next quote.");
         await refreshAccountChrome();
         await paint();
@@ -2145,7 +2167,12 @@ async function mountAccountPage() {
       const status = document.getElementById("account-email-status");
       const next = emailForm.elements.new_email.value.trim();
       const confirm = emailForm.elements.confirm_email.value.trim();
-      if (next.toLowerCase() !== confirm.toLowerCase()) {
+      const parsed = window.MwinbarkaForms.parseNewEmail({ email: next });
+      if (!parsed.ok) {
+        showStatus(status, "error", window.MwinbarkaForms.firstError(parsed.errors));
+        return;
+      }
+      if (parsed.data.email !== window.MwinbarkaForms.sanitizeEmail(confirm)) {
         showStatus(status, "error", "The two new email addresses do not match.");
         return;
       }

@@ -23,7 +23,7 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
   bottom: auto !important;
 }
 </style>
-<link rel="stylesheet" href="styles.css?v=brand43">
+<link rel="stylesheet" href="styles.css?v=brand44">
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
@@ -77,11 +77,13 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
       <div class="field-row">
         <div class="field">
           <label for="review-name">Name</label>
-          <input type="text" id="review-name" name="author_name" required autocomplete="name">
+          <input type="text" id="review-name" name="author_name" required autocomplete="name" maxlength="100">
+          <div class="field-error" id="author_name-error" hidden></div>
         </div>
         <div class="field">
           <label for="review-location">Location in Ghana</label>
-          <input type="text" id="review-location" name="location" required placeholder="e.g. Accra, Kumasi">
+          <input type="text" id="review-location" name="location" required placeholder="e.g. Accra, Kumasi" maxlength="200">
+          <div class="field-error" id="location-error" hidden></div>
         </div>
       </div>
       <div class="field">
@@ -93,10 +95,12 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
           <option value="2">2 — Poor</option>
           <option value="1">1 — Bad</option>
         </select>
+        <div class="field-error" id="rating-error" hidden></div>
       </div>
       <div class="field">
         <label for="review-quote">Your review</label>
-        <textarea id="review-quote" name="quote" rows="4" required placeholder="What did you import, and how did the desk handle it?"></textarea>
+        <textarea id="review-quote" name="quote" rows="4" required placeholder="What did you import, and how did the desk handle it?" maxlength="2000"></textarea>
+        <div class="field-error" id="quote-error" hidden></div>
       </div>
       <button type="submit" class="btn btn-gold">Submit review</button>
       <div id="review-status" class="form-status"></div>
@@ -141,7 +145,8 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
 
 <a href="https://wa.me/233540309637" class="wa-float" target="_blank" rel="noopener" aria-label="Chat with the desk on 054 030 9637">💬</a>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase-client.js?v=brand28"></script>
-<script src="script.js?v=brand22"></script>
+<script src="validation.js?v=brand1"></script>
+<script src="supabase-client.js?v=brand29"></script>
+<script src="script.js?v=brand23"></script>
 </body>
 </html>

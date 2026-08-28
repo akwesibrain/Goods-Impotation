@@ -836,3 +836,101 @@ create policy "Staff can update payment settings"
   on public.payment_settings for update to authenticated
   using (private.is_staff())
   with check (private.is_staff());
+
+-- ============================================================
+-- Input length + HTML strip (server-side; never trust the browser)
+-- ============================================================
+
+create or replace function private.strip_tags(value text)
+returns text
+language sql
+immutable
+as $$
+  select trim(both from regexp_replace(
+    regexp_replace(coalesce(value, ''), '<(script|style)[^>]*>.*?</\1>', '', 'gi'),
+    '<[^>]+>', '', 'g'
+  ));
+$$;
+
+create or replace function private.sanitize_request_row()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.name := left(private.strip_tags(new.name), 100);
+  new.phone := left(regexp_replace(coalesce(new.phone, ''), '[^\d\s+\-]', '', 'g'), 24);
+  new.email := left(lower(private.strip_tags(new.email)), 254);
+  new.location := left(private.strip_tags(new.location), 200);
+  new.request_details := left(private.strip_tags(new.request_details), 4000);
+  new.category := left(private.strip_tags(new.category), 80);
+  new.quantity := left(private.strip_tags(new.quantity), 80);
+  new.origin := left(private.strip_tags(new.origin), 40);
+  new.reference_url := left(private.strip_tags(new.reference_url), 2048);
+  if new.reference_url is not null
+     and new.reference_url <> ''
+     and new.reference_url !~* '^https?://' then
+    new.reference_url := null;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists requests_sanitize on public.requests;
+create trigger requests_sanitize
+  before insert or update on public.requests
+  for each row execute function private.sanitize_request_row();
+
+create or replace function private.sanitize_review_row()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.author_name := left(private.strip_tags(new.author_name), 100);
+  new.location := left(private.strip_tags(new.location), 200);
+  new.quote := left(private.strip_tags(new.quote), 2000);
+  return new;
+end;
+$$;
+
+drop trigger if exists reviews_sanitize on public.reviews;
+create trigger reviews_sanitize
+  before insert or update on public.reviews
+  for each row execute function private.sanitize_review_row();
+
+create or replace function private.sanitize_profile_row()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.full_name := left(private.strip_tags(new.full_name), 100);
+  new.phone := left(regexp_replace(coalesce(new.phone, ''), '[^\d\s+\-]', '', 'g'), 24);
+  new.company_name := left(private.strip_tags(new.company_name), 120);
+  new.whatsapp := left(regexp_replace(coalesce(new.whatsapp, ''), '[^\d\s+\-]', '', 'g'), 24);
+  new.city := left(private.strip_tags(new.city), 80);
+  new.address := left(private.strip_tags(new.address), 200);
+  new.landmark := left(private.strip_tags(new.landmark), 120);
+  return new;
+end;
+$$;
+
+drop trigger if exists profiles_sanitize on public.profiles;
+create trigger profiles_sanitize
+  before insert or update on public.profiles
+  for each row execute function private.sanitize_profile_row();
+
+alter table public.requests drop constraint if exists requests_name_len;
+alter table public.requests add constraint requests_name_len
+  check (char_length(name) between 1 and 100);
+alter table public.requests drop constraint if exists requests_phone_len;
+alter table public.requests add constraint requests_phone_len
+  check (char_length(phone) between 8 and 24);
+alter table public.requests drop constraint if exists requests_details_len;
+alter table public.requests add constraint requests_details_len
+  check (char_length(request_details) between 1 and 4000);
+
+alter table public.reviews drop constraint if exists reviews_author_len;
+alter table public.reviews add constraint reviews_author_len
+  check (char_length(author_name) between 1 and 100);
+alter table public.reviews drop constraint if exists reviews_quote_len;
+alter table public.reviews add constraint reviews_quote_len
+  check (char_length(quote) between 1 and 2000);
