@@ -7,28 +7,29 @@
    ============================================================ */
 
 :root {
-  /* Color */
-  --navy-900: #071427;
+  /* Color — brass gold on deep navy, matching the logo mark */
+  --navy-900: #06101F;
   --navy-800: #0A1F44;
-  --navy-700: #13315F;
-  --navy-600: #1E4076;
-  --gold-500: #FFBE34;
-  --gold-400: #FFD36A;
-  --gold-300: #FFE08A;
-  --navy-deep: #091242;
-  --cream: #FAF8F3;
+  --navy-700: #16345C;
+  --navy-600: #23487A;
+  --navy-deep: #081529;
+  --gold-500: #C9A227;
+  --gold-400: #DCC56A;
+  --gold-300: #E8D48A;
+  --gold-600: #A6861C;
+  --cream: #FBF9F4;
   --white: #FFFFFF;
-  --ink-700: #2B3341;
-  --ink-500: #5B6472;
-  --ink-300: #94A0AE;
-  --line: #E4E1D9;
+  --ink-700: #1C2430;
+  --ink-500: #4A5563;
+  --ink-300: #7B8694;
+  --line: #E5E0D4;
   --danger: #A03636;
   --success: #3B6B2E;
 
   /* Type */
-  --font-display: 'Fraunces', Georgia, serif;
-  --font-body: 'Inter', -apple-system, sans-serif;
-  --font-mono: 'IBM Plex Mono', 'SF Mono', monospace;
+  --font-display: "Fraunces", "Iowan Old Style", Georgia, serif;
+  --font-body: "Inter", "Segoe UI", -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", "SF Mono", ui-monospace, monospace;
 
   /* Scale */
   --space-1: 0.5rem;
@@ -38,14 +39,14 @@
   --space-5: 4rem;
   --space-6: 6rem;
 
-  --radius: 2px;
-  --radius-md: 8px;
-  --shadow-sm: 0 1px 2px rgba(7, 20, 39, 0.06);
-  --shadow-md: 0 8px 24px rgba(7, 20, 39, 0.08);
-  --shadow-lg: 0 18px 50px rgba(7, 20, 39, 0.10);
+  --radius: 6px;
+  --radius-md: 10px;
+  --shadow-sm: 0 1px 2px rgba(6, 16, 31, 0.06);
+  --shadow-md: 0 8px 24px rgba(6, 16, 31, 0.08);
+  --shadow-lg: 0 18px 50px rgba(6, 16, 31, 0.10);
   --max-width: 1180px;
-  --paper: #F3EEE3;
-  --touch: 44px;
+  --paper: #F5F3EE;
+  --touch: 48px;
 }
 
 * { box-sizing: border-box; }
@@ -54,12 +55,17 @@ html { scroll-behavior: smooth; }
 body {
   margin: 0;
   font-family: var(--font-body);
+  font-size: 1.0625rem;
+  font-weight: 400;
   color: var(--ink-700);
   background-color: var(--paper);
-  background-image: radial-gradient(rgba(10, 31, 68, 0.045) 0.8px, transparent 0.8px);
-  background-size: 16px 16px;
+  background-image: radial-gradient(rgba(10, 31, 68, 0.03) 0.8px, transparent 0.8px);
+  background-size: 18px 18px;
   -webkit-font-smoothing: antialiased;
-  line-height: 1.55;
+  line-height: 1.65;
+}
+@media (max-width: 640px) {
+  body { font-size: 1rem; }
 }
 
 img { max-width: 100%; display: block; }
@@ -68,18 +74,20 @@ a { color: inherit; text-decoration: none; }
 h1, h2, h3, h4 {
   font-family: var(--font-display);
   font-weight: 600;
-  line-height: 1.1;
+  font-optical-sizing: auto;
+  line-height: 1.16;
+  letter-spacing: -0.02em;
   margin: 0;
   color: var(--navy-900);
 }
 
 .eyebrow {
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  letter-spacing: 0.14em;
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--gold-500);
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .container {
@@ -112,12 +120,12 @@ textarea:focus-visible, select:focus-visible {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  font-family: var(--font-mono);
-  font-size: 0.85rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  font-weight: 500;
-  padding: 0.95rem 1.6rem;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  font-weight: 600;
+  padding: 0.9rem 1.45rem;
   min-height: var(--touch);
   border-radius: var(--radius);
   border: 1px solid transparent;
@@ -150,7 +158,7 @@ textarea:focus-visible, select:focus-visible {
   background: var(--gold-500);
   color: var(--navy-900);
 }
-.btn-gold:hover { background: var(--gold-400); }
+.btn-gold:hover { background: var(--gold-400); color: var(--navy-900); }
 
 .btn-outline {
   background: transparent;
@@ -214,8 +222,9 @@ header.site-header.tf-head {
   align-items: center;
   gap: 0.7rem;
   font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 1.12rem;
+  font-weight: 600;
+  font-size: 1.2rem;
+  letter-spacing: -0.02em;
   color: var(--white);
   transition: opacity 0.18s ease;
 }
@@ -227,12 +236,12 @@ header.site-header.tf-head {
 }
 .logo-lockup em { font-style: italic; font-weight: 500; color: var(--gold-400); }
 .logo-lockup small {
-  font-family: var(--font-mono);
-  font-size: 0.58rem;
+  font-family: var(--font-body);
+  font-size: 0.68rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(255,255,255,0.45);
-  font-weight: 400;
+  color: rgba(255,255,255,0.5);
+  font-weight: 500;
   margin-top: 0.2rem;
 }
 .nav-links {
@@ -241,10 +250,10 @@ header.site-header.tf-head {
   list-style: none;
   margin: 0;
   padding: 0;
-  font-family: var(--font-mono);
-  font-size: 0.78rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
 }
 .nav-links a { color: rgba(255,255,255,0.75); transition: color .15s; }
 .nav-links a:hover, .nav-links a.active { color: var(--gold-400); }
@@ -293,12 +302,11 @@ header.site-header.tf-head {
 .announce-bar {
   background: #050b14;
   color: var(--gold-400);
-  font-family: var(--font-mono);
-  font-size: 0.68rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
   text-align: center;
-  padding: 0.5rem 1rem;
+  padding: 0.55rem 1rem;
   border-bottom: 1px solid rgba(201, 162, 39, 0.28);
 }
 .header-main {
@@ -579,7 +587,7 @@ header.site-header.tf-head {
 /* ---------------- Section base ---------------- */
 .section { padding: var(--space-6) 0; }
 .section-head { max-width: 620px; margin-bottom: var(--space-4); }
-.section-head h2 { font-size: clamp(1.8rem, 3.4vw, 2.5rem); margin-top: 0.5rem; }
+.section-head h2 { font-size: clamp(1.65rem, 3.2vw, 2.25rem); margin-top: 0.5rem; }
 .section-alt { background: var(--white); }
 
 /* ---------------- Manifest ticket cards (signature element) ---------------- */
@@ -889,12 +897,12 @@ header.site-header.tf-head {
   .tabbar a,
   .tabbar button {
     text-align: center;
-    font-size: 0.62rem;
-    font-family: var(--font-mono);
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+    font-size: 0.72rem;
+    font-family: var(--font-body);
+    font-weight: 600;
+    letter-spacing: 0.02em;
     color: var(--ink-500);
-    padding: 0.45rem 0.15rem;
+    padding: 0.5rem 0.15rem;
     background: none;
     border: 0;
     cursor: pointer;
@@ -929,8 +937,8 @@ header.site-header.tf-head {
   color: var(--white);
   padding: var(--space-6) 0 var(--space-5);
 }
-.page-hero h1 { color: var(--white); font-size: clamp(2.1rem, 4.2vw, 3.1rem); max-width: 16ch; }
-.page-hero p { color: rgba(255,255,255,0.68); max-width: 560px; margin-top: var(--space-2); font-size: 1.08rem; }
+.page-hero h1 { color: var(--white); font-size: clamp(1.9rem, 4vw, 2.75rem); max-width: 18ch; }
+.page-hero p { color: rgba(255,255,255,0.78); max-width: 560px; margin-top: var(--space-2); font-size: 1.12rem; line-height: 1.6; }
 
 /* ---------------- Form ---------------- */
 .form-card {
@@ -945,10 +953,10 @@ header.site-header.tf-head {
 .field { margin-bottom: var(--space-3); }
 .field label {
   display: block;
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   color: var(--ink-500);
   margin-bottom: 0.5rem;
 }
@@ -956,8 +964,8 @@ header.site-header.tf-head {
 .field input, .field textarea, .field select {
   width: 100%;
   font-family: var(--font-body);
-  font-size: 1rem;
-  padding: 0.85rem 0.9rem;
+  font-size: 1.02rem;
+  padding: 0.9rem 0.95rem;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--cream);
@@ -975,8 +983,8 @@ header.site-header.tf-head {
 .form-note { font-size: 0.85rem; color: var(--ink-500); margin-top: var(--space-2); }
 .form-status {
   margin-top: var(--space-2);
-  font-family: var(--font-mono);
-  font-size: 0.85rem;
+  font-family: var(--font-body);
+  font-size: 0.92rem;
   padding: 0.8rem;
   border-radius: var(--radius);
   display: none;
@@ -1000,7 +1008,7 @@ header.site-header.tf-head {
   padding: var(--space-3) 0;
   min-height: var(--touch);
   font-family: var(--font-display);
-  font-size: 1.1rem;
+  font-size: 1.18rem;
   color: var(--navy-900);
   display: flex;
   justify-content: space-between;
@@ -1212,7 +1220,7 @@ body.admin-app .form-status.error {
   width: 3px;
   height: 0;
   border-radius: 99px;
-  background: #FFBE34;
+  background: var(--gold-500);
   transform: translateY(-50%);
   transition: height 0.22s ease;
 }
@@ -1845,11 +1853,11 @@ body.admin-app .status-pill.closed { background: #F0F0F0; color: #595959; }
 }
 .admin-filters { display: flex; gap: var(--space-1); flex-wrap: wrap; }
 .chip {
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  padding: 0.45rem 0.8rem;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  padding: 0.5rem 0.85rem;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--white);
@@ -2111,17 +2119,18 @@ body.advert-locked .wa-float { display: none !important; }
 .product-body .code { font-family: var(--font-mono); font-size: 0.68rem; color: var(--gold-500); letter-spacing: 0.08em; text-transform: uppercase; }
 .product-body h3 {
   font-family: var(--font-body);
-  font-size: 0.92rem;
-  font-weight: 500;
+  font-size: 1rem;
+  font-weight: 600;
   line-height: 1.35;
+  letter-spacing: -0.01em;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 .product-body p { display: none; }
-.product-price { font-family: var(--font-mono); color: var(--gold-500); font-size: 1.05rem; margin-top: auto; }
-.product-price small { font-family: var(--font-body); font-size: 0.7rem; color: var(--ink-500); text-transform: none; letter-spacing: 0; }
+.product-price { font-family: var(--font-body); font-weight: 600; color: var(--gold-600); font-size: 1.12rem; margin-top: auto; }
+.product-price small { font-family: var(--font-body); font-size: 0.78rem; font-weight: 400; color: var(--ink-500); text-transform: none; letter-spacing: 0; }
 .product-actions { display: grid; gap: 0.45rem; margin-top: 0.6rem; }
 .product-body .btn { margin-top: 0; justify-content: center; padding: 0.7rem 1rem; font-size: 0.75rem; }
 .product-order {
@@ -2157,10 +2166,10 @@ body.advert-locked .wa-float { display: none !important; }
 .catalog-lane .product-grid { margin-top: var(--space-2); }
 
 .quote-link {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
   color: var(--gold-400);
   border: 1px solid rgba(201,162,39,0.45);
   border-radius: var(--radius);
@@ -2617,7 +2626,7 @@ body.order-modal-open { overflow: hidden; }
 .tf-head .header-phone,
 .tf-head .header-account {
   color: var(--gold-500);
-  border: 1px solid rgba(255,190,52,0.4);
+  border: 1px solid rgba(201, 162, 39, 0.4);
   width: 42px;
   height: 42px;
   display: grid;
@@ -2657,7 +2666,7 @@ body.order-modal-open { overflow: hidden; }
   width: 42px;
   height: 42px;
   border-radius: 50%;
-  border: 1px solid rgba(255,190,52,0.45);
+  border: 1px solid rgba(201, 162, 39, 0.45);
   display: grid;
   place-items: center;
   color: var(--gold-500);
@@ -2732,30 +2741,30 @@ body.order-modal-open { overflow: hidden; }
   gap: 0.55rem;
   margin: 0 0 1.1rem;
   padding: 0.4rem 0.75rem;
-  border: 1px dashed rgba(255,190,52,0.55);
+  border: 1px dashed rgba(201, 162, 39, 0.55);
   font-family: var(--font-mono);
-  font-size: 0.72rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
   color: var(--gold-400);
 }
 .hero-route span { color: var(--white); }
 .tf-hero h1 {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: clamp(2.35rem, 6vw, 4.2rem);
-  line-height: 1.05;
+  font-size: clamp(2.05rem, 5.2vw, 3.45rem);
+  line-height: 1.12;
+  letter-spacing: -0.025em;
   color: var(--white);
-  max-width: 14ch;
-  margin: 0 0 1.8rem;
+  max-width: 16ch;
+  margin: 0 0 1.35rem;
 }
 .tf-hero .lead {
   display: block;
   max-width: 46ch;
-  color: rgba(255,255,255,0.82);
-  font-size: 1.08rem;
-  line-height: 1.6;
-  margin: 0 0 1.6rem;
+  color: rgba(255,255,255,0.86);
+  font-size: 1.125rem;
+  line-height: 1.65;
+  margin: 0 0 1.5rem;
 }
 
 .tf-services { background: var(--cream); padding: var(--space-6) 0; }
@@ -3597,10 +3606,9 @@ body.account-page .account-backdrop {
   background: var(--gold-500);
   color: var(--navy-900);
   padding: 0.7rem 1rem;
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  letter-spacing: 0.02em;
 }
 .skip-link:focus { top: 0.75rem; }
 
@@ -3643,13 +3651,15 @@ body.nav-open .nav-scrim {
   max-width: 46rem;
 }
 .trust-row li {
-  font-family: var(--font-mono);
-  font-size: 0.68rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--navy-900);
-  background: var(--gold-500);
-  padding: 0.45rem 0.7rem;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: rgba(255,255,255,0.92);
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(201, 162, 39, 0.4);
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius);
 }
 .tf-hero .hero-actions {
   display: flex;
@@ -3675,7 +3685,7 @@ body.nav-open .nav-scrim {
   font-size: 1.15rem;
   margin-bottom: 0.45rem;
 }
-.why-card p { margin: 0; color: var(--ink-500); font-size: 0.95rem; }
+.why-card p { margin: 0; color: var(--ink-500); font-size: 1rem; line-height: 1.55; }
 
 .home-faq { max-width: 760px; }
 
