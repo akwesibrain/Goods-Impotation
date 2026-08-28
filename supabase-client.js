@@ -230,7 +230,7 @@ window.saveRequestToSupabase = async function (data) {
       body: { request_id: requestId },
     }).catch(() => {});
   }
-  return true;
+  return requestId || null;
 };
 
 // The admin dashboard needs the client itself (for login and for

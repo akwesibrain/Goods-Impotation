@@ -22,29 +22,58 @@ document.addEventListener("DOMContentLoaded", () => {
   const toggle = document.querySelector(".nav-toggle");
   const links = document.querySelector(".nav-links");
   if (toggle && links) {
-    toggle.addEventListener("click", () => {
-      links.classList.toggle("open");
-      const expanded = links.classList.contains("open");
-      toggle.setAttribute("aria-expanded", expanded);
-    });
-    links.querySelectorAll("a").forEach((link) => {
-      link.addEventListener("click", () => {
+    if (!document.querySelector(".nav-scrim")) {
+      const scrim = document.createElement("div");
+      scrim.className = "nav-scrim";
+      scrim.addEventListener("click", () => {
         links.classList.remove("open");
         toggle.setAttribute("aria-expanded", "false");
+        document.body.classList.remove("nav-open");
       });
+      document.body.appendChild(scrim);
+    }
+    const closeNav = () => {
+      links.classList.remove("open");
+      toggle.setAttribute("aria-expanded", "false");
+      document.body.classList.remove("nav-open");
+    };
+    toggle.addEventListener("click", () => {
+      const expanded = !links.classList.contains("open");
+      links.classList.toggle("open", expanded);
+      toggle.setAttribute("aria-expanded", expanded);
+      document.body.classList.toggle("nav-open", expanded);
+    });
+    links.querySelectorAll("a").forEach((link) => {
+      link.addEventListener("click", closeNav);
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeNav();
     });
   }
 
   // ---- FAQ accordion ----
-  document.querySelectorAll(".faq-item").forEach((item) => {
+  document.querySelectorAll(".faq-item").forEach((item, index) => {
     const q = item.querySelector(".faq-q");
     if (!q) return;
+    q.setAttribute("type", "button");
+    q.setAttribute("aria-expanded", item.classList.contains("open") ? "true" : "false");
+    if (!q.id) q.id = "faq-q-" + (index + 1);
+    const panel = item.querySelector(".faq-a");
+    if (panel) {
+      panel.id = panel.id || "faq-a-" + (index + 1);
+      q.setAttribute("aria-controls", panel.id);
+    }
     q.addEventListener("click", () => {
       const isOpen = item.classList.contains("open");
       document.querySelectorAll(".faq-item.open").forEach((el) => {
-        if (el !== item) el.classList.remove("open");
+        if (el !== item) {
+          el.classList.remove("open");
+          const other = el.querySelector(".faq-q");
+          if (other) other.setAttribute("aria-expanded", "false");
+        }
       });
       item.classList.toggle("open", !isOpen);
+      q.setAttribute("aria-expanded", String(!isOpen));
     });
   });
 
@@ -76,6 +105,8 @@ document.addEventListener("DOMContentLoaded", () => {
   prefillRequestFromAccount();
   mountAccountPage();
   guardAdvertClicks();
+  mountCatalogSearch();
+  polishPublicChrome();
 });
 
 function fillCategorySelects() {
@@ -125,11 +156,50 @@ function prefillCategoryFromQuery(form) {
     productField.value = `Please quote sea freight to Ghana for about ${kg} kg.`;
   }
 
-  if (!q) return;
-
-  if (productField && !productField.value) {
-    productField.value = looksLikeUrl(q) && !q.startsWith("http") ? `https://${q}` : q;
+  if (q) {
+    if (looksLikeUrl(q)) {
+      const url = q.startsWith("http") ? q : `https://${q}`;
+      if (form.elements.reference_url && !form.elements.reference_url.value) {
+        form.elements.reference_url.value = url;
+      }
+      if (productField && !productField.value) {
+        productField.value = "Please quote this listing.";
+      }
+    } else if (productField && !productField.value) {
+      productField.value = q;
+    }
   }
+}
+
+function fieldWrap(form, name) {
+  const el = form.elements[name];
+  return el && el.closest ? el.closest(".field") : null;
+}
+
+function setFieldError(form, name, message) {
+  const wrap = fieldWrap(form, name);
+  const input = form.elements[name];
+  const err = document.getElementById(name + "-error") || (wrap && wrap.querySelector(".field-error"));
+  if (wrap) wrap.classList.toggle("is-invalid", !!message);
+  if (input) {
+    input.setAttribute("aria-invalid", message ? "true" : "false");
+    if (err && err.id) input.setAttribute("aria-describedby", err.id);
+  }
+  if (err) {
+    err.hidden = !message;
+    err.textContent = message || "";
+  }
+}
+
+function clearFieldErrors(form) {
+  ["name", "phone", "email", "product", "category", "location", "quantity"].forEach((name) => {
+    setFieldError(form, name, "");
+  });
+}
+
+function requestRefLabel(id) {
+  if (!id) return "";
+  return "MW-" + String(id).replace(/-/g, "").slice(0, 8).toUpperCase();
 }
 
 /**
@@ -145,6 +215,9 @@ async function handleRequestSubmit(e) {
   const fields = form.elements;
   const statusEl = document.getElementById("form-status");
   const submitBtn = form.querySelector('button[type="submit"]');
+  const stickyBtn = document.querySelector('.request-sticky button[type="submit"]');
+
+  clearFieldErrors(form);
 
   const product = (fields.product || fields.request_details).value.trim();
   const data = {
@@ -155,15 +228,34 @@ async function handleRequestSubmit(e) {
     category: fields.category.value,
     request_details: product,
     quantity: fields.quantity ? fields.quantity.value.trim() : "",
+    reference_url: fields.reference_url ? fields.reference_url.value.trim() : "",
+    origin: fields.origin ? fields.origin.value.trim() : "",
     photo_url: "",
   };
 
-  if (!data.name || !data.phone || !data.email || !data.request_details || !data.location || !data.quantity || !data.category) {
-    showStatus(statusEl, "error", "Please fill in name, phone number, email, product, category, location, and quantity.");
-    return;
+  let firstInvalid = null;
+  const need = [
+    ["name", data.name, "Enter your name."],
+    ["phone", data.phone, "Enter a phone number."],
+    ["email", data.email, "Enter your email address."],
+    ["product", data.request_details, "Describe the product or paste what you want sourced."],
+    ["category", data.category, "Select a category."],
+    ["quantity", data.quantity, "Enter a quantity."],
+    ["location", data.location, "Enter a delivery location in Ghana."],
+  ];
+  need.forEach(([name, value, message]) => {
+    if (!value) {
+      setFieldError(form, name, message);
+      if (!firstInvalid) firstInvalid = form.elements[name];
+    }
+  });
+  if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+    setFieldError(form, "email", "Enter a valid email address.");
+    if (!firstInvalid) firstInvalid = fields.email;
   }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
-    showStatus(statusEl, "error", "Please enter a valid email address.");
+  if (firstInvalid) {
+    showStatus(statusEl, "error", "Please fix the highlighted fields and try again.");
+    firstInvalid.focus();
     return;
   }
 
@@ -173,8 +265,16 @@ async function handleRequestSubmit(e) {
     return;
   }
 
-  submitBtn.disabled = true;
-  submitBtn.textContent = "SENDING...";
+  const originalLabel = submitBtn ? submitBtn.textContent : "";
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Sending…";
+  }
+  if (stickyBtn) {
+    stickyBtn.disabled = true;
+    stickyBtn.textContent = "Sending…";
+  }
+  showStatus(statusEl, "loading", "Saving your request…");
 
   const photoInput = form.querySelector("#photo");
   let photoFile = photoInput && photoInput.files && photoInput.files[0];
@@ -195,25 +295,26 @@ async function handleRequestSubmit(e) {
     }
   }
 
-  // Save to Supabase (see SUPABASE SETUP comment in supabase-client.js).
-  // If Supabase isn't configured yet, this step is skipped silently and
-  // the lead still reaches the client via WhatsApp below.
+  let requestId = "";
   try {
     if (window.saveRequestToSupabase) {
-      await window.saveRequestToSupabase(data);
+      requestId = (await window.saveRequestToSupabase(data)) || "";
     }
   } catch (err) {
-    console.error("Supabase save failed (WhatsApp will still open):", err);
+    console.error("Supabase save failed (official chat will still open):", err);
   }
 
-  // Build the WhatsApp message
+  const ref = requestRefLabel(requestId);
   const lines = [
     `Hi Mwinbarka Imports, I'd like to place an order:`,
+    ref ? `Reference: ${ref}` : null,
     `Name: ${data.name}`,
     `Phone: ${data.phone}`,
     data.email ? `Email: ${data.email}` : null,
     `Product: ${data.request_details}`,
     data.category ? `Category: ${data.category}` : null,
+    data.origin ? `Origin: ${data.origin}` : null,
+    data.reference_url ? `Listing: ${data.reference_url}` : null,
     data.location ? `Location: ${data.location}` : null,
     data.quantity ? `Quantity: ${data.quantity}` : null,
     data.photo_url ? `Photo: ${data.photo_url}` : null,
@@ -223,11 +324,19 @@ async function handleRequestSubmit(e) {
   const waUrl = `https://wa.me/${WA_NUMBER}?text=${message}`;
 
   form.reset();
+  clearFieldErrors(form);
   const preview = form.querySelector("#photo-preview");
   if (preview) preview.innerHTML = "";
   if (new URLSearchParams(window.location.search).get("from") === "list") saveQuoteList([]);
-  submitBtn.disabled = false;
-  submitBtn.textContent = "ORDER NOW";
+  if (submitBtn) {
+    submitBtn.disabled = false;
+    submitBtn.textContent = originalLabel || "Start an Import Request";
+  }
+  if (stickyBtn) {
+    stickyBtn.disabled = false;
+    stickyBtn.textContent = originalLabel || "Start an Import Request";
+  }
+  if (statusEl) statusEl.className = "form-status";
 
   showOrderReceived(waUrl);
 }
@@ -367,6 +476,32 @@ function showToast(msg) {
   showToast._t = setTimeout(() => el.classList.remove("show"), 2200);
 }
 
+function mountCatalogSearch() {
+  const input = document.getElementById("catalog-search");
+  const root = document.getElementById("catalog-root");
+  if (!input || !root) return;
+  input.addEventListener("input", () => {
+    const q = input.value.trim().toLowerCase();
+    root.querySelectorAll(".product-card").forEach((card) => {
+      const text = (card.textContent || "").toLowerCase();
+      card.hidden = Boolean(q) && !text.includes(q);
+    });
+    root.querySelectorAll(".catalog-lane").forEach((lane) => {
+      const cards = [...lane.querySelectorAll(".product-card")];
+      const visible = cards.some((card) => !card.hidden);
+      lane.hidden = Boolean(q) && cards.length > 0 && !visible;
+    });
+  });
+}
+
+function polishPublicChrome() {
+  document.querySelectorAll(".wa-float").forEach((el) => {
+    if (el.getAttribute("aria-label") === "Join our channel") {
+      el.setAttribute("aria-label", "Chat with the desk on 054 030 9637");
+    }
+  });
+}
+
 function mountFeatureNav() {
   if (document.body && document.body.id === "admin-page") return;
 
@@ -428,8 +563,9 @@ function productCardHtml(p, opts = {}) {
       <div class="product-body">
         <span class="code">${escapeHtml(p.category || "Product")}</span>
         <h3>${escapeHtml(p.name)}</h3>
-        ${price ? `<div class="product-price">${escapeHtml(price)}${opts.indicative ? " <small>indicative</small>" : ""}</div>` : ""}
-        <span class="product-order">Order Now</span>
+        <span class="product-status">Available to source</span>
+        ${price ? `<div class="product-price">${escapeHtml(price)}${opts.indicative ? " <small>indicative</small>" : ""}</div>` : `<div class="product-price"><small>Request quote</small></div>`}
+        <span class="product-order">Request quote</span>
       </div>
     </a>
   `;
@@ -1452,13 +1588,16 @@ async function renderPublicProducts(client) {
     if (filter) names = PRODUCT_CATEGORIES.filter((name) => categorySlug(name) === categorySlug(filter));
     else if (!onCategoriesPage) names = PRODUCT_CATEGORIES.filter((name) => (groups.get(name) || []).length);
     if (!names.length && !onCategoriesPage) {
-      catalog.innerHTML = "";
+      catalog.innerHTML = products.length
+        ? ""
+        : `<p class="empty-note">No live products on the floor yet. Popular sourcing examples are below — or describe what you want.</p>
+           <a class="btn btn-gold" href="request.html">Start an Import Request</a>`;
     } else catalog.innerHTML = names.map((name) => {
       const rows = groups.get(name) || [];
       const cards = rows.length
         ? `<div class="product-grid">${rows.map((p) => productCardHtml(p)).join("")}</div>`
         : `<p class="empty-note">No products in this category yet. Describe what you want and we’ll source it.</p>
-           <a class="btn btn-gold" href="request.html?category=${encodeURIComponent(name)}">Order Now</a>`;
+           <a class="btn btn-gold" href="request.html?category=${encodeURIComponent(name)}">Start an Import Request</a>`;
       return `<section class="catalog-lane">
         <div class="section-head rail-head">
           <span class="eyebrow">${escapeHtml(name)}</span>
@@ -1631,6 +1770,20 @@ const ACCOUNT_SHIPMENT = {
   tema: "Tema",
   ready: "Ready for pickup",
 };
+const ACCOUNT_STATUS_LABEL = {
+  New: "Pending",
+  Contacted: "Reviewing",
+  Quoted: "Quoted",
+  Confirmed: "Confirmed",
+  Closed: "Closed",
+};
+const ACCOUNT_STATUS_CLASS = {
+  New: "is-pending",
+  Contacted: "is-review",
+  Quoted: "is-quoted",
+  Confirmed: "is-ok",
+  Closed: "is-closed",
+};
 const ACCOUNT_PANEL_ALIASES = { orders: "stats", transit: "notification", signup: "home", login: "home" };
 
 function showAccountTab(name) {
@@ -1672,12 +1825,15 @@ function orderCardHtml(row) {
   const when = row.created_at ? new Date(row.created_at).toLocaleDateString() : "";
   const ship = ACCOUNT_SHIPMENT[row.shipment_status] || "";
   const bits = [row.category, row.quantity, row.location].filter(Boolean).join(" · ");
+  const status = row.status || "New";
+  const label = ACCOUNT_STATUS_LABEL[status] || status;
+  const badgeClass = ACCOUNT_STATUS_CLASS[status] || "is-pending";
   return `<article class="account-order">
     <div>
       <strong>${escapeHtml(row.request_details || "Import request")}</strong>
       <span>${escapeHtml(bits)}</span>
     </div>
-    <em>${escapeHtml(row.status || "New")}${ship ? " · " + ship : ""}</em>
+    <span class="status-badge ${badgeClass}">${escapeHtml(label)}${ship ? " · " + escapeHtml(ship) : ""}</span>
     <small>${escapeHtml(when)}</small>
   </article>`;
 }
