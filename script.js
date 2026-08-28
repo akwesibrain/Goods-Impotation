@@ -89,7 +89,7 @@ document.addEventListener("DOMContentLoaded", () => {
     fillCategorySelects();
   }
 
-  applyPublicSite();
+  applyPublicSite().then(() => observeReveals(document));
   mountAnnounceBar();
   mountSiteSearch();
   mountFeatureNav();
@@ -108,6 +108,7 @@ document.addEventListener("DOMContentLoaded", () => {
   mountCatalogSearch();
   polishPublicChrome();
   unstickPublicHeader();
+  mountMotion();
 });
 
 function fillCategorySelects() {
@@ -270,10 +271,12 @@ async function handleRequestSubmit(e) {
   const originalLabel = submitBtn ? submitBtn.textContent : "";
   if (submitBtn) {
     submitBtn.disabled = true;
+    submitBtn.classList.add("is-loading");
     submitBtn.textContent = "Sending…";
   }
   if (stickyBtn) {
     stickyBtn.disabled = true;
+    stickyBtn.classList.add("is-loading");
     stickyBtn.textContent = "Sending…";
   }
   showStatus(statusEl, "loading", "Saving your request…");
@@ -332,15 +335,104 @@ async function handleRequestSubmit(e) {
   if (new URLSearchParams(window.location.search).get("from") === "list") saveQuoteList([]);
   if (submitBtn) {
     submitBtn.disabled = false;
+    submitBtn.classList.remove("is-loading");
     submitBtn.textContent = originalLabel || "Start an Import Request";
   }
   if (stickyBtn) {
     stickyBtn.disabled = false;
+    stickyBtn.classList.remove("is-loading");
     stickyBtn.textContent = originalLabel || "Start an Import Request";
   }
   if (statusEl) statusEl.className = "form-status";
 
   showOrderReceived(waUrl);
+}
+
+function prefersReducedMotion() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function motionMs(ms) {
+  return prefersReducedMotion() ? 0 : ms;
+}
+
+let revealObserver = null;
+
+function mountMotion() {
+  if (document.body && document.body.id === "admin-page") return;
+  if (prefersReducedMotion()) {
+    document.querySelectorAll(".reveal").forEach((el) => el.classList.add("is-in"));
+    return;
+  }
+  if (!revealObserver) {
+    revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("is-in");
+        revealObserver.unobserve(entry.target);
+      });
+    }, { rootMargin: "0px 0px -8% 0px", threshold: 0.1 });
+  }
+  observeReveals(document);
+}
+
+function observeReveals(root) {
+  if (document.body && document.body.id === "admin-page") return;
+  if (prefersReducedMotion()) return;
+  if (!revealObserver) {
+    revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("is-in");
+        revealObserver.unobserve(entry.target);
+      });
+    }, { rootMargin: "0px 0px -8% 0px", threshold: 0.1 });
+  }
+  const scope = root && root.querySelectorAll ? root : document;
+  const nodes = scope.querySelectorAll([
+    ".section-head",
+    ".stamp-grid article",
+    ".why-card",
+    ".faq-item",
+    ".form-card",
+    ".review-card",
+    ".category-card",
+    ".ticket",
+    ".product-card",
+    ".cta-band",
+    ".trust-plate",
+    ".loc-grid > *",
+    ".catalog-lane",
+    ".item-info",
+    ".item-block",
+    ".quote-rows li",
+    ".process-list li",
+    ".split > *",
+    ".udash-hero",
+    ".panel",
+    ".home-faq .faq-item",
+  ].join(","));
+  const fold = window.innerHeight * 0.92;
+  nodes.forEach((el) => {
+    if (el.closest(".tf-hero, .page-hero, .site-header, .tabbar")) return;
+    if (el.classList.contains("skeleton-card")) return;
+    if (el.closest("[hidden]")) return;
+    if (el.classList.contains("is-in")) return;
+    if (el.classList.contains("reveal")) {
+      revealObserver.observe(el);
+      return;
+    }
+    const top = el.getBoundingClientRect().top;
+    if (top < fold && top > -40) {
+      el.classList.add("is-in");
+      return;
+    }
+    el.classList.add("reveal");
+    const parent = el.parentElement;
+    const idx = parent ? Math.max(0, [...parent.children].indexOf(el)) : 0;
+    el.style.setProperty("--stagger", `${Math.min(idx, 6) * 50}ms`);
+    revealObserver.observe(el);
+  });
 }
 
 function showOrderReceived(waUrl) {
@@ -352,11 +444,18 @@ function showOrderReceived(waUrl) {
   }
   modal.hidden = false;
   document.body.classList.add("order-modal-open");
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => modal.classList.add("is-open"));
+  });
   const openWhatsApp = () => {
-    modal.hidden = true;
-    document.body.classList.remove("order-modal-open");
-    const opened = window.open(waUrl, "_blank");
-    if (!opened) window.location.href = waUrl;
+    modal.classList.remove("is-open");
+    const finish = () => {
+      modal.hidden = true;
+      document.body.classList.remove("order-modal-open");
+      const opened = window.open(waUrl, "_blank");
+      if (!opened) window.location.href = waUrl;
+    };
+    setTimeout(finish, motionMs(200));
   };
   go.onclick = openWhatsApp;
   go.focus();
@@ -575,6 +674,7 @@ function renderPopularSourcing() {
   const grid = document.getElementById("popular-grid");
   if (!grid) return;
   grid.innerHTML = POPULAR_SOURCING.map((p) => productCardHtml(p, { indicative: true })).join("");
+  observeReveals(grid);
 }
 
 function bindQuoteButtons() {
@@ -652,6 +752,7 @@ function renderQuoteListPage() {
       renderQuoteListPage();
     });
   }
+  observeReveals(wrap);
 }
 
 function setupPhotoPreview(form) {
@@ -891,6 +992,7 @@ async function renderItemPage(client) {
     if (chat) chat.href = wa;
     if (request) request.href = requestHref;
   }
+  observeReveals(root);
 }
 
 function applyChannelButton(settings) {
@@ -1462,6 +1564,7 @@ async function renderReviews(client) {
   const shown = onHome ? rows.slice(0, 4) : rows;
   const html = shown.map(reviewCardHtml).join("");
   grids.forEach((grid) => { grid.innerHTML = html; });
+  observeReveals(document);
 }
 
 async function bindReviewForm(client) {
@@ -1498,6 +1601,7 @@ async function bindReviewForm(client) {
       return;
     }
     btn.disabled = true;
+    btn.classList.add("is-loading");
     try {
       const user = window.getSessionUser ? await window.getSessionUser() : null;
       const { error } = await client.from("reviews").insert([{
@@ -1516,6 +1620,7 @@ async function bindReviewForm(client) {
       showStatus(statusEl, "error", err.message || "Couldn't send the review.");
     }
     btn.disabled = false;
+    btn.classList.remove("is-loading");
   });
 }
 
@@ -1611,6 +1716,7 @@ async function renderPublicProducts(client) {
 
   const popular = document.getElementById("popular-section");
   if (popular && products.length) popular.hidden = true;
+  observeReveals(document);
 }
 
 function openAccountDrawer() {
@@ -1620,17 +1726,25 @@ function openAccountDrawer() {
     window.location.href = "account.html";
     return;
   }
+  clearTimeout(openAccountDrawer._hide);
   drawer.hidden = false;
   backdrop.hidden = false;
-  document.body.classList.add("account-drawer-open");
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      document.body.classList.add("account-drawer-open");
+    });
+  });
 }
 
 function closeAccountDrawer() {
   const drawer = document.getElementById("account-drawer");
   const backdrop = document.querySelector(".account-backdrop");
-  if (drawer) drawer.hidden = true;
-  if (backdrop) backdrop.hidden = true;
   document.body.classList.remove("account-drawer-open");
+  clearTimeout(openAccountDrawer._hide);
+  openAccountDrawer._hide = setTimeout(() => {
+    if (drawer) drawer.hidden = true;
+    if (backdrop) backdrop.hidden = true;
+  }, motionMs(320));
 }
 
 function mountAccountChrome() {
@@ -2060,6 +2174,7 @@ async function mountAccountPage() {
       const status = document.getElementById("login-status");
       const btn = loginForm.querySelector('button[type="submit"]');
       btn.disabled = true;
+      btn.classList.add("is-loading");
       try {
         if (!window.signInCustomer) throw new Error("Account service is not connected yet.");
         const parsed = window.MwinbarkaForms.parseLogin({
@@ -2077,6 +2192,7 @@ async function mountAccountPage() {
         showStatus(status, "error", err.message || "Could not log in.");
       } finally {
         btn.disabled = false;
+        btn.classList.remove("is-loading");
       }
     });
   }
@@ -2088,6 +2204,7 @@ async function mountAccountPage() {
       const status = document.getElementById("signup-status");
       const btn = signupForm.querySelector('button[type="submit"]');
       btn.disabled = true;
+      btn.classList.add("is-loading");
       try {
         if (!window.signUpCustomer) throw new Error("Account service is not connected yet.");
         const parsed = window.MwinbarkaForms.parseSignup({
@@ -2114,6 +2231,7 @@ async function mountAccountPage() {
         showStatus(status, "error", err.message || "Could not create the account.");
       } finally {
         btn.disabled = false;
+        btn.classList.remove("is-loading");
       }
     });
   }
