@@ -6,8 +6,6 @@
    idea: your request becomes a manifest entry we track to Ghana.
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Rubik:wght@400;500;600;700;800&display=swap');
-
 :root {
   /* Color */
   --navy-900: #071427;
@@ -201,7 +199,7 @@ header.site-header.tf-head {
   font-size: 1.12rem;
   color: var(--white);
 }
-.nav-logo img { height: 36px; width: auto; }
+.nav-logo img { height: 36px; width: 36px; object-fit: contain; }
 .logo-lockup {
   display: flex;
   flex-direction: column;
@@ -2646,14 +2644,38 @@ body.order-modal-open { overflow: hidden; }
   border-color: rgba(255,255,255,0.22);
 }
 .tf-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   min-height: 78vh;
   display: flex;
   align-items: center;
   padding: 5.5rem 0 6rem;
-  background:
-    linear-gradient(105deg, rgba(7,20,39,0.92) 0%, rgba(9,18,66,0.62) 48%, rgba(9,18,66,0.2) 100%),
-    url("https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=2200&q=80") center/cover no-repeat;
+  background-color: var(--navy-900);
   color: var(--white);
+}
+.tf-hero-media {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+.tf-hero-media img {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  object-fit: cover;
+  object-position: center;
+}
+.tf-hero-media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, rgba(7,20,39,0.92) 0%, rgba(9,18,66,0.62) 48%, rgba(9,18,66,0.2) 100%);
+}
+.tf-hero > .container {
+  position: relative;
+  z-index: 1;
 }
 .hero-route {
   display: inline-flex;
@@ -2730,7 +2752,7 @@ body.order-modal-open { overflow: hidden; }
   align-items: flex-start;
 }
 .tf-service-grid h3 {
-  font-family: "Rubik", var(--font-body);
+  font-family: var(--font-display);
   font-size: 1.15rem;
   margin-bottom: 0.35rem;
 }
@@ -2886,6 +2908,9 @@ body.account-drawer-open { overflow: hidden; }
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: var(--space-3);
+}
+.review-grid:empty {
+  min-height: 16rem;
 }
 @media (max-width: 720px) {
   .review-grid { grid-template-columns: 1fr; }
@@ -3729,6 +3754,7 @@ body.nav-open .nav-scrim { display: block; }
 }
 .item-hero img {
   width: 100%;
+  aspect-ratio: 1;
   max-height: 520px;
   object-fit: cover;
   background: #eef1f4;

@@ -23,9 +23,27 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
   bottom: auto !important;
 }
 </style>
-<link rel="stylesheet" href="styles.css?v=brand44">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="preload" as="image" fetchpriority="high"
+  href="https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=1400&q=80"
+  imagesrcset="https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=800&q=75 800w, https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=1400&q=80 1400w, https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=2200&q=80 2200w"
+  imagesizes="100vw">
+<link rel="stylesheet" href="styles.css?v=brand45">
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script defer src="validation.js?v=brand1"></script>
+<script defer src="supabase-client.js?v=brand29"></script>
+<script defer src="script.js?v=brand24"></script>
+<script type="speculationrules">
+{
+  "prefetch": [
+    { "source": "list", "urls": ["/request", "/categories"] }
+  ]
+}
+</script>
 </head>
-<body class="home">
+<body class="home has-tabbar">
 
 <a class="skip-link" href="#main">Skip to content</a>
 <header class="site-header tf-head" style="position:relative;top:auto">
@@ -33,7 +51,7 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
   <div class="tf-top">
     <div class="container header-main">
       <a href="index.html" class="nav-logo">
-        <img src="assets/logo.png" alt="Mwinbarka Imports logo">
+        <img src="assets/logo.png" alt="Mwinbarka Imports logo" width="36" height="36">
         <span class="logo-lockup">Mwinbarka <em>Imports</em><small>China · Turkey → Ghana</small></span>
       </a>
       <ul class="tf-contacts">
@@ -66,12 +84,25 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
           <li class="nav-request"><a href="request.html">Order Now</a></li>
         </ul>
       <div class="tf-socials" aria-label="Social profiles"></div>
+      <a href="quote-list.html" class="quote-link">Quote list <span class="quote-count" data-quote-count>0</span></a>
       <a href="request.html" class="btn btn-white nav-cta">Order Now</a>
     </div>
   </nav>
 </header>
 
 <section class="tf-hero" id="main">
+  <div class="tf-hero-media">
+    <img
+      src="https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=1400&q=80"
+      srcset="https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=800&q=75 800w, https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=1400&q=80 1400w, https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=2200&q=80 2200w"
+      sizes="100vw"
+      width="1400"
+      height="933"
+      fetchpriority="high"
+      loading="eager"
+      decoding="async"
+      alt="Cargo vessel at sea on the import lane to Ghana">
+  </div>
   <div class="container">
     <p class="hero-route">Guangzhou · Istanbul <span>→</span> Tema · Accra</p>
     <h1>Import from China and Turkey. Landed in Ghana. Quoted in GH₵.</h1>
@@ -183,7 +214,16 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
       <a href="categories.html" class="more-link">All categories →</a>
     </div>
     <p class="section-note">Examples until the desk publishes live products. Open a card, then Order Now.</p>
-    <div class="product-grid selected-grid" id="popular-grid"></div>
+    <div class="product-grid selected-grid" id="popular-grid">
+      <div class="skeleton-card" aria-hidden="true"></div>
+      <div class="skeleton-card" aria-hidden="true"></div>
+      <div class="skeleton-card" aria-hidden="true"></div>
+      <div class="skeleton-card" aria-hidden="true"></div>
+      <div class="skeleton-card" aria-hidden="true"></div>
+      <div class="skeleton-card" aria-hidden="true"></div>
+      <div class="skeleton-card" aria-hidden="true"></div>
+      <div class="skeleton-card" aria-hidden="true"></div>
+    </div>
   </div>
 </section>
 
@@ -283,9 +323,5 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
 
 <a href="https://wa.me/233540309637" class="wa-float" target="_blank" rel="noopener" aria-label="Chat with the desk on 054 030 9637">💬</a>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="validation.js?v=brand1"></script>
-<script src="supabase-client.js?v=brand29"></script>
-<script src="script.js?v=brand23"></script>
 </body>
 </html>

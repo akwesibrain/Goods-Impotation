@@ -554,8 +554,8 @@ function productCardHtml(p, opts = {}) {
     ? (String(priceRaw).includes("GH") ? priceRaw : `GH₵${priceRaw}`)
     : (p.from ? `from GH₵${p.from}` : "");
   const img = p.image_url
-    ? `<img src="${escapeAttr(p.image_url)}" alt="${escapeAttr(p.name)}">`
-    : `<img src="${tileDataUri((p.category || "MW").split(" ")[0])}" alt="">`;
+    ? `<img src="${escapeAttr(p.image_url)}" alt="${escapeAttr(p.name)}" width="400" height="400" loading="lazy" decoding="async">`
+    : `<img src="${tileDataUri((p.category || "MW").split(" ")[0])}" alt="" width="400" height="400" loading="lazy" decoding="async">`;
   const href = `item.html?id=${encodeURIComponent(id)}`;
   return `
     <a class="product-card" href="${href}">
@@ -837,8 +837,8 @@ async function renderItemPage(client) {
     ? (String(item.price).includes("GH") ? item.price : `GH₵${item.price}`)
     : (item.from ? `from GH₵${item.from}` : "");
   const img = item.image_url
-    ? `<img src="${escapeAttr(item.image_url)}" alt="${escapeAttr(item.name)}">`
-    : `<img src="${tileDataUri((item.category || "MW").split(" ")[0])}" alt="">`;
+    ? `<img src="${escapeAttr(item.image_url)}" alt="${escapeAttr(item.name)}" width="800" height="800" fetchpriority="high" decoding="async">`
+    : `<img src="${tileDataUri((item.category || "MW").split(" ")[0])}" alt="" width="800" height="800" decoding="async">`;
   const requestHref = `request.html?q=${encodeURIComponent(item.name)}${item.category ? `&category=${encodeURIComponent(item.category)}` : ""}`;
   const wa = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent("Hi Mwinbarka Imports, I'd like a GH₵ quote for: " + item.name)}`;
 
