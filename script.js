@@ -98,7 +98,6 @@ document.addEventListener("DOMContentLoaded", () => {
   mountReviewsLinks();
   renderPopularSourcing();
   renderQuoteListPage();
-  setupShippingAdvisor();
   bindQuoteButtons();
   renderItemPage();
   restoreSearchPhoto();
@@ -154,7 +153,7 @@ function prefillCategoryFromQuery(form) {
   }
 
   if (kg && productField && !productField.value) {
-    productField.value = `Please quote sea freight to Ghana for about ${kg} kg.`;
+    productField.value = `Please quote sea shipping to Ghana for about ${kg} kg.`;
   }
 
   if (q) {
@@ -523,16 +522,6 @@ function unstickPublicHeader() {
 function mountFeatureNav() {
   if (document.body && document.body.id === "admin-page") return;
 
-  const links = document.querySelector(".nav-links");
-  if (links && !links.querySelector('a[href="shipping.html"]')) {
-    const li = document.createElement("li");
-    const here = (location.pathname.split("/").pop() || "") === "shipping.html";
-    li.innerHTML = `<a href="shipping.html"${here ? ' class="active"' : ""}>Shipping Rates</a>`;
-    const cats = [...links.querySelectorAll("a")].find((a) => a.getAttribute("href") === "categories.html");
-    if (cats && cats.parentElement) cats.parentElement.after(li);
-    else links.appendChild(li);
-  }
-
   if (!document.querySelector(".quote-link")) {
     const cta = document.querySelector(".header-main .nav-cta") || document.querySelector(".nav-cta");
     const link = document.createElement("a");
@@ -542,15 +531,6 @@ function mountFeatureNav() {
     if (cta && cta.parentNode) cta.parentNode.insertBefore(link, cta);
     else if (document.querySelector(".header-main")) document.querySelector(".header-main").appendChild(link);
   }
-
-  document.querySelectorAll(".footer-grid ul").forEach((ul) => {
-    const hasHow = [...ul.querySelectorAll("a")].some((a) => a.getAttribute("href") === "how-it-works.html");
-    if (hasHow && !ul.querySelector('a[href="shipping.html"]')) {
-      const li = document.createElement("li");
-      li.innerHTML = `<a href="shipping.html">Shipping Rates</a>`;
-      ul.appendChild(li);
-    }
-  });
 
   updateQuoteBadge();
 }
@@ -670,26 +650,6 @@ function renderQuoteListPage() {
       renderQuoteListPage();
     });
   }
-}
-
-function setupShippingAdvisor() {
-  const form = document.getElementById("shipping-advisor");
-  if (!form) return;
-  const out = document.getElementById("shipping-advice");
-  form.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const kg = Number(form.elements.kg.value);
-    const city = (form.elements.city.value || "Ghana").trim();
-    if (!kg || kg <= 0) {
-      out.hidden = false;
-      out.textContent = "Enter an estimated weight so we can quote sea freight.";
-      return;
-    }
-    out.hidden = false;
-    out.innerHTML = `<p>For <strong>${kg} kg</strong> to <strong>${escapeHtml(city)}</strong>, we ship by <strong>sea freight</strong> (typically 4–8 weeks after the supplier ships).</p>
-      <p>We don't publish a live GH₵/kg table because fuel and season change the number. Order now and we'll quote today's landed cost on the official line.</p>
-      <a class="btn btn-gold" href="request.html?kg=${encodeURIComponent(String(kg))}&q=${encodeURIComponent(kg + " kg sea freight to " + city)}">Order Now</a>`;
-  });
 }
 
 function setupPhotoPreview(form) {
@@ -895,7 +855,7 @@ async function renderItemPage(client) {
       <ol class="process-list">
         <li>Order now — or add it to your quote list.</li>
         <li>We quote the goods in GH₵ (supplier price + China pickup).</li>
-        <li>We ship by sea to Ghana. See the <a href="shipping.html">freight estimate</a> if you want a weight quote first.</li>
+        <li>We ship by sea to Ghana. Typical transit is 4–8 weeks after the supplier ships.</li>
       </ol>
       <p class="muted">Packages can be consolidated. Write the desk if you already have other items waiting.</p>
     </section>

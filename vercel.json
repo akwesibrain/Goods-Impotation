@@ -1,6 +1,10 @@
 {
   "cleanUrls": true,
   "trailingSlash": false,
+  "redirects": [
+    { "source": "/shipping", "destination": "/how-it-works", "permanent": true },
+    { "source": "/shipping.html", "destination": "/how-it-works", "permanent": true }
+  ],
   "headers": [
     {
       "source": "/(.*)",

@@ -13,6 +13,16 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
 
+[[redirects]]
+  from = "/shipping"
+  to = "/how-it-works"
+  status = 301
+
+[[redirects]]
+  from = "/shipping.html"
+  to = "/how-it-works"
+  status = 301
+
 # The admin desk should never show up in search results.
 [[headers]]
   for = "/admin"

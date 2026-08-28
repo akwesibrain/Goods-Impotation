@@ -2488,34 +2488,6 @@ body.order-modal-open { overflow: hidden; }
   color: var(--gold-400);
 }
 
-.freight-split {
-  display: grid;
-  grid-template-columns: 1fr 1.1fr;
-  gap: var(--space-4);
-  align-items: center;
-}
-.freight-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: #fffdf8;
-  font-size: 0.95rem;
-}
-.freight-table th, .freight-table td {
-  border: 1px solid var(--line);
-  padding: 0.85rem 1rem;
-  text-align: left;
-}
-.freight-table thead th {
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--gold-500);
-  background: var(--navy-900);
-}
-.freight-table thead th:first-child { color: transparent; }
-.freight-table tbody th { font-weight: 500; color: var(--navy-800); width: 40%; }
-
 .trust-plate {
   display: flex;
   justify-content: space-between;
@@ -2546,7 +2518,7 @@ body.order-modal-open { overflow: hidden; }
 .desk-aside a { color: var(--gold-400); }
 
 @media (max-width: 960px) {
-  .desk-hero-grid, .lane-grid, .freight-split, .desk-form { grid-template-columns: 1fr; }
+  .desk-hero-grid, .lane-grid, .desk-form { grid-template-columns: 1fr; }
   .process-rail, .metric-row, .lane-tiles { grid-template-columns: 1fr 1fr; }
   .metric-row div { border-left: 0; border-top: 1px solid var(--line); padding-left: 0; }
   .metric-row div:nth-child(-n+2) { border-top: 0; }
