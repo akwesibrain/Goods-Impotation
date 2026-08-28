@@ -157,11 +157,33 @@ textarea:focus-visible, select:focus-visible {
 .btn-white:hover { background: var(--gold-500); border-color: var(--gold-500); }
 
 /* ---------------- Header / Nav ---------------- */
-.site-header {
+/* ---------------- Header / Nav ----------------
+   The header is document-flow only. It must never pin to the viewport.
+   z-index is for the mobile dropdown overlaying page content, not for stickiness. */
+.site-header,
+header.site-header,
+header.site-header.tf-head {
   background: var(--navy-900);
-  position: relative;
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  inset: auto !important;
   z-index: 50;
+  width: 100%;
   border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.site-header .announce-bar,
+.site-header .tf-top,
+.site-header .tf-nav,
+.site-header .header-main,
+.site-header .tf-nav-row {
+  position: relative;
+  top: auto;
+  left: auto;
+  right: auto;
+  bottom: auto;
 }
 .nav {
   display: flex;
@@ -3759,5 +3781,18 @@ body.nav-open .nav-scrim { display: block; }
   .skeleton-card,
   .skeleton-copy span { animation: none; }
 }
+
+/* Lock: public header stays in document flow on every breakpoint */
+header.site-header,
+header.site-header.tf-head,
+.home .site-header,
+.home .tf-head {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+}
+
 
 

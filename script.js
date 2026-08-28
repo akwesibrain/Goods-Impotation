@@ -107,6 +107,7 @@ document.addEventListener("DOMContentLoaded", () => {
   guardAdvertClicks();
   mountCatalogSearch();
   polishPublicChrome();
+  unstickPublicHeader();
 });
 
 function fillCategorySelects() {
@@ -498,6 +499,23 @@ function polishPublicChrome() {
   document.querySelectorAll(".wa-float").forEach((el) => {
     if (el.getAttribute("aria-label") === "Join our channel") {
       el.setAttribute("aria-label", "Chat with the desk on 054 030 9637");
+    }
+  });
+}
+
+function unstickPublicHeader() {
+  const header = document.querySelector("header.site-header");
+  if (!header) return;
+  const parts = [header, ...header.querySelectorAll(":scope > *, .tf-top, .tf-nav, .announce-bar, .header-main, .tf-nav-row")];
+  parts.forEach((el) => {
+    if (el.classList.contains("nav-links")) return;
+    const pos = window.getComputedStyle(el).position;
+    if (pos === "sticky" || pos === "fixed") {
+      el.style.setProperty("position", "relative", "important");
+      el.style.setProperty("top", "auto", "important");
+      el.style.setProperty("left", "auto", "important");
+      el.style.setProperty("right", "auto", "important");
+      el.style.setProperty("bottom", "auto", "important");
     }
   });
 }
