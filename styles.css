@@ -4097,7 +4097,7 @@ body.desk-home {
 .desk-home .nav-logo { color: var(--navy-800); }
 .desk-home .logo-lockup em { color: var(--gold-500); }
 .desk-home .logo-lockup small { color: var(--ink-300); }
-.desk-home .nav-toggle { color: var(--navy-800); }
+.desk-home .header-phone { display: none !important; }
 .desk-home .header-main {
   padding: 0.95rem 0;
   gap: 1rem;
@@ -4153,7 +4153,7 @@ body.desk-home {
 }
 .desk-home .header-account:hover { border-color: var(--gold-500); }
 .desk-home .nav.desk-nav {
-  background: #E8ECF2;
+  background: #E4E8EF;
   padding: 0.45rem 0;
   justify-content: flex-start;
 }
@@ -4357,6 +4357,14 @@ body.desk-home {
   .desk-banner { min-height: 240px; }
 }
 @media (max-width: 860px) {
+  .desk-home .header-main { flex-wrap: wrap; }
+  .desk-home .nav-logo { flex: 1 1 auto; min-width: 0; }
+  .desk-home .site-search {
+    order: 3;
+    flex: 1 1 100%;
+    max-width: none;
+    width: 100%;
+  }
   .desk-home .desk-utils { margin-left: auto; }
   .desk-home .header-account-label {
     position: absolute;
@@ -4392,6 +4400,7 @@ body.desk-home {
   }
 }
 @media (max-width: 640px) {
+  .desk-home .logo-lockup small { display: none; }
   .desk-tiles { grid-template-columns: 1fr 1fr; }
   .desk-banner { aspect-ratio: 5 / 4; }
   .desk-slide-copy { padding: 1.3rem 1rem 2.2rem; }
