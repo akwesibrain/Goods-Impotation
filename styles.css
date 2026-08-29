@@ -3887,6 +3887,10 @@ header.site-header.desk-head,
   from { transform: scale(1.06); }
   to { transform: scale(1); }
 }
+@keyframes mwShipSail {
+  from { transform: scale(1.18) translate3d(-6%, 1.1%, 0); }
+  to   { transform: scale(1.18) translate3d(7%, -0.9%, 0); }
+}
 @keyframes mwSpin {
   to { transform: rotate(360deg); }
 }
@@ -4066,6 +4070,10 @@ header.site-header.desk-head,
   .desk-slide-copy,
   .desk-slide img {
     animation: none !important;
+  }
+  .desk-slide--ship img {
+    transform: none !important;
+    will-change: auto;
   }
 }
 
@@ -4251,6 +4259,16 @@ body.desk-home {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+.desk-slide--ship img {
+  transform: scale(1.18) translate3d(-6%, 1.1%, 0);
+  transform-origin: center center;
+  animation: mwShipSail 18s ease-in-out infinite alternate;
+  animation-play-state: paused;
+  will-change: transform;
+}
+.desk-slide--ship.is-on img {
+  animation-play-state: running;
 }
 .desk-slide-copy {
   position: absolute;
@@ -4760,6 +4778,7 @@ body.desk-home {
 @media (max-width: 640px) {
   .desk-slide-copy .hero-actions .btn { width: 100%; }
   .page-hero-actions .btn { width: 100%; }
+  .desk-slide--ship img { animation-duration: 22s; }
 }
 
 
