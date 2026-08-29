@@ -4692,12 +4692,21 @@ body.desk-home {
   transform-origin: 50% 100%;
   opacity: 0;
 }
+.cred-guard-sprite {
+  position: relative;
+}
 .cred-guard-img {
   width: 100%;
   height: auto;
   display: block;
   filter: drop-shadow(0 16px 18px rgba(10, 31, 68, 0.18));
   transform-origin: 50% 100%;
+}
+.cred-guard-sprite .cred-guard-img + .cred-guard-img {
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0;
 }
 .cred-guard-bubble {
   position: absolute;
@@ -4734,14 +4743,34 @@ body.desk-home {
 .cred-guard-officer.is-in .cred-guard-walk {
   animation: credWalkIn 0.85s cubic-bezier(.2, .85, .2, 1) both;
 }
-.cred-guard-officer.is-in .cred-guard-img {
+.cred-guard-officer.is-in .cred-guard-sprite {
   animation: credBreathe 3.4s ease-in-out 0.85s infinite;
+}
+.cred-guard-officer.is-in .is-pose-ask {
+  animation: credPoseAsk 2.6s 0.85s infinite;
+}
+.cred-guard-officer.is-in .is-pose-beckon {
+  animation: credPoseBeckon 2.6s 0.85s infinite;
+}
+.cred-guard-officer.is-in .is-pose-point {
+  animation: credPosePoint 2.6s 0.85s infinite;
 }
 .cred-guard-officer.is-in .cred-guard-bubble {
   animation: credBubbleIn 0.45s 0.5s cubic-bezier(.2, .8, .2, 1) both;
 }
 .cred-guard-officer.is-in .cred-guard-bubble.is-talking {
   animation: credTalk 0.4s ease;
+}
+.cred-guard-officer[data-pose] .is-pose-ask,
+.cred-guard-officer[data-pose] .is-pose-beckon,
+.cred-guard-officer[data-pose] .is-pose-point {
+  animation: none !important;
+  opacity: 0;
+}
+.cred-guard-officer[data-pose="ask"] .is-pose-ask,
+.cred-guard-officer[data-pose="beckon"] .is-pose-beckon,
+.cred-guard-officer[data-pose="point"] .is-pose-point {
+  opacity: 1;
 }
 
 @keyframes credWalkIn {
@@ -4752,6 +4781,20 @@ body.desk-home {
 @keyframes credBreathe {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-8px); }
+}
+@keyframes credPoseAsk {
+  0%, 30% { opacity: 1; }
+  31%, 100% { opacity: 0; }
+}
+@keyframes credPoseBeckon {
+  0%, 30% { opacity: 0; }
+  31%, 62% { opacity: 1; }
+  63%, 100% { opacity: 0; }
+}
+@keyframes credPosePoint {
+  0%, 62% { opacity: 0; }
+  63%, 96% { opacity: 1; }
+  97%, 100% { opacity: 0; }
 }
 @keyframes credBubbleIn {
   0% { opacity: 0; transform: translate(-6px, 10px) scale(0.72); }
@@ -4778,6 +4821,21 @@ body.desk-home {
     bottom: 8%;
     max-width: 170px;
     font-size: 0.82rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cred-guard-officer.is-in .cred-guard-walk,
+  .cred-guard-officer.is-in .cred-guard-sprite,
+  .cred-guard-officer.is-in .cred-guard-img,
+  .cred-guard-officer.is-in .cred-guard-bubble {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .cred-guard-officer.is-in .is-pose-beckon,
+  .cred-guard-officer.is-in .is-pose-point {
+    opacity: 0 !important;
   }
 }
 

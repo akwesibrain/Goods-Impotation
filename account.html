@@ -27,11 +27,14 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="styles.css?v=brand60">
+<link rel="stylesheet" href="styles.css?v=brand61">
+<link rel="preload" as="image" href="assets/login-officer-ask.png">
+<link rel="preload" as="image" href="assets/login-officer-beckon.png">
+<link rel="preload" as="image" href="assets/login-officer-point.png">
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script defer src="validation.js?v=brand2"></script>
 <script defer src="supabase-client.js?v=brand30"></script>
-<script defer src="script.js?v=brand33"></script>
+<script defer src="script.js?v=brand34"></script>
 </head>
 <body class="account-page">
 <a class="skip-link" href="#main">Skip to content</a>
@@ -113,7 +116,12 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
       <div class="udash-auth cred-guard-auth">
         <aside class="cred-guard-officer" data-cred-guard>
           <div class="cred-guard-walk">
-            <img class="cred-guard-img" src="assets/login-officer.png" width="452" height="678" alt="Desk officer waiting for your login">
+            <div class="cred-guard-sprite" aria-hidden="true">
+              <img class="cred-guard-img is-pose-ask" src="assets/login-officer-ask.png" width="452" height="678" alt="">
+              <img class="cred-guard-img is-pose-beckon" src="assets/login-officer-beckon.png" width="452" height="678" alt="">
+              <img class="cred-guard-img is-pose-point" src="assets/login-officer-point.png" width="452" height="678" alt="">
+            </div>
+            <span class="sr-only">Desk officer requesting your login</span>
           </div>
           <p class="cred-guard-bubble" data-cred-bubble role="status">Hold on. Email and password before you go in.</p>
         </aside>

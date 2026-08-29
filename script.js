@@ -1538,6 +1538,7 @@ function showAccountTab(name) {
 
 function playCredentialGuard(root) {
   if (!root) return;
+  root.removeAttribute("data-pose");
   root.classList.remove("is-in");
   void root.offsetWidth;
   root.classList.add("is-in");
@@ -1563,17 +1564,33 @@ function mountCredentialGuard() {
     if (!form) return;
     const email = form.querySelector("input[type='email'], input[name='email']");
     const password = form.querySelector("input[type='password']");
+    const pose = (name) => {
+      if (!name) root.removeAttribute("data-pose");
+      else root.setAttribute("data-pose", name);
+    };
 
     if (!root.closest("#admin-login") || root.closest("#admin-login")?.style.display !== "none") {
       playCredentialGuard(root);
     }
 
-    email?.addEventListener("focus", () => speak(bubble, "Your email, please."));
-    email?.addEventListener("blur", () => {
-      if (!email.value && !(password && password.value)) speak(bubble, ask);
+    email?.addEventListener("focus", () => {
+      pose("point");
+      speak(bubble, "Your email, please.");
     });
-    password?.addEventListener("focus", () => speak(bubble, "Now the password. Keep it to yourself."));
-    form.addEventListener("submit", () => speak(bubble, "Checking your credentials…"));
+    password?.addEventListener("focus", () => {
+      pose("ask");
+      speak(bubble, "Now the password. Keep it to yourself.");
+    });
+    form.addEventListener("focusout", (e) => {
+      if (!form.contains(e.relatedTarget)) {
+        pose(null);
+        if (email && !email.value && password && !password.value) speak(bubble, ask);
+      }
+    });
+    form.addEventListener("submit", () => {
+      pose("beckon");
+      speak(bubble, "Checking your credentials…");
+    });
   });
 }
 
