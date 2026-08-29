@@ -1325,7 +1325,6 @@ async function renderPublicProducts(client) {
            <a class="btn btn-gold" href="request.html?category=${encodeURIComponent(name)}">Start an Import Request</a>`;
       return `<section class="catalog-lane">
         <div class="section-head rail-head">
-          <span class="eyebrow">${escapeHtml(name)}</span>
           <h2>${escapeHtml(name)}</h2>
           <a class="more-link" href="categories.html?cat=${encodeURIComponent(name)}">See all →</a>
         </div>
