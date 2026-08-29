@@ -27,14 +27,18 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="styles.css?v=brand62">
+<link rel="stylesheet" href="styles.css?v=brand63">
 <link rel="preload" as="image" href="assets/login-officer-watch.png">
 <link rel="preload" as="image" href="assets/login-officer-look.png">
 <link rel="preload" as="image" href="assets/login-officer-cover.png">
+<link rel="preload" as="image" href="assets/signup-agent-idle.png">
+<link rel="preload" as="image" href="assets/signup-agent-walk.png">
+<link rel="preload" as="image" href="assets/signup-agent-wave.png">
+<link rel="preload" as="image" href="assets/signup-agent-cover.png">
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script defer src="validation.js?v=brand2"></script>
 <script defer src="supabase-client.js?v=brand30"></script>
-<script defer src="script.js?v=brand35"></script>
+<script defer src="script.js?v=brand36"></script>
 </head>
 <body class="account-page">
 <a class="skip-link" href="#main">Skip to content</a>
@@ -124,6 +128,18 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
             <span class="sr-only">Desk officer requesting your login</span>
           </div>
           <p class="cred-guard-bubble" data-cred-bubble role="status">Hold on. Email and password before you go in.</p>
+        </aside>
+        <aside class="cred-guard-agent" data-cred-agent hidden>
+          <div class="cred-guard-walk">
+            <div class="cred-guard-sprite" aria-hidden="true">
+              <img class="cred-guard-img is-pose-idle" src="assets/signup-agent-idle.png" width="320" height="680" alt="">
+              <img class="cred-guard-img is-pose-walk" src="assets/signup-agent-walk.png" width="320" height="680" alt="">
+              <img class="cred-guard-img is-pose-wave" src="assets/signup-agent-wave.png" width="320" height="680" alt="">
+              <img class="cred-guard-img is-pose-cover" src="assets/signup-agent-cover.png" width="320" height="680" alt="">
+            </div>
+            <span class="sr-only">Import agent welcoming you to sign up</span>
+          </div>
+          <p class="cred-guard-bubble" data-cred-bubble role="status">Welcome. Let’s open your desk file.</p>
         </aside>
         <div class="cred-guard-forms">
         <div class="account-tabs" role="tablist">

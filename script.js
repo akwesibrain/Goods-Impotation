@@ -1529,10 +1529,17 @@ function showAccountTab(name) {
   document.querySelectorAll("[data-account-tab]").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.accountTab === name);
   });
+  const auth = document.querySelector("#account-auth .cred-guard-auth");
   const guard = document.querySelector("#account-auth [data-cred-guard]");
+  const agent = document.querySelector("#account-auth [data-cred-agent]");
+  if (auth) auth.classList.toggle("is-signup", name === "signup");
   if (guard) {
     guard.hidden = name !== "login";
     if (name === "login") playCredentialGuard(guard);
+  }
+  if (agent) {
+    agent.hidden = name !== "signup";
+    if (name === "signup") playCredentialGuard(agent);
   }
 }
 
@@ -1605,6 +1612,66 @@ function mountCredentialGuard() {
       pose("watch");
       root.style.setProperty("--look-x", "0px");
       speak(bubble, "Checking your credentials…");
+    });
+  });
+
+  document.querySelectorAll("[data-cred-agent]").forEach((root) => {
+    const bubble = root.querySelector("[data-cred-bubble]");
+    const intro = (bubble && bubble.textContent.trim()) || "Welcome. Let’s open your desk file.";
+    const form = document.getElementById("account-signup-form");
+    if (!form) return;
+    const nameInput = form.querySelector("input[name='full_name'], #signup-name");
+    const phone = form.querySelector("input[type='tel'], #signup-phone");
+    const email = form.querySelector("input[type='email'], #signup-email");
+    const password = form.querySelector("input[type='password'], #signup-password");
+    const pose = (name) => {
+      if (!name) root.removeAttribute("data-pose");
+      else root.setAttribute("data-pose", name);
+    };
+    const track = (field) => {
+      const len = (field?.value || "").length;
+      const x = Math.max(-18, Math.min(18, (len - 4) * 1.4));
+      root.style.setProperty("--look-x", `${x}px`);
+    };
+
+    nameInput?.addEventListener("focus", () => {
+      pose("wave");
+      root.style.setProperty("--look-x", "0px");
+      speak(bubble, "Your name, please.");
+    });
+    phone?.addEventListener("focus", () => {
+      pose("idle");
+      track(phone);
+      speak(bubble, "Your Ghana number.");
+    });
+    phone?.addEventListener("input", () => track(phone));
+    email?.addEventListener("focus", () => {
+      pose("idle");
+      track(email);
+      speak(bubble, "Your email, please.");
+    });
+    email?.addEventListener("input", () => {
+      if (root.getAttribute("data-pose") === "cover") return;
+      pose("idle");
+      track(email);
+    });
+    password?.addEventListener("focus", () => {
+      pose("cover");
+      root.style.setProperty("--look-x", "0px");
+      speak(bubble, "I won’t look. Choose a password.");
+    });
+    form.addEventListener("focusout", (e) => {
+      if (!form.contains(e.relatedTarget)) {
+        pose(null);
+        root.style.setProperty("--look-x", "0px");
+        const empty = [nameInput, phone, email, password].every((el) => !el || !el.value);
+        if (empty) speak(bubble, intro);
+      }
+    });
+    form.addEventListener("submit", () => {
+      pose("wave");
+      root.style.setProperty("--look-x", "0px");
+      speak(bubble, "Opening your desk file…");
     });
   });
 }

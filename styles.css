@@ -4678,8 +4678,11 @@ body.desk-home {
 .udash-auth.cred-guard-auth {
   max-width: 400px;
 }
-.cred-guard-auth:has([data-cred-guard][hidden]) {
+.cred-guard-auth:has([data-cred-guard][hidden]):not(.is-signup) {
   padding-top: 0;
+}
+.cred-guard-auth.is-signup {
+  padding-top: 17rem;
 }
 .cred-guard-forms {
   position: relative;
@@ -4712,7 +4715,8 @@ body.desk-home {
   pointer-events: none;
   margin: 0;
 }
-.cred-guard-officer[hidden] { display: none !important; }
+.cred-guard-officer[hidden],
+.cred-guard-agent[hidden] { display: none !important; }
 .cred-guard-walk {
   transform-origin: 50% 100%;
   opacity: 0;
@@ -4849,6 +4853,113 @@ body.desk-home {
   }
   .cred-guard-officer[data-pose="look"] .is-pose-watch,
   .cred-guard-officer[data-pose="cover"] .is-pose-watch {
+    opacity: 0 !important;
+  }
+}
+
+/* ---------------- Signup agent (walk-in businessman) ---------------- */
+.cred-guard-agent {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: min(152px, 48vw);
+  transform: translateX(-50%);
+  z-index: 3;
+  pointer-events: none;
+  margin: 0;
+}
+.cred-guard-agent .cred-guard-walk { opacity: 0; }
+.cred-guard-agent .cred-guard-img { filter: drop-shadow(0 10px 14px rgba(10, 31, 68, 0.22)); }
+.cred-guard-agent.is-in .is-pose-idle { opacity: 1; }
+.cred-guard-agent.is-in .is-pose-walk,
+.cred-guard-agent.is-in .is-pose-wave,
+.cred-guard-agent.is-in .is-pose-cover { opacity: 0; }
+.cred-guard-agent .cred-guard-bubble {
+  left: 86%;
+  top: 6%;
+  max-width: 150px;
+}
+.cred-guard-agent.is-in .cred-guard-walk {
+  animation: agentWalkIn 0.95s cubic-bezier(.2, .85, .2, 1) both;
+}
+.cred-guard-agent.is-in .cred-guard-sprite {
+  animation: credBreathe 3.4s ease-in-out 0.95s infinite;
+}
+.cred-guard-agent.is-in .is-pose-walk {
+  animation: agentFlashWalk 0.95s both;
+}
+.cred-guard-agent.is-in .is-pose-idle {
+  animation: agentRevealIdle 0.95s both;
+}
+.cred-guard-agent.is-in .cred-guard-bubble {
+  animation: credBubbleIn 0.45s 0.55s cubic-bezier(.2, .8, .2, 1) both;
+}
+.cred-guard-agent.is-in .cred-guard-bubble.is-talking {
+  animation: credTalk 0.4s ease;
+}
+.cred-guard-agent[data-pose] .is-pose-idle,
+.cred-guard-agent[data-pose] .is-pose-walk,
+.cred-guard-agent[data-pose] .is-pose-wave,
+.cred-guard-agent[data-pose] .is-pose-cover {
+  animation: none !important;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+.cred-guard-agent[data-pose="idle"] .is-pose-idle,
+.cred-guard-agent[data-pose="walk"] .is-pose-walk,
+.cred-guard-agent[data-pose="wave"] .is-pose-wave,
+.cred-guard-agent[data-pose="cover"] .is-pose-cover {
+  opacity: 1;
+}
+
+@keyframes agentWalkIn {
+  0% { opacity: 0; transform: translateX(-128px); }
+  16% { opacity: 1; transform: translateX(-96px) translateY(-7px) rotate(-4deg); }
+  32% { transform: translateX(-64px) translateY(0) rotate(3deg); }
+  48% { transform: translateX(-34px) translateY(-7px) rotate(-3deg); }
+  64% { transform: translateX(-10px) translateY(0) rotate(2deg); }
+  80% { transform: translateX(8px) translateY(-4px) rotate(-1deg); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes agentFlashWalk {
+  0%, 72% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes agentRevealIdle {
+  0%, 72% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@media (max-width: 760px) {
+  .cred-guard-auth.is-signup { padding-top: 14.2rem; }
+  .cred-guard-agent { width: min(128px, 42vw); }
+  .cred-guard-agent .cred-guard-bubble {
+    left: 70%;
+    top: 2%;
+    max-width: 132px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cred-guard-agent.is-in .cred-guard-walk,
+  .cred-guard-agent.is-in .cred-guard-sprite,
+  .cred-guard-agent.is-in .cred-guard-img,
+  .cred-guard-agent.is-in .cred-guard-bubble {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .cred-guard-agent.is-in .is-pose-walk,
+  .cred-guard-agent.is-in .is-pose-wave,
+  .cred-guard-agent.is-in .is-pose-cover {
+    opacity: 0 !important;
+  }
+  .cred-guard-agent[data-pose="wave"] .is-pose-wave,
+  .cred-guard-agent[data-pose="cover"] .is-pose-cover {
+    opacity: 1 !important;
+  }
+  .cred-guard-agent[data-pose="wave"] .is-pose-idle,
+  .cred-guard-agent[data-pose="cover"] .is-pose-idle {
     opacity: 0 !important;
   }
 }
