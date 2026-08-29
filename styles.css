@@ -3135,6 +3135,7 @@ body.account-page .account-backdrop {
 }
 
 .udash-auth { max-width: 520px; }
+.udash-auth:has(.guard-stage:not([hidden])) { max-width: 860px; }
 .udash-card-form {
   background: #fff;
   border: 0;
@@ -4662,4 +4663,144 @@ body.desk-home {
     object-position: 28% 60%;
   }
 }
+
+/* ---------------- Login guard officer ---------------- */
+.guard-stage {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 1.1rem 1.6rem;
+  width: min(860px, 100%);
+}
+.guard-stage[hidden] { display: none !important; }
+.guard-officer {
+  --look-x: 0px;
+  flex: 0 0 auto;
+  width: min(236px, 34vw);
+  pointer-events: none;
+  user-select: none;
+  z-index: 1;
+}
+.guard-inner {
+  position: relative;
+  transform-origin: 50% 100%;
+  animation: guardIdle 3.8s ease-in-out infinite;
+  filter: drop-shadow(0 16px 18px rgba(10, 31, 68, 0.18));
+}
+.guard-pose {
+  width: 100%;
+  height: auto;
+  max-height: min(520px, 70vh);
+  object-fit: contain;
+  object-position: bottom center;
+  display: block;
+}
+.guard-pose + .guard-pose {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  opacity: 0;
+}
+.guard-officer .is-idle { opacity: 1; }
+.guard-officer[data-pose="look"] .is-idle,
+.guard-officer[data-pose="cover"] .is-idle,
+.guard-officer[data-pose="fail"] .is-idle,
+.guard-officer[data-pose="ok"] .is-idle { opacity: 0; }
+.guard-officer[data-pose="look"] .is-look,
+.guard-officer[data-pose="cover"] .is-cover,
+.guard-officer[data-pose="fail"] .is-fail,
+.guard-officer[data-pose="ok"] .is-ok { opacity: 1; }
+
+.guard-stage > form {
+  flex: 1 1 280px;
+  min-width: 0;
+  max-width: 440px;
+  position: relative;
+  z-index: 2;
+}
+
+.password-wrap {
+  position: relative;
+}
+.password-wrap input {
+  padding-right: 3rem;
+}
+.password-toggle {
+  position: absolute;
+  right: 0.35rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-500);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  border-radius: 10px;
+}
+.password-toggle:hover,
+.password-toggle:focus-visible {
+  color: var(--navy-900);
+  background: rgba(10, 31, 68, 0.06);
+  outline: none;
+}
+.password-toggle svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.admin-gate {
+  background:
+    radial-gradient(900px 420px at 12% 0%, rgba(201, 162, 39, 0.14), transparent 55%),
+    #EFEFF4;
+}
+.admin-gate .guard-stage { width: min(860px, 100%); }
+.admin-gate .admin-gate-card {
+  width: min(420px, 100%);
+  margin: 0;
+}
+
+@keyframes guardIdle {
+  0%, 100% { transform: translateX(var(--look-x, 0px)) rotate(-0.5deg) translateY(0); }
+  50% { transform: translateX(var(--look-x, 0px)) rotate(0.7deg) translateY(-6px); }
+}
+@keyframes guardShake {
+  0%, 100% { transform: translateX(var(--look-x, 0px)); }
+  20% { transform: translateX(calc(var(--look-x, 0px) - 9px)); }
+  40% { transform: translateX(calc(var(--look-x, 0px) + 8px)); }
+  60% { transform: translateX(calc(var(--look-x, 0px) - 5px)); }
+  80% { transform: translateX(calc(var(--look-x, 0px) + 4px)); }
+}
+.guard-officer.is-shake .guard-inner {
+  animation: guardShake 0.48s ease;
+}
+
+@media (max-width: 760px) {
+  .guard-stage {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+  }
+  .guard-officer {
+    width: min(148px, 42vw);
+  }
+  .guard-pose { max-height: 34vh; }
+  .guard-stage > form { max-width: none; width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .guard-inner,
+  .guard-officer.is-shake .guard-inner {
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
 

@@ -126,6 +126,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const statusEl = document.getElementById("login-status");
     const btn = e.target.querySelector('button[type="submit"]');
     btn.disabled = true;
+    btn.classList.add("is-loading");
 
     const { error } = await client.auth.signInWithPassword({
       email: e.target.elements.email.value.trim(),
@@ -133,14 +134,19 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     btn.disabled = false;
+    btn.classList.remove("is-loading");
 
     if (error) {
       statusEl.className = "form-status error";
       statusEl.textContent = error.message;
+      if (typeof setGuardPose === "function") setGuardPose(e.target.closest("[data-guard-stage]"), "fail");
       return;
     }
     statusEl.className = "form-status";
     statusEl.textContent = "";
+    if (typeof setGuardPose === "function") setGuardPose(e.target.closest("[data-guard-stage]"), "ok");
+    const wait = (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) ? 0 : 520;
+    if (wait) await new Promise((r) => setTimeout(r, wait));
     showSignedIn();
   });
 

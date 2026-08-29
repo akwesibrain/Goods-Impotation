@@ -104,6 +104,7 @@ document.addEventListener("DOMContentLoaded", () => {
   restoreSearchPhoto();
   prefillRequestFromAccount();
   mountAccountPage();
+  mountGuardOfficer();
   mountCatalogSearch();
   polishPublicChrome();
   unstickPublicHeader();
@@ -1525,8 +1526,83 @@ function showAccountTab(name) {
   if (!login || !signup) return;
   login.hidden = name !== "login";
   signup.hidden = name !== "signup";
+  const stage = document.getElementById("account-login-stage");
+  if (stage) {
+    stage.hidden = name !== "login";
+    if (name === "login") setGuardPose(stage, null);
+  }
   document.querySelectorAll("[data-account-tab]").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.accountTab === name);
+  });
+}
+
+function setGuardPose(stage, pose) {
+  const officer = (stage && stage.querySelector("[data-guard-officer]")) || document.querySelector("[data-guard-officer]");
+  if (!officer) return;
+  if (!pose) officer.removeAttribute("data-pose");
+  else officer.setAttribute("data-pose", pose);
+  officer.classList.remove("is-shake");
+  if (pose === "fail" && !prefersReducedMotion()) {
+    void officer.offsetWidth;
+    officer.classList.add("is-shake");
+    officer.addEventListener("animationend", () => officer.classList.remove("is-shake"), { once: true });
+  }
+}
+window.setGuardPose = setGuardPose;
+
+function mountPasswordToggles() {
+  document.querySelectorAll("[data-password-toggle]").forEach((btn) => {
+    if (btn.dataset.bound === "1") return;
+    btn.dataset.bound = "1";
+    btn.addEventListener("click", () => {
+      const id = btn.getAttribute("aria-controls");
+      const input = (id && document.getElementById(id)) || btn.parentElement?.querySelector("input");
+      if (!input) return;
+      const show = input.type === "password";
+      input.type = show ? "text" : "password";
+      btn.setAttribute("aria-pressed", show ? "true" : "false");
+      btn.setAttribute("aria-label", show ? "Hide password" : "Show password");
+      const eye = btn.querySelector(".icon-eye");
+      const off = btn.querySelector(".icon-eye-off");
+      if (eye) eye.hidden = show;
+      if (off) off.hidden = !show;
+    });
+  });
+}
+
+function mountGuardOfficer() {
+  mountPasswordToggles();
+  document.querySelectorAll("[data-guard-stage]").forEach((stage) => {
+    if (stage.dataset.bound === "1") return;
+    stage.dataset.bound = "1";
+    const officer = stage.querySelector("[data-guard-officer]");
+    const form = stage.querySelector("form");
+    if (!officer || !form) return;
+    const email = form.querySelector("input[type='email'], input[name='email']");
+    const password = form.querySelector("input[type='password']");
+    const pose = (name) => setGuardPose(stage, name);
+    const track = () => {
+      const len = (email?.value || "").length;
+      officer.style.setProperty("--look-x", `${Math.max(-14, Math.min(16, (len - 6) * 1.2))}px`);
+    };
+    email?.addEventListener("focus", () => { pose("look"); track(); });
+    email?.addEventListener("input", () => {
+      if (officer.getAttribute("data-pose") === "cover") return;
+      pose("look");
+      track();
+    });
+    password?.addEventListener("focus", () => {
+      pose("cover");
+      officer.style.setProperty("--look-x", "0px");
+    });
+    form.addEventListener("focusout", (e) => {
+      if (!form.contains(e.relatedTarget)) {
+        const current = officer.getAttribute("data-pose");
+        if (current === "fail" || current === "ok") return;
+        pose(null);
+        officer.style.setProperty("--look-x", "0px");
+      }
+    });
   });
 }
 
@@ -1819,9 +1895,11 @@ async function mountAccountPage() {
           email: parsed.data.email,
           password: parsed.data.password,
         });
+        setGuardPose(loginForm.closest("[data-guard-stage]"), "ok");
         await refreshAccountChrome();
         await paint();
       } catch (err) {
+        setGuardPose(loginForm.closest("[data-guard-stage]"), "fail");
         showStatus(status, "error", err.message || "Could not log in.");
       } finally {
         btn.disabled = false;
