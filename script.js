@@ -652,7 +652,7 @@ function mountCatalogSearch() {
 function polishPublicChrome() {
   document.querySelectorAll(".wa-float").forEach((el) => {
     if (el.getAttribute("aria-label") === "Join our channel") {
-      el.setAttribute("aria-label", "Chat with the desk on 054 030 9637");
+      el.setAttribute("aria-label", "Chat with the desk");
     }
   });
 }

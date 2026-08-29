@@ -92,7 +92,7 @@
     if (data.name.length < 2) errors.name = "Name must be at least 2 characters.";
     else if (!isPersonName(data.name)) errors.name = "Use letters, spaces, hyphens, or apostrophes only.";
     if (!data.phone) errors.phone = "Enter a Ghana phone number.";
-    else if (!isGhanaPhone(data.phone)) errors.phone = "Enter a Ghana number (e.g. 054 030 9637 or +233 54 030 9637).";
+    else if (!isGhanaPhone(data.phone)) errors.phone = "Enter a Ghana number (e.g. 024 123 4567 or +233 24 123 4567).";
     if (!data.email) errors.email = "Enter your email address.";
     else if (!isEmail(data.email)) errors.email = "Enter a valid email address.";
     if (data.request_details.length < 10) errors.product = "Describe what you want imported (at least 10 characters).";
