@@ -1539,6 +1539,7 @@ function showAccountTab(name) {
 function playCredentialGuard(root) {
   if (!root) return;
   root.removeAttribute("data-pose");
+  root.style.removeProperty("--look-x");
   root.classList.remove("is-in");
   void root.offsetWidth;
   root.classList.add("is-in");
@@ -1568,27 +1569,41 @@ function mountCredentialGuard() {
       if (!name) root.removeAttribute("data-pose");
       else root.setAttribute("data-pose", name);
     };
+    const trackEmail = () => {
+      const len = (email?.value || "").length;
+      const x = Math.max(-22, Math.min(22, (len - 6) * 1.6));
+      root.style.setProperty("--look-x", `${x}px`);
+    };
 
     if (!root.closest("#admin-login") || root.closest("#admin-login")?.style.display !== "none") {
       playCredentialGuard(root);
     }
 
     email?.addEventListener("focus", () => {
-      pose("point");
+      pose("look");
+      trackEmail();
       speak(bubble, "Your email, please.");
     });
+    email?.addEventListener("input", () => {
+      if (root.getAttribute("data-pose") === "cover") return;
+      pose("look");
+      trackEmail();
+    });
     password?.addEventListener("focus", () => {
-      pose("ask");
-      speak(bubble, "Now the password. Keep it to yourself.");
+      pose("cover");
+      root.style.setProperty("--look-x", "0px");
+      speak(bubble, "I won’t look. Type your password.");
     });
     form.addEventListener("focusout", (e) => {
       if (!form.contains(e.relatedTarget)) {
         pose(null);
+        root.style.setProperty("--look-x", "0px");
         if (email && !email.value && password && !password.value) speak(bubble, ask);
       }
     });
     form.addEventListener("submit", () => {
-      pose("beckon");
+      pose("watch");
+      root.style.setProperty("--look-x", "0px");
       speak(bubble, "Checking your credentials…");
     });
   });

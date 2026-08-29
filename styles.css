@@ -1147,12 +1147,14 @@ body.admin-app .form-status.error {
   align-items: center;
   justify-content: center;
   padding: var(--space-3);
-  background: #EFEFF4;
+  background: #0A1F44;
 }
 .admin-gate-card {
-  width: min(440px, 100%);
-  margin: var(--space-5) auto;
+  width: min(400px, 100%);
+  margin: 0 auto;
   animation: adminRise 0.55s cubic-bezier(.2,.8,.2,1) both;
+  border-radius: 22px;
+  overflow: visible;
 }
 .admin-gate-card h1,
 .admin-gate-card h2 { margin: 0.4rem 0 0.75rem; font-family: var(--font-body); }
@@ -3134,7 +3136,7 @@ body.account-page .account-backdrop {
   stroke-width: 2;
 }
 
-.udash-auth { max-width: 520px; }
+.udash-auth { max-width: 400px; }
 .udash-card-form {
   background: #fff;
   border: 0;
@@ -4663,29 +4665,52 @@ body.desk-home {
   }
 }
 
-/* ---------------- Login credential officer ---------------- */
+/* ---------------- Login credential officer (peek-over-card) ---------------- */
 .cred-guard-auth {
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  gap: 0.25rem 1.1rem;
-  width: min(920px, 100%);
+  --look-x: 0px;
+  position: relative;
+  display: block;
+  width: min(400px, 100%);
+  margin: 0 auto;
+  padding-top: 14.8rem;
+  overflow: visible;
 }
 .udash-auth.cred-guard-auth {
-  max-width: 920px;
-  padding-top: 0.4rem;
+  max-width: 400px;
+}
+.cred-guard-auth:has([data-cred-guard][hidden]) {
+  padding-top: 0;
 }
 .cred-guard-forms {
-  flex: 1 1 320px;
-  min-width: 0;
-  max-width: 520px;
+  position: relative;
+  z-index: 1;
   width: 100%;
+  background: #fff;
+  border-radius: 22px;
+  box-shadow: 0 22px 50px rgba(7, 20, 39, 0.18);
+  padding: 1.35rem 1.25rem 1.2rem;
+}
+.cred-guard-forms .form-card,
+.cred-guard-forms .udash-card-form {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+  max-width: none;
+  border-radius: 0;
+}
+.cred-guard-forms .account-tabs {
+  margin-bottom: 1rem;
 }
 .cred-guard-officer {
-  position: relative;
-  width: min(236px, 40vw);
-  flex: 0 0 auto;
-  z-index: 2;
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: min(210px, 62vw);
+  transform: translateX(-50%);
+  z-index: 3;
+  pointer-events: none;
+  margin: 0;
 }
 .cred-guard-officer[hidden] { display: none !important; }
 .cred-guard-walk {
@@ -4694,13 +4719,13 @@ body.desk-home {
 }
 .cred-guard-sprite {
   position: relative;
+  transform: translateX(var(--look-x, 0px));
 }
 .cred-guard-img {
   width: 100%;
   height: auto;
   display: block;
-  filter: drop-shadow(0 16px 18px rgba(10, 31, 68, 0.18));
-  transform-origin: 50% 100%;
+  filter: drop-shadow(0 10px 14px rgba(10, 31, 68, 0.28));
 }
 .cred-guard-sprite .cred-guard-img + .cred-guard-img {
   position: absolute;
@@ -4708,25 +4733,28 @@ body.desk-home {
   top: 0;
   opacity: 0;
 }
+.cred-guard-officer.is-in .is-pose-watch { opacity: 1; }
+.cred-guard-officer.is-in .is-pose-look,
+.cred-guard-officer.is-in .is-pose-cover { opacity: 0; }
 .cred-guard-bubble {
   position: absolute;
-  left: 70%;
-  top: 4%;
+  left: 78%;
+  top: 18%;
   width: max-content;
-  max-width: 210px;
+  max-width: 168px;
   margin: 0;
   background: #fff;
   color: var(--navy-900);
   border: 1px solid var(--line);
   border-radius: 16px 16px 16px 8px;
-  padding: 0.72rem 0.9rem;
+  padding: 0.62rem 0.78rem;
   font-family: var(--font-body);
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   font-weight: 600;
   line-height: 1.35;
-  box-shadow: 0 12px 28px rgba(31, 45, 68, 0.12);
+  box-shadow: 0 12px 28px rgba(31, 45, 68, 0.16);
   opacity: 0;
-  z-index: 3;
+  z-index: 4;
 }
 .cred-guard-bubble::after {
   content: "";
@@ -4741,60 +4769,37 @@ body.desk-home {
   transform: rotate(45deg);
 }
 .cred-guard-officer.is-in .cred-guard-walk {
-  animation: credWalkIn 0.85s cubic-bezier(.2, .85, .2, 1) both;
+  animation: credPeekIn 0.7s cubic-bezier(.2, .85, .2, 1) both;
 }
 .cred-guard-officer.is-in .cred-guard-sprite {
-  animation: credBreathe 3.4s ease-in-out 0.85s infinite;
-}
-.cred-guard-officer.is-in .is-pose-ask {
-  animation: credPoseAsk 2.6s 0.85s infinite;
-}
-.cred-guard-officer.is-in .is-pose-beckon {
-  animation: credPoseBeckon 2.6s 0.85s infinite;
-}
-.cred-guard-officer.is-in .is-pose-point {
-  animation: credPosePoint 2.6s 0.85s infinite;
+  animation: credBreathe 3.4s ease-in-out 0.7s infinite;
 }
 .cred-guard-officer.is-in .cred-guard-bubble {
-  animation: credBubbleIn 0.45s 0.5s cubic-bezier(.2, .8, .2, 1) both;
+  animation: credBubbleIn 0.45s 0.45s cubic-bezier(.2, .8, .2, 1) both;
 }
 .cred-guard-officer.is-in .cred-guard-bubble.is-talking {
   animation: credTalk 0.4s ease;
 }
-.cred-guard-officer[data-pose] .is-pose-ask,
-.cred-guard-officer[data-pose] .is-pose-beckon,
-.cred-guard-officer[data-pose] .is-pose-point {
+.cred-guard-officer[data-pose] .is-pose-watch,
+.cred-guard-officer[data-pose] .is-pose-look,
+.cred-guard-officer[data-pose] .is-pose-cover {
   animation: none !important;
   opacity: 0;
+  transition: opacity 0.18s ease;
 }
-.cred-guard-officer[data-pose="ask"] .is-pose-ask,
-.cred-guard-officer[data-pose="beckon"] .is-pose-beckon,
-.cred-guard-officer[data-pose="point"] .is-pose-point {
+.cred-guard-officer[data-pose="watch"] .is-pose-watch,
+.cred-guard-officer[data-pose="look"] .is-pose-look,
+.cred-guard-officer[data-pose="cover"] .is-pose-cover {
   opacity: 1;
 }
 
-@keyframes credWalkIn {
-  0% { opacity: 0; transform: translateX(-72px) rotate(-7deg); }
-  64% { opacity: 1; transform: translateX(10px) rotate(2deg); }
-  100% { opacity: 1; transform: translateX(0) rotate(0); }
+@keyframes credPeekIn {
+  0% { opacity: 0; transform: translateY(-42px); }
+  100% { opacity: 1; transform: none; }
 }
 @keyframes credBreathe {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
-}
-@keyframes credPoseAsk {
-  0%, 30% { opacity: 1; }
-  31%, 100% { opacity: 0; }
-}
-@keyframes credPoseBeckon {
-  0%, 30% { opacity: 0; }
-  31%, 62% { opacity: 1; }
-  63%, 100% { opacity: 0; }
-}
-@keyframes credPosePoint {
-  0%, 62% { opacity: 0; }
-  63%, 96% { opacity: 1; }
-  97%, 100% { opacity: 0; }
+  0%, 100% { transform: translateX(var(--look-x, 0px)) translateY(0); }
+  50% { transform: translateX(var(--look-x, 0px)) translateY(-6px); }
 }
 @keyframes credBubbleIn {
   0% { opacity: 0; transform: translate(-6px, 10px) scale(0.72); }
@@ -4806,21 +4811,22 @@ body.desk-home {
   100% { opacity: 1; transform: scale(1); }
 }
 
-.admin-gate .cred-guard-auth { align-items: flex-end; }
+.admin-gate .cred-guard-auth {
+  width: min(400px, 100%);
+}
+.admin-gate .admin-gate-card {
+  position: relative;
+  z-index: 1;
+}
 
 @media (max-width: 760px) {
-  .cred-guard-auth {
-    flex-direction: column;
-    align-items: center;
-    gap: 0;
-  }
-  .cred-guard-officer { width: min(170px, 52vw); margin-bottom: -0.4rem; }
+  .cred-guard-auth { padding-top: 12.4rem; }
+  .cred-guard-officer { width: min(176px, 58vw); }
   .cred-guard-bubble {
-    left: 48%;
-    top: auto;
-    bottom: 8%;
-    max-width: 170px;
-    font-size: 0.82rem;
+    left: 62%;
+    top: 8%;
+    max-width: 140px;
+    font-size: 0.78rem;
   }
 }
 
@@ -4833,8 +4839,16 @@ body.desk-home {
     opacity: 1 !important;
     transform: none !important;
   }
-  .cred-guard-officer.is-in .is-pose-beckon,
-  .cred-guard-officer.is-in .is-pose-point {
+  .cred-guard-officer.is-in .is-pose-look,
+  .cred-guard-officer.is-in .is-pose-cover {
+    opacity: 0 !important;
+  }
+  .cred-guard-officer[data-pose="look"] .is-pose-look,
+  .cred-guard-officer[data-pose="cover"] .is-pose-cover {
+    opacity: 1 !important;
+  }
+  .cred-guard-officer[data-pose="look"] .is-pose-watch,
+  .cred-guard-officer[data-pose="cover"] .is-pose-watch {
     opacity: 0 !important;
   }
 }
