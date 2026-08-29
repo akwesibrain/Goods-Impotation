@@ -3888,8 +3888,8 @@ header.site-header.desk-head,
   to { transform: scale(1); }
 }
 @keyframes mwShipSail {
-  from { transform: scale(1.18) translate3d(-6%, 1.1%, 0); }
-  to   { transform: scale(1.18) translate3d(7%, -0.9%, 0); }
+  from { transform: scale(1.2) translate3d(-8%, 1.2%, 0); }
+  to   { transform: scale(1.2) translate3d(9%, -1%, 0); }
 }
 @keyframes mwSpin {
   to { transform: rotate(360deg); }
@@ -4263,12 +4263,9 @@ body.desk-home {
 .desk-slide--ship img {
   transform: scale(1.18) translate3d(-6%, 1.1%, 0);
   transform-origin: center center;
-  animation: mwShipSail 18s ease-in-out infinite alternate;
-  animation-play-state: paused;
+  animation: mwShipSail 16s ease-in-out infinite alternate;
   will-change: transform;
-}
-.desk-slide--ship.is-on img {
-  animation-play-state: running;
+  backface-visibility: hidden;
 }
 .desk-slide-copy {
   position: absolute;
@@ -4355,7 +4352,24 @@ body.desk-home {
   .desk-cats { display: none; }
   .desk-cat-chips { display: flex; }
   .desk-tiles { grid-template-columns: repeat(3, 1fr); }
-  .desk-banner { min-height: 240px; }
+  .desk-banner {
+    aspect-ratio: auto;
+    min-height: 0;
+    height: auto;
+  }
+  .desk-slide {
+    position: relative;
+    inset: auto;
+    min-height: 22rem;
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .desk-slide img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
 }
 @media (max-width: 860px) {
   .desk-home .header-main {
@@ -4429,8 +4443,26 @@ body.desk-home {
 @media (max-width: 640px) {
   .desk-home .logo-lockup small { display: none; }
   .desk-tiles { grid-template-columns: 1fr 1fr; }
-  .desk-banner { aspect-ratio: 5 / 4; }
-  .desk-slide-copy { padding: 1.3rem 1rem 2.2rem; }
+  .desk-slide {
+    min-height: 26rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+  .desk-slide-copy {
+    position: relative;
+    z-index: 2;
+    padding: 5rem 1rem 1.2rem;
+  }
+  .desk-slide-copy h1,
+  .desk-slide-copy h2 {
+    max-width: none;
+    font-size: 1.55rem;
+  }
+  .desk-slide-copy p {
+    max-width: none;
+    font-size: 0.92rem;
+  }
   .desk-home .announce-bar.desk-strip { justify-content: center; text-align: center; }
   .desk-home .announce-bar.desk-strip span:first-child { display: none; }
 }
@@ -4760,7 +4792,10 @@ body.desk-home {
 @media (max-width: 640px) {
   .desk-slide-copy .hero-actions .btn { width: 100%; }
   .page-hero-actions .btn { width: 100%; }
-  .desk-slide--ship img { animation-duration: 22s; }
+  .desk-slide--ship img {
+    animation-duration: 14s;
+    object-position: 28% 60%;
+  }
 }
 
 
