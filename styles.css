@@ -4379,7 +4379,19 @@ body.desk-home {
     grid-area: utils;
     margin-left: 0;
   }
-  .desk-home .nav-toggle { grid-area: toggle; margin-left: 0; }
+  .desk-home .nav-toggle {
+    grid-area: toggle;
+    margin-left: 0;
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    color: var(--navy-800);
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    font-size: 1.25rem;
+    line-height: 1;
+  }
   .desk-home .header-account-label {
     position: absolute;
     width: 1px;
