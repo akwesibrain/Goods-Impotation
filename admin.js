@@ -965,7 +965,7 @@ async function loadSettings(client) {
   const { data, error } = await client.from("site_settings").select("*").eq("id", 1).maybeSingle();
   if (error || !data) return;
   const form = document.getElementById("settings-form");
-  ["whatsapp_channel_url", "whatsapp_url", "facebook_url", "instagram_url", "tiktok_url", "advert_video_url"].forEach((key) => {
+  ["whatsapp_channel_url", "whatsapp_url", "facebook_url", "instagram_url", "tiktok_url"].forEach((key) => {
     if (form.elements[key]) form.elements[key].value = data[key] || "";
   });
 }
@@ -1085,25 +1085,19 @@ async function handleSettingsSubmit(e, client) {
   btn.disabled = true;
 
   try {
-    let videoUrl = form.elements.advert_video_url.value.trim() || null;
-    const file = form.elements.advert_video_file.files[0];
-    if (file) videoUrl = await uploadMedia(client, file, "adverts");
-
     const { error } = await client.from("site_settings").update({
       whatsapp_channel_url: form.elements.whatsapp_channel_url.value.trim() || null,
       whatsapp_url: form.elements.whatsapp_url.value.trim() || null,
       facebook_url: form.elements.facebook_url.value.trim() || null,
       instagram_url: form.elements.instagram_url.value.trim() || null,
       tiktok_url: form.elements.tiktok_url.value.trim() || null,
-      advert_video_url: videoUrl,
+      advert_video_url: null,
       updated_at: new Date().toISOString(),
     }).eq("id", 1);
     if (error) throw error;
 
-    if (videoUrl) form.elements.advert_video_url.value = videoUrl;
-    form.elements.advert_video_file.value = "";
     statusEl.className = "form-status success";
-    statusEl.textContent = "Settings saved. The website will use these links and this video.";
+    statusEl.textContent = "Settings saved. The website will use these links.";
   } catch (err) {
     statusEl.className = "form-status error";
     statusEl.textContent = err.message || "Couldn't save settings.";

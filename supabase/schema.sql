@@ -192,7 +192,7 @@ create policy "Staff can delete products"
   using (private.is_staff());
 
 -- ============================================================
--- Site settings — one row. Channel link, social URLs, advert video.
+-- Site settings — one row. Channel link and social URLs.
 -- The public site reads this so the floating button and video gate
 -- pick up whatever the admin pasted in.
 -- ============================================================
@@ -282,7 +282,7 @@ create policy "Staff can delete reviews"
   using (private.is_staff());
 
 -- ============================================================
--- Storage — product photos and the advert video.
+-- Storage — product photos.
 -- Public can read; only a signed-in admin can upload.
 -- ============================================================
 

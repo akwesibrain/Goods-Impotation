@@ -23,6 +23,16 @@
   to = "/how-it-works"
   status = 301
 
+[[redirects]]
+  from = "/watch"
+  to = "/"
+  status = 301
+
+[[redirects]]
+  from = "/watch.html"
+  to = "/"
+  status = 301
+
 # The admin desk should never show up in search results.
 [[headers]]
   for = "/admin"

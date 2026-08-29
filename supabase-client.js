@@ -81,7 +81,6 @@ window.signInCustomer = async function ({ email, password }) {
   if (!supabaseClient) throw new Error("Account service is not connected yet.");
   const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
   if (error) throw error;
-  if (window.markAdvertSkippedForAccount) window.markAdvertSkippedForAccount();
   return true;
 };
 
@@ -93,7 +92,6 @@ window.signUpCustomer = async function ({ email, password, fullName, phone }) {
     options: { data: { full_name: fullName || "", phone: phone || "" } },
   });
   if (error) throw error;
-  if (window.markAdvertSkippedForAccount) window.markAdvertSkippedForAccount();
   if (data.session && data.user) {
     const forms = window.MwinbarkaForms;
     await supabaseClient.from("profiles").upsert({
