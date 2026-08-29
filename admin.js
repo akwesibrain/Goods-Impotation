@@ -110,10 +110,6 @@ document.addEventListener("DOMContentLoaded", () => {
     dashboard.style.display = "none";
     dashboard.classList.remove("is-ready");
     if (signOutBtn) signOutBtn.style.display = "none";
-    const officer = loginSection.querySelector("[data-cred-guard]");
-    if (officer && typeof playCredentialGuard === "function") {
-      requestAnimationFrame(() => playCredentialGuard(officer));
-    }
   };
 
   if (/type=email_change/.test(location.hash || "")) {

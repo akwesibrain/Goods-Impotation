@@ -12,3 +12,6 @@ Thumbs.db
 # stray env files out of the repo anyway.
 .env
 .env.*
+
+# Supabase CLI cache
+supabase/.temp/
