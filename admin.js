@@ -200,6 +200,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("admin-nav-scrim")?.addEventListener("click", closeAdminMenu);
 
   document.getElementById("product-form").addEventListener("submit", (e) => handleProductSubmit(e, client));
+  document.getElementById("product-cancel")?.addEventListener("click", resetProductForm);
   document.getElementById("review-admin-form").addEventListener("submit", (e) => handleReviewAdminSubmit(e, client));
   document.getElementById("settings-form").addEventListener("submit", (e) => handleSettingsSubmit(e, client));
   document.getElementById("staff-email-form")?.addEventListener("submit", (e) => handleStaffEmailSubmit(e, client));
@@ -800,10 +801,18 @@ async function loadProducts(client) {
     <td>${p.price ? "GH₵" + escapeHtml(p.price) : '<span class="muted">—</span>'}</td>
     <td>
       <div class="row-actions">
+        <button type="button" class="chip" data-edit-product="${escapeAttr(p.id)}">Edit</button>
         <button type="button" class="chip" data-delete-product="${escapeAttr(p.id)}">Delete</button>
       </div>
     </td>
   </tr>`).join("");
+
+  body.querySelectorAll("[data-edit-product]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const product = allProducts.find((row) => row.id === btn.dataset.editProduct);
+      if (product) fillProductForm(product);
+    });
+  });
 
   body.querySelectorAll("[data-delete-product]").forEach((btn) => {
     btn.addEventListener("click", async () => {
@@ -816,6 +825,52 @@ async function loadProducts(client) {
       await loadProducts(client);
     });
   });
+}
+
+function resetProductForm() {
+  const form = document.getElementById("product-form");
+  if (!form) return;
+  form.reset();
+  const idField = document.getElementById("product-id");
+  if (idField) idField.value = "";
+  const eyebrow = document.getElementById("product-form-eyebrow");
+  const title = document.getElementById("product-form-title");
+  const submit = document.getElementById("product-submit");
+  const cancel = document.getElementById("product-cancel");
+  const note = document.getElementById("product-image-note");
+  const statusEl = document.getElementById("product-status");
+  if (eyebrow) eyebrow.textContent = "New product";
+  if (title) title.textContent = "Add a product";
+  if (submit) submit.textContent = "Save product";
+  if (cancel) cancel.hidden = true;
+  if (note) note.textContent = "";
+  if (statusEl) {
+    statusEl.className = "form-status";
+    statusEl.textContent = "";
+  }
+}
+
+function fillProductForm(product) {
+  const form = document.getElementById("product-form");
+  if (!form || !product) return;
+  document.getElementById("product-id").value = product.id || "";
+  form.elements.name.value = product.name || "";
+  form.elements.price.value = product.price || "";
+  form.elements.category.value = product.category || "";
+  form.elements.description.value = product.description || "";
+  const imageInput = document.getElementById("product-image");
+  if (imageInput) imageInput.value = "";
+  const eyebrow = document.getElementById("product-form-eyebrow");
+  const title = document.getElementById("product-form-title");
+  const submit = document.getElementById("product-submit");
+  const cancel = document.getElementById("product-cancel");
+  const note = document.getElementById("product-image-note");
+  if (eyebrow) eyebrow.textContent = "Edit product";
+  if (title) title.textContent = "Update price and description";
+  if (submit) submit.textContent = "Save changes";
+  if (cancel) cancel.hidden = false;
+  if (note) note.textContent = product.image_url ? "Leave the photo empty to keep the current picture." : "";
+  form.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 async function handleProductSubmit(e, client) {
@@ -838,22 +893,27 @@ async function handleProductSubmit(e, client) {
 
   btn.disabled = true;
   try {
-    let imageUrl = null;
+    let imageUrl;
     const file = form.elements.image.files[0];
     if (file) imageUrl = await uploadMedia(client, file, "products");
 
-    const { error } = await client.from("products").insert([{
+    const payload = {
       name,
       description: form.elements.description.value.trim() || null,
       price: form.elements.price.value.trim() || null,
       category,
-      image_url: imageUrl,
-    }]);
+    };
+    if (imageUrl) payload.image_url = imageUrl;
+
+    const existingId = (document.getElementById("product-id")?.value || "").trim();
+    const { error } = existingId
+      ? await client.from("products").update(payload).eq("id", existingId)
+      : await client.from("products").insert([{ ...payload, image_url: imageUrl || null }]);
     if (error) throw error;
 
-    form.reset();
+    resetProductForm();
     statusEl.className = "form-status success";
-    statusEl.textContent = "Product saved.";
+    statusEl.textContent = existingId ? "Product updated. Add GH₵ or copy anytime." : "Product saved.";
     await loadProducts(client);
   } catch (err) {
     statusEl.className = "form-status error";

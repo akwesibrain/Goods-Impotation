@@ -709,6 +709,7 @@ function productCardHtml(p, opts = {}) {
   const img = p.image_url
     ? `<img src="${escapeAttr(p.image_url)}" alt="${escapeAttr(p.name)}" width="400" height="400" loading="lazy" decoding="async">`
     : `<img src="${tileDataUri((p.category || "MW").split(" ")[0])}" alt="" width="400" height="400" loading="lazy" decoding="async">`;
+  const blurb = p.notes || p.description || "";
   const href = `item.html?id=${encodeURIComponent(id)}`;
   return `
     <a class="product-card" href="${href}">
@@ -716,7 +717,7 @@ function productCardHtml(p, opts = {}) {
       <div class="product-body">
         <span class="code">${escapeHtml(p.category || "Product")}</span>
         <h3>${escapeHtml(p.name)}</h3>
-        ${p.notes ? `<p class="product-tagline">${escapeHtml(p.notes)}</p>` : ""}
+        ${blurb ? `<p class="product-tagline">${escapeHtml(blurb)}</p>` : ""}
         <span class="product-status">Available to source</span>
         ${price ? `<div class="product-price">${escapeHtml(price)}${opts.indicative ? " <small>indicative</small>" : ""}</div>` : `<div class="product-price"><small>Request quote</small></div>`}
         <span class="product-order">Request quote</span>

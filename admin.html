@@ -22,8 +22,8 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script defer src="validation.js?v=brand2"></script>
 <script defer src="supabase-client.js?v=brand30"></script>
-<script defer src="script.js?v=brand31"></script>
-<script defer src="admin.js?v=brand32"></script>
+<script defer src="script.js?v=brand32"></script>
+<script defer src="admin.js?v=brand33"></script>
 </head>
 <body id="admin-page" class="admin-app">
 
@@ -351,8 +351,10 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
 
       <div class="admin-panel" id="tab-products" hidden>
         <form id="product-form" class="form-card admin-form" novalidate>
-          <span class="eyebrow">New product</span>
-          <h2>Add a product</h2>
+          <span class="eyebrow" id="product-form-eyebrow">New product</span>
+          <h2 id="product-form-title">Add a product</h2>
+          <p class="form-note">Price and description can stay blank. Open Edit later to add the GH₵ quote and copy.</p>
+          <input type="hidden" id="product-id" name="id" value="">
 
           <div class="field-row">
             <div class="field">
@@ -361,7 +363,7 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
             </div>
             <div class="field">
               <label for="product-price">Price in GH₵</label>
-              <input type="text" id="product-price" name="price" placeholder="e.g. 450">
+              <input type="text" id="product-price" name="price" placeholder="Add later">
             </div>
           </div>
 
@@ -383,15 +385,19 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
 
           <div class="field">
             <label for="product-description">Description</label>
-            <textarea id="product-description" name="description" rows="3"></textarea>
+            <textarea id="product-description" name="description" rows="3" placeholder="Add later"></textarea>
           </div>
 
           <div class="field">
             <label for="product-image">Photo</label>
             <input type="file" id="product-image" name="image" accept="image/*">
+            <p class="hint" id="product-image-note"></p>
           </div>
 
-          <button type="submit" class="btn btn-gold">Save product</button>
+          <div class="hero-actions">
+            <button type="submit" class="btn btn-gold" id="product-submit">Save product</button>
+            <button type="button" class="btn btn-outline-dark" id="product-cancel" hidden>Cancel edit</button>
+          </div>
           <div id="product-status" class="form-status"></div>
         </form>
 
