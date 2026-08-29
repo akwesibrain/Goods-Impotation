@@ -4292,26 +4292,8 @@ body.desk-home {
   color: rgba(255, 255, 255, 0.88);
   font-size: 0.98rem;
 }
-.desk-dots {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0.7rem;
-  z-index: 2;
-  display: flex;
-  justify-content: center;
-  gap: 0.4rem;
-}
-.desk-dot {
-  width: 8px;
-  height: 8px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.45);
-  cursor: pointer;
-}
-.desk-dot.is-on { background: var(--white); }
+.desk-dots,
+.desk-dot { display: none; }
 
 .desk-tiles {
   display: grid;
