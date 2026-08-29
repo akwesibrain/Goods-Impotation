@@ -15,7 +15,7 @@
 <meta name="twitter:card" content="summary">
 <link rel="canonical" href="https://goods-impotation.vercel.app">
 <style>
-header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-header .tf-nav, .site-header .announce-bar {
+header.site-header, header.site-header.tf-head, header.site-header.desk-head, .site-header .tf-top, .site-header .tf-nav, .site-header .announce-bar, .site-header .desk-nav {
   position: relative !important;
   top: auto !important;
   left: auto !important;
@@ -29,12 +29,12 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
 <link rel="preload" as="image" fetchpriority="high"
   href="https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=1400&q=80"
   imagesrcset="https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=800&q=75 800w, https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=1400&q=80 1400w, https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=2200&q=80 2200w"
-  imagesizes="100vw">
-<link rel="stylesheet" href="styles.css?v=brand47">
+  imagesizes="(max-width: 960px) 100vw, 56vw">
+<link rel="stylesheet" href="styles.css?v=brand48">
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script defer src="validation.js?v=brand1"></script>
 <script defer src="supabase-client.js?v=brand29"></script>
-<script defer src="script.js?v=brand25"></script>
+<script defer src="script.js?v=brand26"></script>
 <script type="speculationrules">
 {
   "prefetch": [
@@ -43,81 +43,140 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
 }
 </script>
 </head>
-<body class="home has-tabbar">
+<body class="home desk-home has-tabbar">
 
 <a class="skip-link" href="#main">Skip to content</a>
-<header class="site-header tf-head" style="position:relative;top:auto">
-  <div class="announce-bar">Accra desk · Landed quotes in GH₵ · Official line 054 030 9637 only</div>
-  <div class="tf-top">
-    <div class="container header-main">
-      <a href="index.html" class="nav-logo">
-        <img src="assets/logo.png" alt="Mwinbarka Imports logo" width="36" height="36">
-        <span class="logo-lockup">Mwinbarka <em>Imports</em><small>China · Turkey → Ghana</small></span>
-      </a>
-      <ul class="tf-contacts">
-        <li>
-          <span class="tf-ico" aria-hidden="true">◷</span>
-          <div><strong>Mon – Sat 9.00 – 18.00</strong><small>Sunday closed</small></div>
-        </li>
-        <li>
-          <span class="tf-ico" aria-hidden="true">✉</span>
-          <div><strong>Official desk</strong><small>054 030 9637 only</small></div>
-        </li>
-        <li>
-          <span class="tf-ico" aria-hidden="true">☎</span>
-          <div><strong>Call / chat</strong><small>+233 54 030 9637</small></div>
-        </li>
-      </ul>
-      <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">☰</button>
-    </div>
+<header class="site-header desk-head" style="position:relative;top:auto">
+  <div class="announce-bar desk-strip">
+    <span>Mon – Sat 9.00 – 18.00 · Sunday closed</span>
+    <span>Official line 054 030 9637 only</span>
   </div>
-  <nav class="nav tf-nav">
-    <div class="container tf-nav-row">
-              <ul class="nav-links">
-          <li><a href="index.html" class="active">Home</a></li>
-          <li><a href="about.html">About</a></li>
-          <li><a href="how-it-works.html">Process</a></li>
-          <li><a href="categories.html">Products</a></li>
-          <li><a href="reviews.html">Reviews</a></li>
-          <li><a href="faq.html">FAQ</a></li>
-          <li><a href="contact.html">Contact</a></li>
-          <li class="nav-request"><a href="request.html">Order Now</a></li>
-        </ul>
-      <div class="tf-socials" aria-label="Social profiles"></div>
+  <div class="header-main container">
+    <a href="index.html" class="nav-logo">
+      <img src="assets/logo.png" alt="Mwinbarka Imports logo" width="36" height="36">
+      <span class="logo-lockup">Mwinbarka <em>Imports</em><small>China · Turkey → Ghana</small></span>
+    </a>
+    <form class="site-search" action="request.html" method="get" role="search">
+      <input type="search" name="q" placeholder="What do you want imported?" aria-label="Search what to import">
+      <button type="submit" class="btn desk-search-btn" aria-label="Search">Search</button>
+    </form>
+    <div class="desk-utils">
       <a href="quote-list.html" class="quote-link">Quote list <span class="quote-count" data-quote-count>0</span></a>
-      <a href="request.html" class="btn btn-white nav-cta">Order Now</a>
+      <button type="button" class="header-account" data-open-account aria-label="Account">
+        <span aria-hidden="true">👤</span>
+        <span class="header-account-label">Account</span>
+      </button>
+    </div>
+    <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">☰</button>
+  </div>
+  <nav class="nav desk-nav">
+    <div class="container">
+      <ul class="nav-links">
+        <li><a href="index.html" class="active">Home</a></li>
+        <li><a href="about.html">About</a></li>
+        <li><a href="how-it-works.html">Process</a></li>
+        <li><a href="categories.html">Products</a></li>
+        <li><a href="reviews.html">Reviews</a></li>
+        <li><a href="faq.html">FAQ</a></li>
+        <li><a href="contact.html">Contact</a></li>
+        <li class="nav-request"><a href="request.html">Order Now</a></li>
+      </ul>
     </div>
   </nav>
 </header>
 
-<section class="tf-hero" id="main">
-  <div class="tf-hero-media">
-    <img
-      src="https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=1400&q=80"
-      srcset="https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=800&q=75 800w, https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=1400&q=80 1400w, https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=2200&q=80 2200w"
-      sizes="100vw"
-      width="1400"
-      height="933"
-      fetchpriority="high"
-      loading="eager"
-      decoding="async"
-      alt="Cargo vessel at sea on the import lane to Ghana">
+<section class="desk-stage" id="main">
+  <div class="container desk-cat-chips" aria-label="Product categories">
+    <a href="categories.html?cat=Clothing%20%26%20Fashion">Clothing</a>
+    <a href="categories.html?cat=Shoes%20%26%20Bags">Shoes &amp; bags</a>
+    <a href="categories.html?cat=Beauty%20%26%20Cosmetics">Beauty</a>
+    <a href="categories.html?cat=Kitchen%20%26%20Home">Kitchen &amp; home</a>
+    <a href="categories.html?cat=Baby%20%26%20Kids">Baby &amp; kids</a>
+    <a href="categories.html?cat=Electronics">Electronics</a>
+    <a href="categories.html?cat=Auto%20Parts">Auto parts</a>
+    <a href="categories.html">All products</a>
   </div>
-  <div class="container">
-    <p class="hero-route">Guangzhou · Istanbul <span>→</span> Tema · Accra</p>
-    <h1>Import from China and Turkey. Landed in Ghana. Quoted in GH₵.</h1>
-    <p class="lead">Mwinbarka Imports is an Accra desk. Describe the goods, pick a product, or paste a wholesale listing. We source, ship by sea to Tema, clear, and deliver nationwide. Nothing is paid on this website.</p>
-    <div class="hero-actions">
-      <a href="request.html" class="btn btn-gold">Start an Import Request</a>
-      <a href="categories.html" class="btn btn-outline">Explore Products</a>
-      <a href="contact.html" class="btn btn-outline">Contact Us</a>
+  <div class="container desk-grid">
+    <aside class="desk-cats" aria-label="Product categories">
+      <h2>Product Categories</h2>
+      <ul>
+        <li><a href="categories.html?cat=Clothing%20%26%20Fashion">Clothing &amp; Fashion</a></li>
+        <li><a href="categories.html?cat=Shoes%20%26%20Bags">Shoes &amp; Bags</a></li>
+        <li><a href="categories.html?cat=Beauty%20%26%20Cosmetics">Beauty &amp; Cosmetics</a></li>
+        <li><a href="categories.html?cat=Kitchen%20%26%20Home">Kitchen &amp; Home</a></li>
+        <li><a href="categories.html?cat=Baby%20%26%20Kids">Baby &amp; Kids</a></li>
+        <li><a href="categories.html?cat=Electronics">Electronics</a></li>
+        <li><a href="categories.html?cat=Auto%20Parts">Auto Parts</a></li>
+        <li><a href="categories.html?cat=Other">Other / wholesale listing</a></li>
+      </ul>
+    </aside>
+
+    <div class="desk-banner" data-desk-slider>
+      <article class="desk-slide is-on">
+        <img
+          src="https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=1400&q=80"
+          srcset="https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=800&q=75 800w, https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=1400&q=80 1400w, https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=2200&q=80 2200w"
+          sizes="(max-width: 960px) 100vw, 56vw"
+          width="1400"
+          height="788"
+          fetchpriority="high"
+          loading="eager"
+          decoding="async"
+          alt="Cargo vessel at sea on the import lane to Ghana">
+        <div class="desk-slide-copy">
+          <h1>China and Turkey are shipping. Ghana is the landing.</h1>
+          <p>Sea to Tema. Door delivery nationwide. Quoted in GH₵.</p>
+          <a href="request.html" class="btn btn-gold">Start an Import Request</a>
+        </div>
+      </article>
+      <article class="desk-slide">
+        <img
+          src="https://images.unsplash.com/photo-1494412574643-ff11af0a1c09?auto=format&fit=crop&w=1400&q=80"
+          srcset="https://images.unsplash.com/photo-1494412574643-ff11af0a1c09?auto=format&fit=crop&w=800&q=75 800w, https://images.unsplash.com/photo-1494412574643-ff11af0a1c09?auto=format&fit=crop&w=1400&q=80 1400w, https://images.unsplash.com/photo-1494412574643-ff11af0a1c09?auto=format&fit=crop&w=2200&q=80 2200w"
+          sizes="(max-width: 960px) 100vw, 56vw"
+          width="1400"
+          height="788"
+          loading="lazy"
+          decoding="async"
+          alt="Shipping containers stacked at a port on the lane to Ghana">
+        <div class="desk-slide-copy">
+          <h2>Sea to Tema. Door delivery nationwide.</h2>
+          <p>One Accra desk. Official line 054 030 9637 only. Nothing is paid on this website.</p>
+          <a href="contact.html" class="btn btn-gold">Contact the desk</a>
+        </div>
+      </article>
+      <div class="desk-dots" role="tablist" aria-label="Banner slides">
+        <button type="button" class="desk-dot is-on" role="tab" aria-selected="true" aria-label="Slide 1"></button>
+        <button type="button" class="desk-dot" role="tab" aria-selected="false" aria-label="Slide 2"></button>
+      </div>
     </div>
-    <ul class="trust-row">
-      <li>Official line 054 030 9637 only</li>
-      <li>Sea shipping to Tema</li>
-      <li>Nationwide Ghana delivery</li>
-      <li>No on-site payment</li>
-    </ul>
+
+    <aside class="desk-tiles" aria-label="Desk shortcuts">
+      <a href="request.html">
+        <span class="desk-tile-ico" aria-hidden="true">✎</span>
+        <span>Order now</span>
+      </a>
+      <a href="https://wa.me/233540309637" target="_blank" rel="noopener">
+        <span class="desk-tile-ico" aria-hidden="true">☎</span>
+        <span>054 030 9637</span>
+      </a>
+      <a href="how-it-works.html">
+        <span class="desk-tile-ico" aria-hidden="true">⇢</span>
+        <span>Process</span>
+      </a>
+      <a href="quote-list.html">
+        <span class="desk-tile-ico" aria-hidden="true">☰</span>
+        <span>Quote list</span>
+      </a>
+      <a href="contact.html">
+        <span class="desk-tile-ico" aria-hidden="true">◷</span>
+        <span>Mon–Sat 9–18</span>
+      </a>
+      <a href="request.html">
+        <span class="desk-tile-ico" aria-hidden="true">GH₵</span>
+        <span>Quoted in GH₵</span>
+      </a>
+    </aside>
   </div>
 </section>
 

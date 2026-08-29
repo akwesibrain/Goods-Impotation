@@ -109,6 +109,7 @@ document.addEventListener("DOMContentLoaded", () => {
   polishPublicChrome();
   unstickPublicHeader();
   mountMotion();
+  mountDeskSlider();
 });
 
 function fillCategorySelects() {
@@ -356,6 +357,61 @@ function motionMs(ms) {
   return prefersReducedMotion() ? 0 : ms;
 }
 
+function mountDeskSlider() {
+  const root = document.querySelector("[data-desk-slider]");
+  if (!root) return;
+  const slides = Array.from(root.querySelectorAll(".desk-slide"));
+  const dots = Array.from(root.querySelectorAll(".desk-dot"));
+  if (slides.length < 2) return;
+
+  let index = Math.max(0, slides.findIndex((slide) => slide.classList.contains("is-on")));
+  let timer = 0;
+
+  const show = (next) => {
+    index = (next + slides.length) % slides.length;
+    slides.forEach((slide, i) => slide.classList.toggle("is-on", i === index));
+    dots.forEach((dot, i) => {
+      const on = i === index;
+      dot.classList.toggle("is-on", on);
+      dot.setAttribute("aria-selected", on ? "true" : "false");
+    });
+  };
+
+  const stop = () => {
+    if (timer) {
+      window.clearInterval(timer);
+      timer = 0;
+    }
+  };
+
+  const start = () => {
+    stop();
+    if (prefersReducedMotion()) return;
+    timer = window.setInterval(() => show(index + 1), 6500);
+  };
+
+  dots.forEach((dot, i) => {
+    dot.addEventListener("click", () => {
+      show(i);
+      start();
+    });
+  });
+
+  root.addEventListener("mouseenter", stop);
+  root.addEventListener("mouseleave", start);
+  root.addEventListener("focusin", stop);
+  root.addEventListener("focusout", (event) => {
+    if (!root.contains(event.relatedTarget)) start();
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) stop();
+    else start();
+  });
+
+  show(index);
+  start();
+}
+
 let revealObserver = null;
 
 function mountMotion() {
@@ -414,7 +470,7 @@ function observeReveals(root) {
   ].join(","));
   const fold = window.innerHeight * 0.92;
   nodes.forEach((el) => {
-    if (el.closest(".tf-hero, .page-hero, .site-header, .tabbar")) return;
+    if (el.closest(".tf-hero, .desk-stage, .page-hero, .site-header, .tabbar")) return;
     if (el.classList.contains("skeleton-card")) return;
     if (el.closest("[hidden]")) return;
     if (el.classList.contains("is-in")) return;
@@ -606,7 +662,7 @@ function polishPublicChrome() {
 function unstickPublicHeader() {
   const header = document.querySelector("header.site-header");
   if (!header) return;
-  const parts = [header, ...header.querySelectorAll(":scope > *, .tf-top, .tf-nav, .announce-bar, .header-main, .tf-nav-row")];
+  const parts = [header, ...header.querySelectorAll(":scope > *, .tf-top, .tf-nav, .desk-nav, .announce-bar, .header-main, .tf-nav-row")];
   parts.forEach((el) => {
     if (el.classList.contains("nav-links")) return;
     const pos = window.getComputedStyle(el).position;
