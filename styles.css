@@ -4663,6 +4663,124 @@ body.desk-home {
   }
 }
 
+/* ---------------- Login credential officer ---------------- */
+.cred-guard-auth {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.25rem 1.1rem;
+  width: min(920px, 100%);
+}
+.udash-auth.cred-guard-auth {
+  max-width: 920px;
+  padding-top: 0.4rem;
+}
+.cred-guard-forms {
+  flex: 1 1 320px;
+  min-width: 0;
+  max-width: 520px;
+  width: 100%;
+}
+.cred-guard-officer {
+  position: relative;
+  width: min(236px, 40vw);
+  flex: 0 0 auto;
+  z-index: 2;
+}
+.cred-guard-officer[hidden] { display: none !important; }
+.cred-guard-walk {
+  transform-origin: 50% 100%;
+  opacity: 0;
+}
+.cred-guard-img {
+  width: 100%;
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 16px 18px rgba(10, 31, 68, 0.18));
+  transform-origin: 50% 100%;
+}
+.cred-guard-bubble {
+  position: absolute;
+  left: 70%;
+  top: 4%;
+  width: max-content;
+  max-width: 210px;
+  margin: 0;
+  background: #fff;
+  color: var(--navy-900);
+  border: 1px solid var(--line);
+  border-radius: 16px 16px 16px 8px;
+  padding: 0.72rem 0.9rem;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.35;
+  box-shadow: 0 12px 28px rgba(31, 45, 68, 0.12);
+  opacity: 0;
+  z-index: 3;
+}
+.cred-guard-bubble::after {
+  content: "";
+  position: absolute;
+  left: 14px;
+  bottom: -6px;
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  transform: rotate(45deg);
+}
+.cred-guard-officer.is-in .cred-guard-walk {
+  animation: credWalkIn 0.85s cubic-bezier(.2, .85, .2, 1) both;
+}
+.cred-guard-officer.is-in .cred-guard-img {
+  animation: credBreathe 3.4s ease-in-out 0.85s infinite;
+}
+.cred-guard-officer.is-in .cred-guard-bubble {
+  animation: credBubbleIn 0.45s 0.5s cubic-bezier(.2, .8, .2, 1) both;
+}
+.cred-guard-officer.is-in .cred-guard-bubble.is-talking {
+  animation: credTalk 0.4s ease;
+}
+
+@keyframes credWalkIn {
+  0% { opacity: 0; transform: translateX(-72px) rotate(-7deg); }
+  64% { opacity: 1; transform: translateX(10px) rotate(2deg); }
+  100% { opacity: 1; transform: translateX(0) rotate(0); }
+}
+@keyframes credBreathe {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+@keyframes credBubbleIn {
+  0% { opacity: 0; transform: translate(-6px, 10px) scale(0.72); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes credTalk {
+  0% { opacity: 1; transform: scale(1); }
+  45% { opacity: 1; transform: scale(1.05) translateY(-4px); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.admin-gate .cred-guard-auth { align-items: flex-end; }
+
+@media (max-width: 760px) {
+  .cred-guard-auth {
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+  .cred-guard-officer { width: min(170px, 52vw); margin-bottom: -0.4rem; }
+  .cred-guard-bubble {
+    left: 48%;
+    top: auto;
+    bottom: 8%;
+    max-width: 170px;
+    font-size: 0.82rem;
+  }
+}
+
 
 
 

@@ -104,6 +104,7 @@ document.addEventListener("DOMContentLoaded", () => {
   restoreSearchPhoto();
   prefillRequestFromAccount();
   mountAccountPage();
+  mountCredentialGuard();
   mountCatalogSearch();
   polishPublicChrome();
   unstickPublicHeader();
@@ -1527,6 +1528,52 @@ function showAccountTab(name) {
   signup.hidden = name !== "signup";
   document.querySelectorAll("[data-account-tab]").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.accountTab === name);
+  });
+  const guard = document.querySelector("#account-auth [data-cred-guard]");
+  if (guard) {
+    guard.hidden = name !== "login";
+    if (name === "login") playCredentialGuard(guard);
+  }
+}
+
+function playCredentialGuard(root) {
+  if (!root) return;
+  root.classList.remove("is-in");
+  void root.offsetWidth;
+  root.classList.add("is-in");
+}
+window.playCredentialGuard = playCredentialGuard;
+
+function mountCredentialGuard() {
+  const roots = [...document.querySelectorAll("[data-cred-guard]")];
+  if (!roots.length) return;
+
+  const speak = (bubble, text) => {
+    if (!bubble || !text || bubble.textContent === text) return;
+    bubble.textContent = text;
+    bubble.classList.remove("is-talking");
+    void bubble.offsetWidth;
+    bubble.classList.add("is-talking");
+  };
+
+  roots.forEach((root) => {
+    const bubble = root.querySelector("[data-cred-bubble]");
+    const ask = (bubble && bubble.textContent.trim()) || "Hold on. Email and password before you go in.";
+    const form = root.closest(".cred-guard-auth")?.querySelector("form#account-login-form, form#login-form");
+    if (!form) return;
+    const email = form.querySelector("input[type='email'], input[name='email']");
+    const password = form.querySelector("input[type='password']");
+
+    if (!root.closest("#admin-login") || root.closest("#admin-login")?.style.display !== "none") {
+      playCredentialGuard(root);
+    }
+
+    email?.addEventListener("focus", () => speak(bubble, "Your email, please."));
+    email?.addEventListener("blur", () => {
+      if (!email.value && !(password && password.value)) speak(bubble, ask);
+    });
+    password?.addEventListener("focus", () => speak(bubble, "Now the password. Keep it to yourself."));
+    form.addEventListener("submit", () => speak(bubble, "Checking your credentials…"));
   });
 }
 
