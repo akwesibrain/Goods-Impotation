@@ -203,14 +203,17 @@ function clearFieldErrors(form) {
 function readRequestForm(form) {
   const fields = form.elements;
   const product = (fields.product || fields.request_details);
+  const notes = fields.notes && fields.notes.value ? String(fields.notes.value).trim() : "";
+  let details = product ? product.value : "";
+  if (notes) details = (details + "\n\nAdditional requirements: " + notes).slice(0, 2000);
   return {
     name: fields.name.value,
     phone: fields.phone.value,
     email: fields.email ? fields.email.value : "",
     location: fields.location ? fields.location.value : "",
     category: fields.category ? fields.category.value : "",
-    request_details: product ? product.value : "",
-    product: product ? product.value : "",
+    request_details: details,
+    product: details,
     quantity: fields.quantity ? fields.quantity.value : "",
     reference_url: fields.reference_url ? fields.reference_url.value : "",
     origin: fields.origin ? fields.origin.value : "",
@@ -337,12 +340,12 @@ async function handleRequestSubmit(e) {
   if (submitBtn) {
     submitBtn.disabled = false;
     submitBtn.classList.remove("is-loading");
-    submitBtn.textContent = originalLabel || "Start an Import Request";
+    submitBtn.textContent = originalLabel || "Start Your Order";
   }
   if (stickyBtn) {
     stickyBtn.disabled = false;
     stickyBtn.classList.remove("is-loading");
-    stickyBtn.textContent = originalLabel || "Start an Import Request";
+    stickyBtn.textContent = originalLabel || "Start Your Order";
   }
   if (statusEl) statusEl.className = "form-status";
 
@@ -467,6 +470,8 @@ function observeReveals(root) {
     ".udash-hero",
     ".panel",
     ".home-faq .faq-item",
+    ".trust-strip-row div",
+    ".step-cards article",
   ].join(","));
   const fold = window.innerHeight * 0.92;
   nodes.forEach((el) => {
@@ -718,6 +723,7 @@ function productCardHtml(p, opts = {}) {
       <div class="product-body">
         <span class="code">${escapeHtml(p.category || "Product")}</span>
         <h3>${escapeHtml(p.name)}</h3>
+        ${p.notes ? `<p class="product-tagline">${escapeHtml(p.notes)}</p>` : ""}
         <span class="product-status">Available to source</span>
         ${price ? `<div class="product-price">${escapeHtml(price)}${opts.indicative ? " <small>indicative</small>" : ""}</div>` : `<div class="product-price"><small>Request quote</small></div>`}
         <span class="product-order">Request quote</span>
@@ -1566,13 +1572,27 @@ function starText(rating) {
   return "★".repeat(n) + "☆".repeat(5 - n);
 }
 
+function reviewInitials(name) {
+  return String(name || "M")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0))
+    .join("")
+    .toUpperCase() || "M";
+}
+
 function reviewCardHtml(review) {
+  const name = review.author_name || "Customer";
   return `<article class="review-card">
     <div class="review-stars" aria-label="${escapeAttr(String(review.rating || 5))} out of 5">${starText(review.rating)}</div>
     <p>${escapeHtml(review.quote)}</p>
     <footer>
-      <strong>${escapeHtml(review.author_name)}</strong>
-      <span>${escapeHtml(review.location || "Ghana")}</span>
+      <span class="review-avatar" aria-hidden="true">${escapeHtml(reviewInitials(name))}</span>
+      <div>
+        <strong>${escapeHtml(name)}</strong>
+        <span>${escapeHtml(review.location || "Ghana")}</span>
+      </div>
     </footer>
   </article>`;
 }
