@@ -127,6 +127,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const btn = e.target.querySelector('button[type="submit"]');
     btn.disabled = true;
     btn.classList.add("is-loading");
+    btn.setAttribute("aria-busy", "true");
 
     const { error } = await client.auth.signInWithPassword({
       email: e.target.elements.email.value.trim(),
@@ -135,6 +136,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     btn.disabled = false;
     btn.classList.remove("is-loading");
+    btn.removeAttribute("aria-busy");
 
     if (error) {
       statusEl.className = "form-status error";

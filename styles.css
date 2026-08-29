@@ -4671,12 +4671,13 @@ body.desk-home {
   justify-content: center;
   gap: 1.1rem 1.6rem;
   width: min(860px, 100%);
+  overflow-x: clip;
 }
 .guard-stage[hidden] { display: none !important; }
 .guard-officer {
   --look-x: 0px;
   flex: 0 0 auto;
-  width: min(236px, 34vw);
+  width: min(248px, 36vw);
   pointer-events: none;
   user-select: none;
   z-index: 1;
@@ -4686,11 +4687,12 @@ body.desk-home {
   transform-origin: 50% 100%;
   animation: guardIdle 3.8s ease-in-out infinite;
   filter: drop-shadow(0 16px 18px rgba(10, 31, 68, 0.18));
+  will-change: transform;
 }
 .guard-pose {
   width: 100%;
   height: auto;
-  max-height: min(520px, 70vh);
+  max-height: min(560px, 72vh);
   object-fit: contain;
   object-position: bottom center;
   display: block;
@@ -4702,6 +4704,10 @@ body.desk-home {
   opacity: 0;
 }
 .guard-officer .is-idle { opacity: 1; }
+.guard-officer .is-blink { opacity: 0; }
+.guard-officer:not([data-pose]) .is-blink {
+  animation: guardBlink 5.4s ease-in-out infinite;
+}
 .guard-officer[data-pose="look"] .is-idle,
 .guard-officer[data-pose="cover"] .is-idle,
 .guard-officer[data-pose="fail"] .is-idle,
@@ -4710,6 +4716,9 @@ body.desk-home {
 .guard-officer[data-pose="cover"] .is-cover,
 .guard-officer[data-pose="fail"] .is-fail,
 .guard-officer[data-pose="ok"] .is-ok { opacity: 1; }
+.guard-officer[data-pose="ok"] .guard-inner {
+  animation: guardOk 0.7s ease, guardIdle 3.8s ease-in-out 0.7s infinite;
+}
 
 .guard-stage > form {
   flex: 1 1 280px;
@@ -4717,6 +4726,10 @@ body.desk-home {
   max-width: 440px;
   position: relative;
   z-index: 2;
+}
+.guard-stage > form .btn {
+  width: 100%;
+  justify-content: center;
 }
 
 .password-wrap {
@@ -4754,6 +4767,10 @@ body.desk-home {
   stroke-width: 1.8;
   stroke-linecap: round;
   stroke-linejoin: round;
+  grid-area: 1 / 1;
+}
+.password-toggle svg[hidden] {
+  display: none !important;
 }
 
 .admin-gate {
@@ -4770,6 +4787,15 @@ body.desk-home {
 @keyframes guardIdle {
   0%, 100% { transform: translateX(var(--look-x, 0px)) rotate(-0.5deg) translateY(0); }
   50% { transform: translateX(var(--look-x, 0px)) rotate(0.7deg) translateY(-6px); }
+}
+@keyframes guardBlink {
+  0%, 44%, 52%, 100% { opacity: 0; }
+  46%, 49% { opacity: 1; }
+}
+@keyframes guardOk {
+  0% { transform: translateX(var(--look-x, 0px)) translateY(10px) scale(0.98); }
+  55% { transform: translateX(var(--look-x, 0px)) translateY(-5px) scale(1.03); }
+  100% { transform: translateX(var(--look-x, 0px)) translateY(0) scale(1); }
 }
 @keyframes guardShake {
   0%, 100% { transform: translateX(var(--look-x, 0px)); }
@@ -4789,7 +4815,8 @@ body.desk-home {
     gap: 0.35rem;
   }
   .guard-officer {
-    width: min(148px, 42vw);
+    width: min(128px, 40vw);
+    margin-bottom: 0.15rem;
   }
   .guard-pose { max-height: 34vh; }
   .guard-stage > form { max-width: none; width: 100%; }
@@ -4797,9 +4824,12 @@ body.desk-home {
 
 @media (prefers-reduced-motion: reduce) {
   .guard-inner,
-  .guard-officer.is-shake .guard-inner {
+  .guard-officer.is-shake .guard-inner,
+  .guard-officer:not([data-pose]) .is-blink,
+  .guard-officer[data-pose="ok"] .guard-inner {
     animation: none !important;
     transform: none !important;
+    will-change: auto;
   }
 }
 

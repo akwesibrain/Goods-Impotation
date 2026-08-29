@@ -15,3 +15,6 @@ Thumbs.db
 
 # Supabase CLI cache
 supabase/.temp/
+
+# Local tooling (site is static HTML — no build step)
+node_modules/

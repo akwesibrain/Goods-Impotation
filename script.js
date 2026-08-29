@@ -1583,7 +1583,7 @@ function mountGuardOfficer() {
     const pose = (name) => setGuardPose(stage, name);
     const track = () => {
       const len = (email?.value || "").length;
-      officer.style.setProperty("--look-x", `${Math.max(-14, Math.min(16, (len - 6) * 1.2))}px`);
+      officer.style.setProperty("--look-x", `${8 + Math.min(12, len * 0.45)}px`);
     };
     email?.addEventListener("focus", () => { pose("look"); track(); });
     email?.addEventListener("input", () => {
@@ -1595,13 +1595,14 @@ function mountGuardOfficer() {
       pose("cover");
       officer.style.setProperty("--look-x", "0px");
     });
-    form.addEventListener("focusout", (e) => {
-      if (!form.contains(e.relatedTarget)) {
+    form.addEventListener("focusout", () => {
+      requestAnimationFrame(() => {
+        if (form.contains(document.activeElement)) return;
         const current = officer.getAttribute("data-pose");
         if (current === "fail" || current === "ok") return;
         pose(null);
         officer.style.setProperty("--look-x", "0px");
-      }
+      });
     });
   });
 }
@@ -1884,6 +1885,7 @@ async function mountAccountPage() {
       const btn = loginForm.querySelector('button[type="submit"]');
       btn.disabled = true;
       btn.classList.add("is-loading");
+      btn.setAttribute("aria-busy", "true");
       try {
         if (!window.signInCustomer) throw new Error("Account service is not connected yet.");
         const parsed = window.MwinbarkaForms.parseLogin({
@@ -1896,6 +1898,8 @@ async function mountAccountPage() {
           password: parsed.data.password,
         });
         setGuardPose(loginForm.closest("[data-guard-stage]"), "ok");
+        const wait = motionMs(720);
+        if (wait) await new Promise((r) => setTimeout(r, wait));
         await refreshAccountChrome();
         await paint();
       } catch (err) {
@@ -1904,6 +1908,7 @@ async function mountAccountPage() {
       } finally {
         btn.disabled = false;
         btn.classList.remove("is-loading");
+        btn.removeAttribute("aria-busy");
       }
     });
   }
