@@ -4357,15 +4357,29 @@ body.desk-home {
   .desk-banner { min-height: 240px; }
 }
 @media (max-width: 860px) {
-  .desk-home .header-main { flex-wrap: wrap; }
-  .desk-home .nav-logo { flex: 1 1 auto; min-width: 0; }
-  .desk-home .site-search {
-    order: 3;
-    flex: 1 1 100%;
-    max-width: none;
-    width: 100%;
+  .desk-home .header-main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      "logo utils toggle"
+      "search search search";
+    align-items: center;
+    column-gap: 0.55rem;
+    row-gap: 0.65rem;
   }
-  .desk-home .desk-utils { margin-left: auto; }
+  .desk-home .nav-logo { grid-area: logo; min-width: 0; }
+  .desk-home .site-search {
+    grid-area: search;
+    order: unset;
+    flex: none;
+    width: 100%;
+    max-width: none;
+  }
+  .desk-home .desk-utils {
+    grid-area: utils;
+    margin-left: 0;
+  }
+  .desk-home .nav-toggle { grid-area: toggle; margin-left: 0; }
   .desk-home .header-account-label {
     position: absolute;
     width: 1px;
