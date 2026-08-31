@@ -767,6 +767,78 @@ function renderPopularSourcing() {
   observeReveals(grid);
 }
 
+function buyNowHrefFromEl(el) {
+  if (!el) return "request.html";
+  const name = el.dataset.name || "";
+  const category = el.dataset.category || "";
+  const qty = el.dataset.qty || "";
+  const params = new URLSearchParams();
+  if (name) params.set("q", name);
+  if (category) params.set("category", category);
+  if (qty) params.set("qty", qty);
+  const qs = params.toString();
+  return qs ? `request.html?${qs}` : "request.html";
+}
+
+function closeAuthGate() {
+  const modal = document.getElementById("auth-gate");
+  if (!modal) return;
+  modal.classList.remove("is-open");
+  modal.hidden = true;
+  document.body.classList.remove("order-modal-open");
+}
+
+function showAuthGate(nextUrl) {
+  const dest = (window.saveAuthNext && window.saveAuthNext(nextUrl)) || nextUrl || "request.html";
+  let modal = document.getElementById("auth-gate");
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "auth-gate";
+    modal.className = "order-modal";
+    modal.hidden = true;
+    modal.innerHTML = `
+      <div class="order-modal-card" role="dialog" aria-modal="true" aria-labelledby="auth-gate-title">
+        <h2 id="auth-gate-title">Sign in to buy</h2>
+        <p>You need an account to send this order. Log in, or sign up if you are new — then we open the order form. Nothing is billed on this site.</p>
+        <a class="btn btn-gold" data-auth-login href="account.html#login">Log in</a>
+        <a class="btn btn-outline-dark" data-auth-signup href="account.html#signup">Sign up</a>
+        <button type="button" class="login-alt-btn" data-auth-cancel>Not now</button>
+      </div>
+    `;
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal || e.target.closest("[data-auth-cancel]")) {
+        e.preventDefault();
+        if (window.consumeAuthNext) window.consumeAuthNext();
+        closeAuthGate();
+      }
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && modal.classList.contains("is-open")) closeAuthGate();
+    });
+    document.body.appendChild(modal);
+  }
+  const login = modal.querySelector("[data-auth-login]");
+  const signup = modal.querySelector("[data-auth-signup]");
+  const next = encodeURIComponent(dest);
+  if (login) login.href = `account.html?next=${next}#login`;
+  if (signup) signup.href = `account.html?next=${next}#signup`;
+  modal.hidden = false;
+  modal.classList.add("is-open");
+  document.body.classList.add("order-modal-open");
+  const first = modal.querySelector("[data-auth-login]");
+  if (first) first.focus();
+}
+
+async function startBuyNow(nextUrl) {
+  const dest = (window.safeNextPath && window.safeNextPath(nextUrl)) || nextUrl || "request.html";
+  const user = window.getSessionUser ? await window.getSessionUser() : null;
+  if (user) {
+    window.location.href = dest;
+    return;
+  }
+  showAuthGate(dest);
+}
+
 function bindQuoteButtons() {
   document.addEventListener("click", (e) => {
     const add = e.target.closest(".add-cart, .add-quote");
@@ -774,10 +846,15 @@ function bindQuoteButtons() {
     if (!add && !buy) return;
     e.preventDefault();
     e.stopPropagation();
-    const card = e.target.closest("[data-quote-item]");
-    if (!card || !card.dataset.id) return;
-    addToQuoteList(cartItemFromEl(card));
-    if (buy) window.location.href = "quote-list.html";
+    if (add) {
+      const card = add.closest("[data-quote-item]");
+      if (!card || !card.dataset.id) return;
+      addToQuoteList(cartItemFromEl(card));
+      return;
+    }
+    const card = buy.closest("[data-quote-item]");
+    const href = buy.getAttribute("href") || (card ? buyNowHrefFromEl(card) : "request.html");
+    startBuyNow(href);
   });
 }
 
@@ -786,7 +863,7 @@ function renderQuoteListPage() {
   if (!wrap) return;
   const items = getQuoteList();
   if (!items.length) {
-    wrap.innerHTML = `<p class="empty-note">Your cart is empty. Add items from Products, then Buy now — we confirm the landed GH₵ on the official line.</p>
+    wrap.innerHTML = `<p class="empty-note">Your cart is empty. Use Add to cart on Products, then send the list — we confirm the landed GH₵ on the official line.</p>
       <a class="btn btn-gold" href="categories.html">Browse products</a>`;
     return;
   }
@@ -812,7 +889,7 @@ function renderQuoteListPage() {
     </ul>
     ${total ? `<p class="cart-total">Indicative total <strong>GH₵${total}</strong> <small>— official quote is final</small></p>` : ""}
     <div class="hero-actions" style="margin-top: 1.5rem;">
-      <a class="btn btn-gold" href="request.html?from=list">Buy now</a>
+      <a class="btn btn-gold buy-now" href="request.html?from=list">Buy now</a>
       <button type="button" class="btn btn-outline-dark" id="clear-quote-list">Clear cart</button>
     </div>
   `;
@@ -1047,7 +1124,7 @@ async function renderItemPage(client) {
     <section class="item-block">
       <h2>How to request this</h2>
       <ol class="process-list">
-        <li>Add to cart, or tap Buy now to send the order.</li>
+        <li>Add to cart to keep it, or tap Buy now to send this item. Buy now asks you to log in or sign up.</li>
         <li>We quote the goods in GH₵ (supplier price + China pickup).</li>
         <li>We ship by sea to Ghana. Typical transit is 4–8 weeks after the supplier ships.</li>
       </ol>
@@ -1772,8 +1849,11 @@ async function mountAccountPage() {
   const signedBox = document.getElementById("account-signed");
   if (!authBox || !signedBox) return;
 
+  const nextParam = new URLSearchParams(location.search).get("next");
+  if (nextParam && window.saveAuthNext) window.saveAuthNext(nextParam);
   const hash = (location.hash || "").replace("#", "");
   if (hash === "signup") showAccountTab("signup");
+  if (hash === "login") showAccountTab("login");
 
   document.querySelectorAll("[data-account-tab]").forEach((btn) => {
     btn.addEventListener("click", () => showAccountTab(btn.dataset.accountTab));
@@ -1850,6 +1930,7 @@ async function mountAccountPage() {
       window.location.replace("admin.html");
       return;
     }
+    if (nextParam && window.continueAfterCustomerAuth && window.continueAfterCustomerAuth()) return;
     authBox.hidden = true;
     signedBox.hidden = false;
     const displayName = profile.full_name || "Customer";
@@ -1888,6 +1969,7 @@ async function mountAccountPage() {
           window.location.replace("admin.html");
           return;
         }
+        if (window.continueAfterCustomerAuth && window.continueAfterCustomerAuth()) return;
         await refreshAccountChrome();
         await paint();
       } catch (err) {
@@ -1955,8 +2037,10 @@ async function mountAccountPage() {
           password: parsed.data.password,
         });
         if (result && result.needsConfirm) {
-          showStatus(status, "success", "Account created. Check your email to confirm, then log in.");
+          showStatus(status, "success", "Account created. Check your email to confirm, then log in to finish buying.");
           showAccountTab("login");
+        } else if (window.continueAfterCustomerAuth && window.continueAfterCustomerAuth()) {
+          return;
         } else {
           await refreshAccountChrome();
           await paint();

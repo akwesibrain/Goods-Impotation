@@ -119,6 +119,56 @@ window.authRedirectUrl = function (page) {
   }
 };
 
+const AUTH_NEXT_KEY = "mwinbarka_after_auth";
+const AUTH_NEXT_PAGES = {
+  "request.html": true,
+  "quote-list.html": true,
+  "item.html": true,
+  "categories.html": true,
+  "index.html": true,
+  "account.html": true,
+};
+
+window.safeNextPath = function (raw) {
+  let value = String(raw || "").trim();
+  if (!value) return "";
+  try { value = decodeURIComponent(value); } catch (_) {}
+  value = value.replace(/^\/+/, "");
+  if (!value || /^[a-z]+:/i.test(value) || value.startsWith("//") || value.includes("\\")) return "";
+  const file = value.split(/[?#]/)[0];
+  if (!AUTH_NEXT_PAGES[file]) return "";
+  return value;
+};
+
+window.saveAuthNext = function (url) {
+  const next = window.safeNextPath(url);
+  try {
+    if (next) sessionStorage.setItem(AUTH_NEXT_KEY, next);
+  } catch (_) {}
+  return next;
+};
+
+window.peekAuthNext = function () {
+  try {
+    return window.safeNextPath(sessionStorage.getItem(AUTH_NEXT_KEY) || "");
+  } catch (_) {
+    return "";
+  }
+};
+
+window.consumeAuthNext = function () {
+  const next = window.peekAuthNext();
+  try { sessionStorage.removeItem(AUTH_NEXT_KEY); } catch (_) {}
+  return next;
+};
+
+window.continueAfterCustomerAuth = function () {
+  const next = window.consumeAuthNext();
+  if (!next) return false;
+  window.location.replace(next);
+  return true;
+};
+
 window.resolveLoginEmail = async function (identifier) {
   const raw = String(identifier || "").trim();
   if (!raw) throw new Error("Enter your email or Ghana number.");
@@ -160,6 +210,9 @@ window.routeSignedInUser = async function () {
     if (typeof window.markStaffWelcome === "function") window.markStaffWelcome();
     window.location.replace("admin.html");
     return { isStaff: true };
+  }
+  if (window.continueAfterCustomerAuth && window.continueAfterCustomerAuth()) {
+    return { isStaff: false };
   }
   window.location.replace("account.html");
   return { isStaff: false };

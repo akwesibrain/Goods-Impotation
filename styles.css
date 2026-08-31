@@ -2252,6 +2252,17 @@ body.admin-app .status-pill.closed { background: #F0F0F0; color: #595959; }
   line-height: 1.55;
 }
 .order-modal-card .btn { width: 100%; justify-content: center; }
+.order-modal-card .btn + .btn { margin-top: 0.6rem; }
+.order-modal-card .login-alt-btn {
+  display: block;
+  width: 100%;
+  margin-top: 0.85rem;
+  background: none;
+  border: 0;
+  color: var(--ink-500);
+  cursor: pointer;
+  text-align: center;
+}
 body.order-modal-open { overflow: hidden; }
 .empty-note { color: var(--ink-500); margin-bottom: var(--space-3); }
 .quote-rows { list-style: none; margin: 0; padding: 0; }
