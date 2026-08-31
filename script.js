@@ -1321,8 +1321,9 @@ async function renderPublicProducts(client) {
            <a class="btn btn-gold" href="request.html">Start an Import Request</a>`;
     } else catalog.innerHTML = names.map((name) => {
       const rows = groups.get(name) || [];
-      const cards = rows.length
-        ? `<div class="product-grid">${rows.map((p) => productCardHtml(p)).join("")}</div>`
+      const shown = onCategoriesPage ? rows : rows.slice(0, 4);
+      const cards = shown.length
+        ? `<div class="product-grid">${shown.map((p) => productCardHtml(p)).join("")}</div>`
         : `<p class="empty-note">No products in this category yet. Describe what you want and we’ll source it.</p>
            <a class="btn btn-gold" href="request.html?category=${encodeURIComponent(name)}">Start an Import Request</a>`;
       return `<section class="catalog-lane">
