@@ -142,7 +142,7 @@
   function parseLogin(raw) {
     const data = {
       email: sanitizeEmail(raw.email).slice(0, 254),
-      password: asString(raw.password),
+      password: asString(raw.password).replace(/^\s+|\s+$/g, ""),
     };
     const errors = {};
     if (!isEmail(data.email)) errors.email = "Enter a valid email address.";

@@ -1127,6 +1127,7 @@ body.admin-app .form-status.error {
   .admin-card,
   .admin-shell.is-ready .admin-sidebar,
   .admin-shell.is-ready .admin-workspace,
+  .admin-welcome,
   body.admin-app .form-card,
   body.admin-app .form-status.success,
   body.admin-app .form-status.error,
@@ -1293,6 +1294,59 @@ body.admin-app .form-status.error {
   transition: color 0.18s ease;
 }
 .admin-top-link:hover { color: #17181B; }
+.admin-welcome {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin: 0.55rem 1.3rem 0;
+  padding: 0.95rem 1.1rem;
+  background: #fff;
+  border: 1px solid rgba(201, 162, 39, 0.38);
+  border-left: 4px solid #C9A227;
+  border-radius: 16px;
+  box-shadow: 0 10px 24px rgba(10, 31, 68, 0.06);
+  animation: adminWelcomeIn 0.42s cubic-bezier(.2,.8,.2,1) both;
+}
+.admin-welcome[hidden] { display: none !important; }
+.admin-welcome-mark {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #C9A227;
+  box-shadow: 0 0 0 6px rgba(201, 162, 39, 0.16);
+  flex-shrink: 0;
+}
+.admin-welcome-copy { min-width: 0; flex: 1; }
+.admin-welcome-copy strong {
+  display: block;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #C9A227;
+  margin-bottom: 0.15rem;
+}
+.admin-welcome-copy p {
+  margin: 0;
+  color: #0A1F44;
+  font-size: 1.02rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.admin-welcome-dismiss {
+  border: 0;
+  background: transparent;
+  color: var(--ink-500);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.35rem 0.45rem;
+  border-radius: 8px;
+}
+.admin-welcome-dismiss:hover { background: #F6F1E4; color: #0A1F44; }
+@keyframes adminWelcomeIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: none; }
+}
 .admin-user {
   display: flex;
   align-items: center;
@@ -2896,8 +2950,10 @@ body.account-drawer-open { overflow: hidden; }
   .admin-table .cell-details { min-width: 0 !important; }
   body.admin-app .field-row { grid-template-columns: 1fr; }
   .admin-form { max-width: none; }
-  .admin-workspace {
-    padding-bottom: calc(4.6rem + env(safe-area-inset-bottom));
+  .admin-welcome {
+    margin: 0.4rem 0.85rem 0;
+    padding: 0.85rem 0.9rem;
+    flex-wrap: wrap;
   }
   .admin-stage {
     padding-bottom: 0.5rem;

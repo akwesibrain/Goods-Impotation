@@ -1852,7 +1852,7 @@ async function mountAccountPage() {
         await refreshAccountChrome();
         await paint();
       } catch (err) {
-        showStatus(status, "error", err.message || "Could not log in.");
+        showStatus(status, "error", (window.friendlyLoginError && window.friendlyLoginError(err)) || err.message || "Could not log in.");
       } finally {
         btn.disabled = false;
         btn.classList.remove("is-loading");

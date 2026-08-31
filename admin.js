@@ -79,6 +79,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (staffName && profile) staffName.textContent = profile.full_name || "Staff";
     if (staffAvatar && profile) staffAvatar.textContent = initials(profile.full_name || profile.email || "MW");
     fillStaffLogin(profile);
+    showStaffWelcome(profile);
     await Promise.all([
       loadRequests(client),
       loadProducts(client),
@@ -106,6 +107,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const showSignedOut = () => {
     closeAdminMenu();
+    hideStaffWelcome();
     loginSection.style.display = "flex";
     dashboard.style.display = "none";
     dashboard.classList.remove("is-ready");
@@ -129,10 +131,26 @@ document.addEventListener("DOMContentLoaded", () => {
     btn.classList.add("is-loading");
     btn.setAttribute("aria-busy", "true");
 
-    const password = e.target.elements.password.value;
+    const login = window.normalizeLogin
+      ? window.normalizeLogin({
+          email: e.target.elements.email.value,
+          password: e.target.elements.password.value,
+        })
+      : {
+          email: e.target.elements.email.value.trim().toLowerCase(),
+          password: String(e.target.elements.password.value || "").replace(/^\s+|\s+$/g, ""),
+        };
+    if (!login.email || !login.email.includes("@")) {
+      btn.disabled = false;
+      btn.classList.remove("is-loading");
+      btn.removeAttribute("aria-busy");
+      statusEl.className = "form-status error";
+      statusEl.textContent = "Use your desk email, not a phone number.";
+      return;
+    }
     const { error } = await client.auth.signInWithPassword({
-      email: e.target.elements.email.value.trim(),
-      password,
+      email: login.email,
+      password: login.password,
     });
 
     btn.disabled = false;
@@ -141,18 +159,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (error) {
       statusEl.className = "form-status error";
-      statusEl.textContent = error.message;
+      statusEl.textContent = (window.friendlyLoginError && window.friendlyLoginError(error)) || error.message;
       return;
     }
-    if (typeof window.rememberStaffPassword === "function") window.rememberStaffPassword(password);
+    if (typeof window.rememberStaffPassword === "function") window.rememberStaffPassword(login.password);
+    if (typeof window.markStaffWelcome === "function") window.markStaffWelcome();
     statusEl.className = "form-status";
     statusEl.textContent = "";
     showSignedIn();
   });
 
+  document.getElementById("admin-welcome-dismiss")?.addEventListener("click", hideStaffWelcome);
+
   signOutBtn.addEventListener("click", async () => {
     closeAdminMenu();
     if (window.clearStaffPassword) window.clearStaffPassword();
+    hideStaffWelcome();
     await client.auth.signOut();
     showSignedOut();
   });
@@ -1037,6 +1059,25 @@ async function loadSettings(client) {
   ["whatsapp_channel_url", "whatsapp_url", "facebook_url", "instagram_url", "tiktok_url"].forEach((key) => {
     if (form.elements[key]) form.elements[key].value = data[key] || "";
   });
+}
+
+function hideStaffWelcome() {
+  const banner = document.getElementById("admin-welcome");
+  if (banner) banner.hidden = true;
+}
+
+function showStaffWelcome(profile) {
+  const banner = document.getElementById("admin-welcome");
+  const text = document.getElementById("admin-welcome-text");
+  if (!banner || !banner.hidden) return;
+  const shouldShow = typeof window.consumeStaffWelcome === "function" && window.consumeStaffWelcome();
+  if (!shouldShow) return;
+  if (text) {
+    text.textContent = window.staffWelcomeMessage
+      ? window.staffWelcomeMessage(profile)
+      : "Welcome to the Mwinbarka desk.";
+  }
+  banner.hidden = false;
 }
 
 function fillStaffLogin(profile) {

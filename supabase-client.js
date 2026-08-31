@@ -23,7 +23,7 @@
 // ============================================================
 
 const SUPABASE_URL = "https://kajtwabmwbncfgvehqmm.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_OthsZo5O7gJ_w23GJVdmuQ_EBsh6gsn";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImthanR3YWJtd2JuY2ZndmVocW1tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxODAxMzQsImV4cCI6MjEwMjc1NjEzNH0.U7KYHYne3umDVLMyR6qcdS_7RobiiOrCESdGT1ng1p8";
 
 let supabaseClient = null;
 
@@ -84,6 +84,62 @@ window.rememberStaffPassword = function (password) {
   } catch (_) {}
 };
 
+window.markStaffWelcome = function () {
+  try { sessionStorage.setItem("mwinbarka_staff_welcome", "1"); } catch (_) {}
+};
+
+window.consumeStaffWelcome = function () {
+  try {
+    const show = sessionStorage.getItem("mwinbarka_staff_welcome") === "1";
+    if (show) sessionStorage.removeItem("mwinbarka_staff_welcome");
+    return show;
+  } catch (_) {
+    return false;
+  }
+};
+
+window.normalizeLogin = function ({ email, password }) {
+  return {
+    email: String(email || "").trim().toLowerCase(),
+    password: String(password == null ? "" : password).replace(/^\s+|\s+$/g, ""),
+  };
+};
+
+window.staffWelcomeMessage = function (profile) {
+  const name = String((profile && profile.full_name) || "").trim();
+  const first = name.split(/\s+/)[0] || "there";
+  let hour = new Date().getHours();
+  try {
+    hour = Number(
+      new Intl.DateTimeFormat("en-GB", {
+        timeZone: "Africa/Accra",
+        hour: "numeric",
+        hourCycle: "h23",
+      }).format(new Date())
+    );
+  } catch (_) {}
+  const hello = hour < 12 ? "Good morning" : hour < 16 ? "Good afternoon" : "Good evening";
+  return hello + ", " + first + ". Welcome to the Mwinbarka desk.";
+};
+
+window.friendlyLoginError = function (err) {
+  const raw = String((err && err.message) || err || "");
+  const text = raw.toLowerCase();
+  if (text.includes("invalid login") || text.includes("invalid credentials") || text.includes("invalid_credentials")) {
+    return "Email or password is wrong. Check both and try again.";
+  }
+  if (text.includes("email not confirmed")) {
+    return "Confirm this email first, then sign in.";
+  }
+  if (text.includes("rate") || text.includes("too many")) {
+    return "Too many tries. Wait a minute, then try again.";
+  }
+  if (text.includes("not connected")) {
+    return "Account service is not connected yet.";
+  }
+  return raw || "Could not log in.";
+};
+
 window.readStaffPassword = function () {
   try {
     return sessionStorage.getItem("mwinbarka_staff_pw") || "";
@@ -100,10 +156,18 @@ window.clearStaffPassword = function () {
 
 window.signInCustomer = async function ({ email, password }) {
   if (!supabaseClient) throw new Error("Account service is not connected yet.");
-  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  const login = window.normalizeLogin({ email, password });
+  if (!login.email || !login.password) throw new Error("Enter your email and password.");
+  const { error } = await supabaseClient.auth.signInWithPassword({
+    email: login.email,
+    password: login.password,
+  });
   if (error) throw error;
   const staff = await window.isStaffSession();
-  if (staff) window.rememberStaffPassword(password);
+  if (staff) {
+    window.rememberStaffPassword(login.password);
+    window.markStaffWelcome();
+  }
   return { isStaff: staff };
 };
 
