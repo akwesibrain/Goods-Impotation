@@ -813,7 +813,10 @@ function showAuthGate(nextUrl) {
       }
     });
     document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && modal.classList.contains("is-open")) closeAuthGate();
+      if (e.key === "Escape" && modal.classList.contains("is-open")) {
+        if (window.consumeAuthNext) window.consumeAuthNext();
+        closeAuthGate();
+      }
     });
     document.body.appendChild(modal);
   }
