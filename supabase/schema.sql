@@ -45,6 +45,7 @@ create table if not exists public.profiles (
   id         uuid primary key references auth.users(id) on delete cascade,
   full_name  text,
   phone      text,
+  email      text not null default '',
   is_staff   boolean not null default false,
   created_at timestamptz not null default now()
 );
@@ -94,14 +95,17 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.profiles (id, full_name, phone, is_staff)
+  insert into public.profiles (id, full_name, phone, email, is_staff)
   values (
     new.id,
     coalesce(new.raw_user_meta_data->>'full_name', ''),
     coalesce(new.raw_user_meta_data->>'phone', ''),
+    coalesce(new.email, ''),
     false
   )
-  on conflict (id) do nothing;
+  on conflict (id) do update
+    set email = excluded.email
+    where public.profiles.email = '';
   return new;
 end;
 $$;
@@ -534,6 +538,7 @@ grant execute on function private.is_owner() to anon, authenticated;
 grant update (is_staff, staff_role) on table public.profiles to authenticated;
 
 alter table public.profiles
+  add column if not exists email text not null default '',
   add column if not exists company_name text not null default '',
   add column if not exists whatsapp text not null default '',
   add column if not exists region text not null default '',
@@ -552,7 +557,7 @@ alter table public.profiles add constraint profiles_preferred_origin_check
   check (preferred_origin in ('china', 'turkey', 'either'));
 
 grant update (
-  full_name, phone, company_name, whatsapp, region, city, address, landmark,
+  full_name, phone, email, company_name, whatsapp, region, city, address, landmark,
   preferred_origin, desk_notes, notify_sms, notify_whatsapp, notify_email, updated_at
 ) on table public.profiles to authenticated;
 

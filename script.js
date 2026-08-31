@@ -1863,6 +1863,10 @@ async function mountAccountPage() {
       showAccountPanel("home");
       return;
     }
+    if (profile.is_staff) {
+      window.location.replace("admin.html");
+      return;
+    }
     authBox.hidden = true;
     signedBox.hidden = false;
     const displayName = profile.full_name || "Customer";
@@ -1893,13 +1897,17 @@ async function mountAccountPage() {
           password: loginForm.elements.password.value,
         });
         if (!parsed.ok) throw new Error(window.MwinbarkaForms.firstError(parsed.errors));
-        await window.signInCustomer({
+        const signedIn = await window.signInCustomer({
           email: parsed.data.email,
           password: parsed.data.password,
         });
         setGuardPose(loginForm.closest("[data-guard-stage]"), "ok");
         const wait = motionMs(720);
         if (wait) await new Promise((r) => setTimeout(r, wait));
+        if (signedIn && signedIn.isStaff) {
+          window.location.replace("admin.html");
+          return;
+        }
         await refreshAccountChrome();
         await paint();
       } catch (err) {

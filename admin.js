@@ -129,9 +129,10 @@ document.addEventListener("DOMContentLoaded", () => {
     btn.classList.add("is-loading");
     btn.setAttribute("aria-busy", "true");
 
+    const password = e.target.elements.password.value;
     const { error } = await client.auth.signInWithPassword({
       email: e.target.elements.email.value.trim(),
-      password: e.target.elements.password.value,
+      password,
     });
 
     btn.disabled = false;
@@ -144,6 +145,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (typeof setGuardPose === "function") setGuardPose(e.target.closest("[data-guard-stage]"), "fail");
       return;
     }
+    if (typeof window.rememberStaffPassword === "function") window.rememberStaffPassword(password);
     statusEl.className = "form-status";
     statusEl.textContent = "";
     if (typeof setGuardPose === "function") setGuardPose(e.target.closest("[data-guard-stage]"), "ok");
@@ -154,6 +156,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   signOutBtn.addEventListener("click", async () => {
     closeAdminMenu();
+    if (window.clearStaffPassword) window.clearStaffPassword();
     await client.auth.signOut();
     showSignedOut();
   });
@@ -213,6 +216,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("settings-form").addEventListener("submit", (e) => handleSettingsSubmit(e, client));
   document.getElementById("staff-email-form")?.addEventListener("submit", (e) => handleStaffEmailSubmit(e, client));
   document.getElementById("staff-password-form")?.addEventListener("submit", (e) => handleStaffPasswordSubmit(e, client));
+  document.getElementById("staff-phone-form")?.addEventListener("submit", (e) => handleStaffPhoneSubmit(e, client));
   document.getElementById("sms-settings-form").addEventListener("submit", (e) => handleSmsSettingsSubmit(e, client));
   document.getElementById("sms-send-form").addEventListener("submit", (e) => handleSmsSend(e, client));
   document.getElementById("sms-broadcast-form")?.addEventListener("submit", (e) => handleSmsBroadcast(e, client));
@@ -734,22 +738,22 @@ async function loadCustomers(client) {
   const body = document.getElementById("customers-body");
   const note = document.getElementById("customers-note");
   if (!body) return;
-  body.innerHTML = `<tr><td colspan="5" class="admin-empty">Loading customers...</td></tr>`;
+  body.innerHTML = `<tr><td colspan="6" class="admin-empty">Loading customers...</td></tr>`;
 
   const { data, error } = await client
     .from("profiles")
-    .select("id, full_name, phone, is_staff, created_at")
+    .select("id, full_name, phone, email, is_staff, created_at")
     .eq("is_staff", false)
     .order("created_at", { ascending: false });
 
   if (error) {
-    body.innerHTML = `<tr><td colspan="5" class="admin-empty">Couldn't load customers: ${escapeHtml(error.message)}</td></tr>`;
+    body.innerHTML = `<tr><td colspan="6" class="admin-empty">Couldn't load customers: ${escapeHtml(error.message)}</td></tr>`;
     return;
   }
 
   allCustomers = data || [];
   if (!allCustomers.length) {
-    body.innerHTML = `<tr><td colspan="5"><div class="admin-empty"><span class="code">MW · NO CUSTOMERS</span>No customer accounts yet. Guests can still send orders without signing up.</div></td></tr>`;
+    body.innerHTML = `<tr><td colspan="6"><div class="admin-empty"><span class="code">MW · NO CUSTOMERS</span>No customer accounts yet. Guests can still send orders without signing up.</div></td></tr>`;
     if (note) note.textContent = "";
     fillSmsRecipients();
     renderOverview();
@@ -764,6 +768,7 @@ async function loadCustomers(client) {
   body.innerHTML = allCustomers.map((c) => `<tr>
     <td class="cell-when">${formatDate(c.created_at)}</td>
     <td><strong>${escapeHtml(c.full_name) || '<span class="muted">—</span>'}</strong></td>
+    <td>${escapeHtml(c.email) || '<span class="muted">—</span>'}</td>
     <td>${escapeHtml(c.phone) || '<span class="muted">—</span>'}</td>
     <td>${counts[c.id] || 0}</td>
     <td>
@@ -1039,8 +1044,29 @@ async function loadSettings(client) {
 }
 
 function fillStaffLogin(profile) {
-  const emailEl = document.getElementById("staff-current-email");
-  if (emailEl) emailEl.value = (profile && profile.email) || "";
+  const email = (profile && profile.email) || "";
+  const phone = (profile && profile.phone) || "";
+  const emailEls = [
+    document.getElementById("staff-detail-email"),
+    document.getElementById("staff-current-email"),
+  ];
+  emailEls.forEach((el) => {
+    if (el) el.value = email;
+  });
+  const phoneEl = document.getElementById("staff-detail-phone");
+  if (phoneEl && !phoneEl.matches(":focus")) phoneEl.value = phone;
+  const pwEl = document.getElementById("staff-detail-password");
+  const hint = document.getElementById("staff-password-hint");
+  const saved = window.readStaffPassword ? window.readStaffPassword() : "";
+  if (pwEl) {
+    pwEl.value = saved;
+    pwEl.placeholder = saved ? "" : "Hidden until you sign in this session";
+  }
+  if (hint) {
+    hint.textContent = saved
+      ? "Tap the eye to show it. It stays on this device until you close the tab or log out."
+      : "Sign in once this session to show the password here. You can still set a new one below.";
+  }
 }
 
 function friendlyAuthError(err) {
@@ -1136,11 +1162,53 @@ async function handleStaffPasswordSubmit(e, client) {
     if (!window.updateMyPassword) throw new Error("Account service is not connected yet.");
     await window.updateMyPassword({ currentPassword, newPassword });
     form.reset();
+    const profile = window.getMyProfile ? await window.getMyProfile() : null;
+    fillStaffLogin(profile);
     statusEl.className = "form-status success";
     statusEl.textContent = "Password saved. Use the new password the next time you sign in.";
   } catch (err) {
     statusEl.className = "form-status error";
     statusEl.textContent = friendlyAuthError(err);
+  }
+  btn.disabled = false;
+}
+
+async function handleStaffPhoneSubmit(e, client) {
+  e.preventDefault();
+  const form = e.target;
+  const statusEl = document.getElementById("staff-phone-status");
+  const btn = form.querySelector('button[type="submit"]');
+  const phone = form.elements.phone.value.trim();
+  if (!phone) {
+    statusEl.className = "form-status error";
+    statusEl.textContent = "Enter a Ghana phone number.";
+    return;
+  }
+  btn.disabled = true;
+  statusEl.className = "form-status";
+  statusEl.textContent = "Saving…";
+  try {
+    const profile = window.getMyProfile ? await window.getMyProfile() : null;
+    if (!window.updateMyProfile) throw new Error("Account service is not connected yet.");
+    await window.updateMyProfile({
+      full_name: (profile && profile.full_name) || "Staff",
+      phone,
+      company_name: (profile && profile.company_name) || "",
+      whatsapp: phone,
+      region: (profile && profile.region) || "",
+      city: (profile && profile.city) || "",
+      address: (profile && profile.address) || "",
+      landmark: (profile && profile.landmark) || "",
+    });
+    const next = window.getMyProfile ? await window.getMyProfile() : profile;
+    fillStaffLogin(next);
+    const staffLine = document.getElementById("admin-staff-email");
+    if (staffLine && next) staffLine.textContent = next.email || "Staff";
+    statusEl.className = "form-status success";
+    statusEl.textContent = "Phone saved. You can open Settings anytime to see it.";
+  } catch (err) {
+    statusEl.className = "form-status error";
+    statusEl.textContent = err.message || "Couldn't save the phone number.";
   }
   btn.disabled = false;
 }

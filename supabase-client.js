@@ -48,12 +48,12 @@ window.getMyProfile = async function () {
   if (!user || !supabaseClient) return null;
   const { data } = await supabaseClient
     .from("profiles")
-    .select("id, full_name, phone, company_name, whatsapp, region, city, address, landmark, notify_sms, notify_whatsapp, notify_email, is_staff, staff_role, created_at")
+    .select("id, full_name, phone, email, company_name, whatsapp, region, city, address, landmark, notify_sms, notify_whatsapp, notify_email, is_staff, staff_role, created_at")
     .eq("id", user.id)
     .maybeSingle();
   return {
     id: user.id,
-    email: user.email || "",
+    email: user.email || (data && data.email) || "",
     full_name: (data && data.full_name) || user.user_metadata?.full_name || "",
     phone: (data && data.phone) || user.user_metadata?.phone || "",
     company_name: (data && data.company_name) || "",
@@ -77,11 +77,34 @@ window.isStaffSession = async function () {
   return !!(profile && profile.is_staff);
 };
 
+window.rememberStaffPassword = function (password) {
+  try {
+    if (password) sessionStorage.setItem("mwinbarka_staff_pw", password);
+    else sessionStorage.removeItem("mwinbarka_staff_pw");
+  } catch (_) {}
+};
+
+window.readStaffPassword = function () {
+  try {
+    return sessionStorage.getItem("mwinbarka_staff_pw") || "";
+  } catch (_) {
+    return "";
+  }
+};
+
+window.clearStaffPassword = function () {
+  try {
+    sessionStorage.removeItem("mwinbarka_staff_pw");
+  } catch (_) {}
+};
+
 window.signInCustomer = async function ({ email, password }) {
   if (!supabaseClient) throw new Error("Account service is not connected yet.");
   const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
   if (error) throw error;
-  return true;
+  const staff = await window.isStaffSession();
+  if (staff) window.rememberStaffPassword(password);
+  return { isStaff: staff };
 };
 
 window.signUpCustomer = async function ({ email, password, fullName, phone }) {
@@ -98,12 +121,14 @@ window.signUpCustomer = async function ({ email, password, fullName, phone }) {
       id: data.user.id,
       full_name: forms ? forms.sanitize(fullName || "").slice(0, 100) : (fullName || ""),
       phone: forms ? forms.sanitizePhone(phone || "").slice(0, 20) : (phone || ""),
+      email: data.user.email || email || "",
     }, { onConflict: "id" });
   }
   return { needsConfirm: !!(data.user && !data.session) };
 };
 
 window.signOutCustomer = async function (everywhere) {
+  if (window.clearStaffPassword) window.clearStaffPassword();
   if (!supabaseClient) return;
   await supabaseClient.auth.signOut({ scope: everywhere ? "global" : "local" });
 };
@@ -119,6 +144,7 @@ window.updateMyPassword = async function ({ currentPassword, newPassword }) {
   if (checkError) throw new Error("Current password is wrong.");
   const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
   if (error) throw error;
+  if (window.rememberStaffPassword) window.rememberStaffPassword(newPassword);
   return true;
 };
 
@@ -141,6 +167,10 @@ window.updateMyEmail = async function ({ currentPassword, newEmail, emailRedirec
     { emailRedirectTo: emailRedirectTo || window.location.href.split("#")[0] },
   );
   if (error) throw error;
+  await supabaseClient.from("profiles").update({
+    email: next,
+    updated_at: new Date().toISOString(),
+  }).eq("id", user.id);
   return true;
 };
 
