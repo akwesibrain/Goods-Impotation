@@ -142,15 +142,11 @@ document.addEventListener("DOMContentLoaded", () => {
     if (error) {
       statusEl.className = "form-status error";
       statusEl.textContent = error.message;
-      if (typeof setGuardPose === "function") setGuardPose(e.target.closest("[data-guard-stage]"), "fail");
       return;
     }
     if (typeof window.rememberStaffPassword === "function") window.rememberStaffPassword(password);
     statusEl.className = "form-status";
     statusEl.textContent = "";
-    if (typeof setGuardPose === "function") setGuardPose(e.target.closest("[data-guard-stage]"), "ok");
-    const wait = (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) ? 0 : 520;
-    if (wait) await new Promise((r) => setTimeout(r, wait));
     showSignedIn();
   });
 

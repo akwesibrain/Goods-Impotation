@@ -104,7 +104,7 @@ document.addEventListener("DOMContentLoaded", () => {
   restoreSearchPhoto();
   prefillRequestFromAccount();
   mountAccountPage();
-  mountGuardOfficer();
+  mountPasswordToggles();
   mountCatalogSearch();
   polishPublicChrome();
   unstickPublicHeader();
@@ -1526,29 +1526,10 @@ function showAccountTab(name) {
   if (!login || !signup) return;
   login.hidden = name !== "login";
   signup.hidden = name !== "signup";
-  const stage = document.getElementById("account-login-stage");
-  if (stage) {
-    stage.hidden = name !== "login";
-    if (name === "login") setGuardPose(stage, null);
-  }
   document.querySelectorAll("[data-account-tab]").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.accountTab === name);
   });
 }
-
-function setGuardPose(stage, pose) {
-  const officer = (stage && stage.querySelector("[data-guard-officer]")) || document.querySelector("[data-guard-officer]");
-  if (!officer) return;
-  if (!pose) officer.removeAttribute("data-pose");
-  else officer.setAttribute("data-pose", pose);
-  officer.classList.remove("is-shake");
-  if (pose === "fail" && !prefersReducedMotion()) {
-    void officer.offsetWidth;
-    officer.classList.add("is-shake");
-    officer.addEventListener("animationend", () => officer.classList.remove("is-shake"), { once: true });
-  }
-}
-window.setGuardPose = setGuardPose;
 
 function mountPasswordToggles() {
   document.querySelectorAll("[data-password-toggle]").forEach((btn) => {
@@ -1566,43 +1547,6 @@ function mountPasswordToggles() {
       const off = btn.querySelector(".icon-eye-off");
       if (eye) eye.hidden = show;
       if (off) off.hidden = !show;
-    });
-  });
-}
-
-function mountGuardOfficer() {
-  mountPasswordToggles();
-  document.querySelectorAll("[data-guard-stage]").forEach((stage) => {
-    if (stage.dataset.bound === "1") return;
-    stage.dataset.bound = "1";
-    const officer = stage.querySelector("[data-guard-officer]");
-    const form = stage.querySelector("form");
-    if (!officer || !form) return;
-    const email = form.querySelector("input[type='email'], input[name='email']");
-    const password = form.querySelector("input[type='password']");
-    const pose = (name) => setGuardPose(stage, name);
-    const track = () => {
-      const len = (email?.value || "").length;
-      officer.style.setProperty("--look-x", `${8 + Math.min(12, len * 0.45)}px`);
-    };
-    email?.addEventListener("focus", () => { pose("look"); track(); });
-    email?.addEventListener("input", () => {
-      if (officer.getAttribute("data-pose") === "cover") return;
-      pose("look");
-      track();
-    });
-    password?.addEventListener("focus", () => {
-      pose("cover");
-      officer.style.setProperty("--look-x", "0px");
-    });
-    form.addEventListener("focusout", () => {
-      requestAnimationFrame(() => {
-        if (form.contains(document.activeElement)) return;
-        const current = officer.getAttribute("data-pose");
-        if (current === "fail" || current === "ok") return;
-        pose(null);
-        officer.style.setProperty("--look-x", "0px");
-      });
     });
   });
 }
@@ -1901,9 +1845,6 @@ async function mountAccountPage() {
           email: parsed.data.email,
           password: parsed.data.password,
         });
-        setGuardPose(loginForm.closest("[data-guard-stage]"), "ok");
-        const wait = motionMs(720);
-        if (wait) await new Promise((r) => setTimeout(r, wait));
         if (signedIn && signedIn.isStaff) {
           window.location.replace("admin.html");
           return;
@@ -1911,7 +1852,6 @@ async function mountAccountPage() {
         await refreshAccountChrome();
         await paint();
       } catch (err) {
-        setGuardPose(loginForm.closest("[data-guard-stage]"), "fail");
         showStatus(status, "error", err.message || "Could not log in.");
       } finally {
         btn.disabled = false;
