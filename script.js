@@ -1008,7 +1008,7 @@ async function renderItemPage(client) {
     <div class="item-hero">${img}</div>
     <div class="item-info">
       <h1>${escapeHtml(item.name)}</h1>
-      ${price ? `<div class="product-price">${escapeHtml(price)} <small>indicative landed start — official quote is final</small></div>` : ""}
+      ${price ? `<div class="product-price">${escapeHtml(price)} <small>starting GH₵ (factory wholesale + GH₵50) — official quote is final</small></div>` : ""}
     </div>
     <section class="item-block">
       <h2>How to request this</h2>
@@ -1323,7 +1323,7 @@ async function renderPublicProducts(client) {
       const rows = groups.get(name) || [];
       const shown = onCategoriesPage ? rows : rows.slice(0, 4);
       const cards = shown.length
-        ? `<div class="product-grid">${shown.map((p) => productCardHtml(p)).join("")}</div>`
+        ? `<div class="product-grid">${shown.map((p) => productCardHtml(p, { indicative: true })).join("")}</div>`
         : `<p class="empty-note">No products in this category yet. Describe what you want and we’ll source it.</p>
            <a class="btn btn-gold" href="request.html?category=${encodeURIComponent(name)}">Start an Import Request</a>`;
       return `<section class="catalog-lane">
@@ -1344,7 +1344,7 @@ async function renderPublicProducts(client) {
     if (!visible.length) {
       document.querySelectorAll("#products-section").forEach((section) => { section.hidden = true; });
     } else {
-      const html = visible.map((p) => productCardHtml(p)).join("");
+      const html = visible.map((p) => productCardHtml(p, { indicative: true })).join("");
       grids.forEach((grid) => { grid.innerHTML = html; });
       document.querySelectorAll("#products-section").forEach((section) => { section.hidden = false; });
     }

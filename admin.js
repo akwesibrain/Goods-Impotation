@@ -989,7 +989,7 @@ async function handleProductSubmit(e, client) {
 
     resetProductForm();
     statusEl.className = "form-status success";
-    statusEl.textContent = existingId ? "Product updated. Add GH₵ or copy anytime." : "Product saved.";
+    statusEl.textContent = existingId ? "Saved. The public GH₵ price now matches what you typed." : "Product saved.";
     await loadProducts(client);
   } catch (err) {
     statusEl.className = "form-status error";
