@@ -2029,15 +2029,17 @@ body.admin-app .status-pill.closed { background: #F0F0F0; color: #595959; }
   border-color: var(--gold-500);
 }
 .product-card img, .product-placeholder {
-  width: 100%;
-  height: 88px;
-  aspect-ratio: auto;
-  object-fit: contain;
+  display: block;
+  width: 240px;
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  max-height: 240px;
+  object-fit: cover;
   background: #f3f1eb;
-  padding: 0.35rem;
-}
-@media (min-width: 761px) {
-  .product-card img, .product-placeholder { height: 108px; }
+  padding: 0;
+  border-radius: 1rem;
+  margin: 0 auto;
 }
 .product-body { padding: 0.85rem; display: flex; flex-direction: column; gap: 0.35rem; flex: 1; }
 .product-body .code { font-family: var(--font-body); font-size: 0.72rem; color: var(--ink-500); letter-spacing: 0.02em; text-transform: none; }
@@ -3758,14 +3760,15 @@ body.nav-open .nav-scrim {
   background: #f3f1eb;
 }
 .item-hero img {
-  width: auto;
+  width: 240px;
+  height: 240px;
   max-width: 100%;
-  height: 180px;
-  max-height: 180px;
-  aspect-ratio: auto;
-  object-fit: contain;
+  max-height: 240px;
+  aspect-ratio: 1;
+  object-fit: cover;
   background: #f3f1eb;
-  padding: 0.6rem;
+  padding: 0;
+  border-radius: 1rem;
 }
 
 @media (max-width: 960px) {
@@ -4544,7 +4547,7 @@ body.desk-home {
 .product-card img {
   background: #f3f1eb;
   transition: transform 0.45s var(--ease-out);
-  object-fit: contain;
+  object-fit: cover;
 }
 .product-card .product-tagline {
   display: -webkit-box;

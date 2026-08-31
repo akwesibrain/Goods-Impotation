@@ -708,8 +708,8 @@ function productCardHtml(p, opts = {}) {
     ? (String(priceRaw).includes("GH") ? priceRaw : `GH₵${priceRaw}`)
     : (p.from ? `from GH₵${p.from}` : "");
   const img = p.image_url
-    ? `<img src="${escapeAttr(p.image_url)}" alt="${escapeAttr(p.name)}" width="240" height="180" loading="lazy" decoding="async">`
-    : `<img src="${tileDataUri((p.category || "MW").split(" ")[0])}" alt="" width="240" height="180" loading="lazy" decoding="async">`;
+    ? `<img src="${escapeAttr(p.image_url)}" alt="${escapeAttr(p.name)}" width="240" height="240" loading="lazy" decoding="async">`
+    : `<img src="${tileDataUri((p.category || "MW").split(" ")[0])}" alt="" width="240" height="240" loading="lazy" decoding="async">`;
   const blurb = p.notes || p.description || "";
   const href = `item.html?id=${encodeURIComponent(id)}`;
   return `
