@@ -603,13 +603,41 @@ function saveQuoteList(items) {
   updateQuoteBadge();
 }
 
+function cartItemFromEl(el) {
+  return {
+    id: el.dataset.id,
+    name: el.dataset.name,
+    category: el.dataset.category || "",
+    from: el.dataset.from || "",
+    image_url: el.dataset.image || "",
+    qty: Number(el.dataset.qty) || 1,
+  };
+}
+
 function addToQuoteList(item) {
   const items = getQuoteList();
-  const existing = items.find((row) => row.id === item.id);
-  if (existing) existing.qty = (Number(existing.qty) || 1) + (Number(item.qty) || 1);
-  else items.push({ id: item.id, name: item.name, category: item.category || "", from: item.from || "", qty: Number(item.qty) || 1 });
+  const existing = items.find((row) => String(row.id) === String(item.id));
+  if (existing) {
+    existing.qty = (Number(existing.qty) || 1) + (Number(item.qty) || 1);
+    if (item.image_url && !existing.image_url) existing.image_url = item.image_url;
+    if (item.from && !existing.from) existing.from = item.from;
+  } else {
+    items.push({
+      id: item.id,
+      name: item.name,
+      category: item.category || "",
+      from: item.from || "",
+      image_url: item.image_url || "",
+      qty: Number(item.qty) || 1,
+    });
+  }
   saveQuoteList(items);
-  showToast("Added to your quote list");
+  showToast("Added to cart");
+}
+
+function cartUnitGhs(item) {
+  const n = parseInt(String(item.from || "").replace(/[^\d]/g, ""), 10);
+  return Number.isFinite(n) ? n : 0;
 }
 
 function updateQuoteBadge() {
@@ -683,7 +711,7 @@ function mountFeatureNav() {
     const link = document.createElement("a");
     link.href = "quote-list.html";
     link.className = "quote-link";
-    link.innerHTML = `Quote list <span class="quote-count" data-quote-count>0</span>`;
+    link.innerHTML = `Cart <span class="quote-count" data-quote-count>0</span>`;
     if (cta && cta.parentNode) cta.parentNode.insertBefore(link, cta);
     else if (document.querySelector(".header-main")) document.querySelector(".header-main").appendChild(link);
   }
@@ -710,20 +738,25 @@ function productCardHtml(p, opts = {}) {
   const img = p.image_url
     ? `<img src="${escapeAttr(p.image_url)}" alt="${escapeAttr(p.name)}" width="240" height="240" loading="lazy" decoding="async">`
     : `<img src="${tileDataUri((p.category || "MW").split(" ")[0])}" alt="" width="240" height="240" loading="lazy" decoding="async">`;
-  const blurb = p.notes || p.description || "";
+  const blurb = cleanPublicBlurb(p.notes || p.description || "");
   const href = `item.html?id=${encodeURIComponent(id)}`;
   return `
-    <a class="product-card" href="${href}">
+    <article class="product-card" data-quote-item data-id="${escapeAttr(id)}" data-name="${escapeAttr(p.name)}" data-category="${escapeAttr(p.category || "")}" data-from="${escapeAttr(priceRaw || p.from || "")}" data-image="${escapeAttr(p.image_url || "")}">
+      <a class="product-card-link" href="${href}">
       ${img}
       <div class="product-body">
         <span class="code">${escapeHtml(p.category || "Product")}</span>
         <h3>${escapeHtml(p.name)}</h3>
         ${blurb ? `<p class="product-tagline">${escapeHtml(blurb)}</p>` : ""}
         <span class="product-status">Available to source</span>
-        ${price ? `<div class="product-price">${escapeHtml(price)}${opts.indicative ? " <small>indicative</small>" : ""}</div>` : `<div class="product-price"><small>Request quote</small></div>`}
-        <span class="product-order">Request quote</span>
+        ${price ? `<div class="product-price">${escapeHtml(price)}${opts.indicative ? " <small>indicative</small>" : ""}</div>` : `<div class="product-price"><small>Starting GH₵ on request</small></div>`}
       </div>
-    </a>
+      </a>
+      <div class="product-actions">
+        <button type="button" class="btn btn-outline-dark add-cart">Add to cart</button>
+        <button type="button" class="product-order buy-now">Buy now</button>
+      </div>
+    </article>
   `;
 }
 
@@ -736,17 +769,15 @@ function renderPopularSourcing() {
 
 function bindQuoteButtons() {
   document.addEventListener("click", (e) => {
-    const btn = e.target.closest(".add-quote");
-    if (!btn) return;
-    const card = btn.closest("[data-quote-item]");
-    if (!card) return;
-    addToQuoteList({
-      id: card.dataset.id,
-      name: card.dataset.name,
-      category: card.dataset.category,
-      from: card.dataset.from,
-      qty: 1,
-    });
+    const add = e.target.closest(".add-cart, .add-quote");
+    const buy = e.target.closest(".buy-now");
+    if (!add && !buy) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const card = e.target.closest("[data-quote-item]");
+    if (!card || !card.dataset.id) return;
+    addToQuoteList(cartItemFromEl(card));
+    if (buy) window.location.href = "quote-list.html";
   });
 }
 
@@ -755,31 +786,34 @@ function renderQuoteListPage() {
   if (!wrap) return;
   const items = getQuoteList();
   if (!items.length) {
-    wrap.innerHTML = `<p class="empty-note">Your quote list is empty. Add items from Home, then send them all in one request.</p>
-      <a class="btn btn-gold" href="index.html">Browse popular sourcing</a>`;
+    wrap.innerHTML = `<p class="empty-note">Your cart is empty. Add items from Products, then Buy now — we confirm the landed GH₵ on the official line.</p>
+      <a class="btn btn-gold" href="categories.html">Browse products</a>`;
     return;
   }
 
+  const total = items.reduce((sum, item) => sum + cartUnitGhs(item) * (Number(item.qty) || 1), 0);
   wrap.innerHTML = `
     <ul class="quote-rows">
       ${items.map((item, i) => `
         <li data-id="${escapeAttr(item.id)}">
-          <div>
+          ${item.image_url ? `<img src="${escapeAttr(item.image_url)}" alt="" width="64" height="64">` : ""}
+          <div class="quote-row-main">
             <strong>${escapeHtml(item.name)}</strong>
-            <span>${escapeHtml(item.category || "")}</span>
+            <span>${escapeHtml(item.category || "")}${cartUnitGhs(item) ? ` · GH₵${cartUnitGhs(item)} indicative` : ""}</span>
           </div>
           <div class="qty-controls">
-            <button type="button" data-qty="${i}" data-dir="-1">−</button>
+            <button type="button" data-qty="${i}" data-dir="-1" aria-label="Fewer">−</button>
             <span>${escapeHtml(item.qty || 1)}</span>
-            <button type="button" data-qty="${i}" data-dir="1">+</button>
+            <button type="button" data-qty="${i}" data-dir="1" aria-label="More">+</button>
             <button type="button" class="linkish" data-remove="${i}">Remove</button>
           </div>
         </li>
       `).join("")}
     </ul>
+    ${total ? `<p class="cart-total">Indicative total <strong>GH₵${total}</strong> <small>— official quote is final</small></p>` : ""}
     <div class="hero-actions" style="margin-top: 1.5rem;">
-      <a class="btn btn-gold" href="request.html?from=list">Send all as one order</a>
-      <button type="button" class="btn btn-outline-dark" id="clear-quote-list">Clear list</button>
+      <a class="btn btn-gold" href="request.html?from=list">Buy now</a>
+      <button type="button" class="btn btn-outline-dark" id="clear-quote-list">Clear cart</button>
     </div>
   `;
 
@@ -907,7 +941,7 @@ function mountMobileChrome() {
   nav.innerHTML = `
     ${tab("index.html", "Home")}
     ${tab("categories.html", "Categories")}
-    ${tab("quote-list.html", "Quote", ` <span data-quote-count>0</span>`)}
+    ${tab("quote-list.html", "Cart", ` <span data-quote-count>0</span>`)}
     ${tab("request.html", "Order")}
     <button type="button" class="tab-account${here === "account.html" ? " active" : ""}" data-open-account>Account</button>
   `;
@@ -1008,12 +1042,12 @@ async function renderItemPage(client) {
     <div class="item-hero">${img}</div>
     <div class="item-info">
       <h1>${escapeHtml(item.name)}</h1>
-      ${price ? `<div class="product-price">${escapeHtml(price)} <small>starting GH₵ (factory wholesale + GH₵50) — official quote is final</small></div>` : ""}
+      ${price ? `<div class="product-price">${escapeHtml(price)}</div>` : ""}
     </div>
     <section class="item-block">
       <h2>How to request this</h2>
       <ol class="process-list">
-        <li>Order now — or add it to your quote list.</li>
+        <li>Add to cart, or tap Buy now to send the order.</li>
         <li>We quote the goods in GH₵ (supplier price + China pickup).</li>
         <li>We ship by sea to Ghana. Typical transit is 4–8 weeks after the supplier ships.</li>
       </ol>
@@ -1033,7 +1067,7 @@ async function renderItemPage(client) {
         <div><dt>Material</dt><dd>${escapeHtml(item.material || "—")}</dd></div>
         <div><dt>Origin</dt><dd>${escapeHtml(item.origin || "China or Turkey")}</dd></div>
       </dl>
-      ${item.notes ? `<p class="muted">${escapeHtml(item.notes)}</p>` : ""}
+      ${cleanPublicBlurb(item.notes) ? `<p class="muted">${escapeHtml(cleanPublicBlurb(item.notes))}</p>` : ""}
     </section>
   `;
 
@@ -1044,6 +1078,7 @@ async function renderItemPage(client) {
     bar.dataset.name = item.name;
     bar.dataset.category = item.category || "";
     bar.dataset.from = item.from || item.price || "";
+    bar.dataset.image = item.image_url || "";
     const chat = bar.querySelector("[data-chat]");
     const request = bar.querySelector("[data-request]");
     if (chat) chat.href = wa;
@@ -2069,6 +2104,14 @@ async function mountAccountPage() {
   }
 
   await paint();
+}
+
+function cleanPublicBlurb(text) {
+  return String(text || "")
+    .replace(/\s*Starting GH₵ is factory wholesale plus GH₵50(; Accra confirms the landed quote)?(\. Accra confirms the landed quote on the official line)?\.?/gi, "")
+    .replace(/\s*starting GH₵ \(factory wholesale \+ GH₵50\)[^.]*\.?/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function escapeHtml(value) {
