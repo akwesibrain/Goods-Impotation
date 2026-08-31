@@ -34,7 +34,13 @@ if (
   !SUPABASE_URL.includes("YOUR_SUPABASE") &&
   !SUPABASE_ANON_KEY.includes("YOUR_SUPABASE")
 ) {
-  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+      persistSession: true,
+      detectSessionInUrl: true,
+      flowType: "implicit",
+    },
+  });
 }
 
 window.getSessionUser = async function () {
@@ -105,6 +111,60 @@ window.normalizeLogin = function ({ email, password }) {
   };
 };
 
+window.authRedirectUrl = function (page) {
+  try {
+    return new URL(page, window.location.href).toString();
+  } catch (_) {
+    return page;
+  }
+};
+
+window.resolveLoginEmail = async function (identifier) {
+  const raw = String(identifier || "").trim();
+  if (!raw) throw new Error("Enter your email or Ghana number.");
+  if (raw.includes("@")) return raw.toLowerCase();
+  if (!supabaseClient) throw new Error("Account service is not connected yet.");
+  const { data, error } = await supabaseClient.rpc("login_email_for_identifier", { p_id: raw });
+  if (error) throw new Error("Could not check that number. Try your email.");
+  if (!data) throw new Error("No account uses that Ghana number. Try your email.");
+  return String(data).toLowerCase();
+};
+
+window.requestLoginLink = async function (identifier) {
+  if (!supabaseClient) throw new Error("Account service is not connected yet.");
+  const email = await window.resolveLoginEmail(identifier);
+  const { error } = await supabaseClient.auth.signInWithOtp({
+    email,
+    options: {
+      shouldCreateUser: false,
+      emailRedirectTo: window.authRedirectUrl("auth-callback.html"),
+    },
+  });
+  if (error) throw error;
+  return email;
+};
+
+window.requestPasswordReset = async function (identifier) {
+  if (!supabaseClient) throw new Error("Account service is not connected yet.");
+  const email = await window.resolveLoginEmail(identifier);
+  const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+    redirectTo: window.authRedirectUrl("reset-password.html"),
+  });
+  if (error) throw error;
+  return email;
+};
+
+window.routeSignedInUser = async function () {
+  const staff = await window.isStaffSession();
+  if (staff) {
+    if (typeof window.markStaffWelcome === "function") window.markStaffWelcome();
+    window.location.replace("admin.html");
+    return { isStaff: true };
+  }
+  window.location.replace("account.html");
+  return { isStaff: false };
+};
+
 window.staffWelcomeMessage = function (profile) {
   const name = String((profile && profile.full_name) || "").trim();
   const first = name.split(/\s+/)[0] || "there";
@@ -126,7 +186,7 @@ window.friendlyLoginError = function (err) {
   const raw = String((err && err.message) || err || "");
   const text = raw.toLowerCase();
   if (text.includes("invalid login") || text.includes("invalid credentials") || text.includes("invalid_credentials")) {
-    return "Email or password is wrong. Check both and try again.";
+    return "Email or password is wrong. Chrome may be filling an old password — tap the eye, type it again, or use the email sign-in link.";
   }
   if (text.includes("email not confirmed")) {
     return "Confirm this email first, then sign in.";
@@ -157,9 +217,10 @@ window.clearStaffPassword = function () {
 window.signInCustomer = async function ({ email, password }) {
   if (!supabaseClient) throw new Error("Account service is not connected yet.");
   const login = window.normalizeLogin({ email, password });
-  if (!login.email || !login.password) throw new Error("Enter your email and password.");
+  if (!login.password) throw new Error("Enter your password.");
+  const resolvedEmail = await window.resolveLoginEmail(login.email);
   const { error } = await supabaseClient.auth.signInWithPassword({
-    email: login.email,
+    email: resolvedEmail,
     password: login.password,
   });
   if (error) throw error;

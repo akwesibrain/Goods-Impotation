@@ -140,12 +140,15 @@
   }
 
   function parseLogin(raw) {
+    const identifier = asString(raw.email || raw.identifier).trim();
     const data = {
-      email: sanitizeEmail(raw.email).slice(0, 254),
+      email: identifier.includes("@") ? sanitizeEmail(identifier).slice(0, 254) : identifier,
       password: asString(raw.password).replace(/^\s+|\s+$/g, ""),
     };
     const errors = {};
-    if (!isEmail(data.email)) errors.email = "Enter a valid email address.";
+    if (!isEmail(data.email) && !isGhanaPhone(data.email)) {
+      errors.email = "Enter your email or a Ghana phone number.";
+    }
     if (!data.password) errors.password = "Enter your password.";
     return { ok: Object.keys(errors).length === 0, data, errors };
   }

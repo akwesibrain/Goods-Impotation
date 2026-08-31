@@ -939,3 +939,59 @@ alter table public.reviews add constraint reviews_author_len
 alter table public.reviews drop constraint if exists reviews_quote_len;
 alter table public.reviews add constraint reviews_quote_len
   check (char_length(quote) between 1 and 2000);
+
+-- Login may use a Ghana number. Anon can resolve it to the account email
+-- so the browser can call signInWithPassword without reading profiles.
+create or replace function public.login_email_for_identifier(p_id text)
+returns text
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+declare
+  raw text := lower(btrim(coalesce(p_id, '')));
+  digits text;
+  found_email text;
+begin
+  if raw = '' then
+    return null;
+  end if;
+
+  if position('@' in raw) > 0 then
+    select p.email into found_email
+    from public.profiles p
+    where lower(p.email) = raw and coalesce(p.email, '') <> ''
+    limit 1;
+    return coalesce(found_email, raw);
+  end if;
+
+  digits := regexp_replace(raw, '\D', '', 'g');
+  if left(digits, 2) = '00' then
+    digits := substr(digits, 3);
+  end if;
+  if left(digits, 3) = '233' and length(digits) = 12 then
+    digits := '0' || substr(digits, 4);
+  elsif length(digits) = 9 then
+    digits := '0' || digits;
+  end if;
+  if length(digits) <> 10 then
+    return null;
+  end if;
+
+  select p.email into found_email
+  from public.profiles p
+  where regexp_replace(coalesce(p.phone, ''), '\D', '', 'g') in (
+      digits,
+      '233' || substr(digits, 2)
+    )
+    and coalesce(p.email, '') <> ''
+  order by p.is_staff desc, p.created_at asc
+  limit 1;
+
+  return found_email;
+end;
+$$;
+
+revoke all on function public.login_email_for_identifier(text) from public;
+grant execute on function public.login_email_for_identifier(text) to anon, authenticated;

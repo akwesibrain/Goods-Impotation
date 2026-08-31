@@ -1160,6 +1160,24 @@ body.admin-app .form-status.error {
 .admin-gate-card p { color: var(--ink-500); margin-top: 0; }
 .admin-gate-foot { margin-top: var(--space-3); font-size: 0.9rem; }
 .admin-gate-foot a { text-decoration: underline; color: var(--navy-700); }
+.login-alt {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem 1rem;
+  margin: 0.85rem 0 0.35rem;
+}
+.login-alt-btn {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: #0A1F44;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.login-alt-btn:hover { color: #C9A227; }
 
 .admin-shell {
   display: flex;

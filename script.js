@@ -1808,6 +1808,9 @@ async function mountAccountPage() {
       return;
     }
     if (profile.is_staff) {
+      if (/type=(magiclink|signup|invite|recovery|email)/.test(location.hash + location.search) && window.markStaffWelcome) {
+        window.markStaffWelcome();
+      }
       window.location.replace("admin.html");
       return;
     }
@@ -1859,6 +1862,37 @@ async function mountAccountPage() {
         btn.removeAttribute("aria-busy");
       }
     });
+
+    const bindAccountLoginAlt = (btnId, action, pending, success) => {
+      const btn = document.getElementById(btnId);
+      if (!btn) return;
+      btn.addEventListener("click", async () => {
+        const status = document.getElementById("login-status");
+        const identifier = loginForm.elements.email.value;
+        btn.disabled = true;
+        showStatus(status, "loading", pending);
+        try {
+          await action(identifier);
+          showStatus(status, "success", success);
+        } catch (err) {
+          showStatus(status, "error", (window.friendlyLoginError && window.friendlyLoginError(err)) || err.message || "Could not send that email.");
+        } finally {
+          btn.disabled = false;
+        }
+      });
+    };
+    bindAccountLoginAlt(
+      "account-magic-link",
+      (id) => window.requestLoginLink(id),
+      "Sending a sign-in link…",
+      "Check Gmail for the sign-in link."
+    );
+    bindAccountLoginAlt(
+      "account-forgot-password",
+      (id) => window.requestPasswordReset(id),
+      "Sending a reset link…",
+      "Check Gmail for the reset link, then set a new password."
+    );
   }
 
   const signupForm = document.getElementById("account-signup-form");

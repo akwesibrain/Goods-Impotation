@@ -140,16 +140,27 @@ document.addEventListener("DOMContentLoaded", () => {
           email: e.target.elements.email.value.trim().toLowerCase(),
           password: String(e.target.elements.password.value || "").replace(/^\s+|\s+$/g, ""),
         };
-    if (!login.email || !login.email.includes("@")) {
+    if (!login.password) {
       btn.disabled = false;
       btn.classList.remove("is-loading");
       btn.removeAttribute("aria-busy");
       statusEl.className = "form-status error";
-      statusEl.textContent = "Use your desk email, not a phone number.";
+      statusEl.textContent = "Enter your password, or use the email sign-in link.";
+      return;
+    }
+    let email = login.email;
+    try {
+      if (window.resolveLoginEmail) email = await window.resolveLoginEmail(login.email);
+    } catch (err) {
+      btn.disabled = false;
+      btn.classList.remove("is-loading");
+      btn.removeAttribute("aria-busy");
+      statusEl.className = "form-status error";
+      statusEl.textContent = (window.friendlyLoginError && window.friendlyLoginError(err)) || err.message;
       return;
     }
     const { error } = await client.auth.signInWithPassword({
-      email: login.email,
+      email,
       password: login.password,
     });
 
@@ -170,6 +181,40 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   document.getElementById("admin-welcome-dismiss")?.addEventListener("click", hideStaffWelcome);
+
+  const bindLoginAlt = (btnId, action, pending, success) => {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    btn.addEventListener("click", async () => {
+      const statusEl = document.getElementById("login-status");
+      const identifier = document.getElementById("email")?.value || "";
+      btn.disabled = true;
+      statusEl.className = "form-status loading";
+      statusEl.textContent = pending;
+      try {
+        await action(identifier);
+        statusEl.className = "form-status success";
+        statusEl.textContent = success;
+      } catch (err) {
+        statusEl.className = "form-status error";
+        statusEl.textContent = (window.friendlyLoginError && window.friendlyLoginError(err)) || err.message || "Could not send that email.";
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  };
+  bindLoginAlt(
+    "admin-magic-link",
+    (id) => window.requestLoginLink(id),
+    "Sending a sign-in link…",
+    "Check Gmail for the sign-in link. It opens this desk."
+  );
+  bindLoginAlt(
+    "admin-forgot-password",
+    (id) => window.requestPasswordReset(id),
+    "Sending a reset link…",
+    "Check Gmail for the reset link, then set a new password."
+  );
 
   signOutBtn.addEventListener("click", async () => {
     closeAdminMenu();
