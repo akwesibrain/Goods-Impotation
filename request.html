@@ -27,17 +27,20 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="styles.css?v=brand81">
+<link rel="stylesheet" href="styles.css?v=brand82">
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script defer src="validation.js?v=brand6"></script>
+<script defer src="validation.js?v=brand7"></script>
 <script defer src="supabase-client.js?v=brand35"></script>
-<script defer src="script.js?v=brand55"></script>
+<script defer src="script.js?v=brand56"></script>
 </head>
-<body class="has-tabbar">
+<body class="desk-home has-tabbar">
 
 <a class="skip-link" href="#main">Skip to content</a>
-<header class="site-header" style="position:relative;top:auto">
-  <div class="announce-bar">Landed quotes in GH₵ · Chat only</div>
+<header class="site-header desk-head" style="position:relative;top:auto">
+  <div class="announce-bar desk-strip">
+    <span>Mon – Sat 9.00 – 18.00 · Sunday closed</span>
+    <span>Quoted in GH₵</span>
+  </div>
   <div class="header-main container">
     <a href="index.html" class="nav-logo">
       <img src="assets/logo.png" alt="Mwinbarka Imports logo" width="36" height="36">
@@ -45,14 +48,20 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
     </a>
     <form class="site-search" action="request.html" method="get" role="search">
       <input type="search" name="q" placeholder="What do you want imported?" aria-label="Search what to import">
-      <button type="submit" class="btn btn-gold">Look up</button>
+      <button type="submit" class="btn desk-search-btn" aria-label="Search">Search</button>
     </form>
-    <a href="quote-list.html" class="quote-link">Cart <span class="quote-count" data-quote-count>0</span></a>
-    <a href="request.html" class="btn btn-gold nav-cta">Order Now</a>
+    <div class="desk-utils">
+      <a href="quote-list.html" class="quote-link">Cart <span class="quote-count" data-quote-count>0</span></a>
+      <button type="button" class="header-account" data-open-account aria-label="Account">
+        <span aria-hidden="true">👤</span>
+        <span class="header-account-label">Account</span>
+      </button>
+    </div>
     <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">☰</button>
   </div>
-  <nav class="nav container">
-          <ul class="nav-links">
+  <nav class="nav desk-nav">
+    <div class="container">
+      <ul class="nav-links">
         <li><a href="index.html">Home</a></li>
         <li><a href="about.html">About</a></li>
         <li><a href="how-it-works.html">How it works</a></li>
@@ -60,14 +69,14 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
         <li><a href="reviews.html">Reviews</a></li>
         <li><a href="faq.html">FAQ</a></li>
         <li><a href="contact.html">Contact</a></li>
-        <li class="nav-request"><a href="request.html">Order Now</a></li>
+        <li class="nav-request"><a href="request.html" class="active">Order Now</a></li>
       </ul>
+    </div>
   </nav>
 </header>
 
 <section class="page-hero" id="main">
   <div class="container">
-    <span class="eyebrow">MW–01 · New file</span>
     <h1>Tell us what to source. We’ll quote in GH₵.</h1>
     <p>Name the product, quantity, and where in Ghana it should land. You’ll see a confirmation first — then chat opens so our agent can confirm the GH₵ quote and payment.</p>
   </div>
@@ -117,36 +126,19 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
       </div>
 
       <div class="field">
-        <label for="reference_url">Listing URL <span class="optional">(optional)</span></label>
-        <input type="url" id="reference_url" name="reference_url" inputmode="url" placeholder="https://… wholesale or Alibaba listing" autocomplete="url" maxlength="2048">
-        <div class="hint">Paste a factory listing if you have one. We’ll open it and quote the landed GH₵.</div>
-        <div class="field-error" id="reference_url-error" hidden></div>
-      </div>
-
-      <div class="field-row">
-        <div class="field">
-          <label for="category">Category</label>
-          <select id="category" name="category" required>
-            <option value="">Select a category</option>
-            <option>Kitchen & Home</option>
-            <option>Clothing & Fashion</option>
-            <option>Electronics</option>
-            <option>Shoes & Bags</option>
-            <option>Beauty & Cosmetics</option>
-            <option>Auto Parts</option>
-            <option>Baby & Kids</option>
-            <option>Other</option>
-          </select>
-          <div class="field-error" id="category-error" hidden></div>
-        </div>
-        <div class="field">
-          <label for="origin">Preferred origin <span class="optional">(optional)</span></label>
-          <select id="origin" name="origin">
-            <option value="">Either — you decide</option>
-            <option value="China">China</option>
-            <option value="Turkey">Turkey</option>
-          </select>
-        </div>
+        <label for="category">Category</label>
+        <select id="category" name="category" required>
+          <option value="">Select a category</option>
+          <option>Kitchen & Home</option>
+          <option>Clothing & Fashion</option>
+          <option>Electronics</option>
+          <option>Shoes & Bags</option>
+          <option>Beauty & Cosmetics</option>
+          <option>Auto Parts</option>
+          <option>Baby & Kids</option>
+          <option>Other</option>
+        </select>
+        <div class="field-error" id="category-error" hidden></div>
       </div>
 
       <div class="field">

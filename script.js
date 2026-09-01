@@ -159,16 +159,11 @@ function prefillCategoryFromQuery(form) {
     productField.value = `Please quote sea shipping to Ghana for about ${kg} kg.`;
   }
 
-  if (q) {
+  if (q && productField && !productField.value) {
     if (looksLikeUrl(q)) {
       const url = q.startsWith("http") ? q : `https://${q}`;
-      if (form.elements.reference_url && !form.elements.reference_url.value) {
-        form.elements.reference_url.value = url;
-      }
-      if (productField && !productField.value) {
-        productField.value = "Please quote this listing.";
-      }
-    } else if (productField && !productField.value) {
+      productField.value = `Please quote this listing: ${url}`;
+    } else {
       productField.value = q;
     }
   }
@@ -195,7 +190,7 @@ function setFieldError(form, name, message) {
 }
 
 function clearFieldErrors(form) {
-  ["name", "phone", "email", "product", "category", "location", "quantity", "reference_url", "origin"].forEach((name) => {
+  ["name", "phone", "email", "product", "category", "location", "quantity"].forEach((name) => {
     setFieldError(form, name, "");
   });
 }
@@ -215,13 +210,13 @@ function readRequestForm(form) {
     request_details: details,
     product: details,
     quantity: fields.quantity ? fields.quantity.value : "",
-    reference_url: fields.reference_url ? fields.reference_url.value : "",
-    origin: fields.origin ? fields.origin.value : "",
+    reference_url: "",
+    origin: "",
   };
 }
 
 function bindRequestLiveValidation(form) {
-  const names = ["name", "phone", "email", "product", "category", "quantity", "location", "reference_url", "origin"];
+  const names = ["name", "phone", "email", "product", "category", "quantity", "location"];
   names.forEach((name) => {
     const el = form.elements[name];
     if (!el) return;
@@ -316,8 +311,6 @@ async function handleRequestSubmit(e) {
     data.email ? `Email: ${data.email}` : null,
     `Product: ${data.request_details}`,
     data.category ? `Category: ${data.category}` : null,
-    data.origin ? `Origin: ${data.origin}` : null,
-    data.reference_url ? `Listing: ${data.reference_url}` : null,
     data.location ? `Location: ${data.location}` : null,
     data.quantity ? `Quantity: ${data.quantity}` : null,
     data.photo_url ? `Photo: ${data.photo_url}` : null,

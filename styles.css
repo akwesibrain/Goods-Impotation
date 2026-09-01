@@ -4509,6 +4509,14 @@ body.desk-home {
   color: var(--white);
 }
 .desk-home .section-alt { background: #F3F5F8; }
+.desk-home .form-card {
+  background: var(--white);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-sm);
+}
+.desk-home .process-list {
+  color: var(--ink-500);
+}
 .desk-home .panel {
   background: var(--white);
   color: var(--ink-700);

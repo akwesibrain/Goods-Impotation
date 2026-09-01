@@ -84,8 +84,8 @@
       category: sanitize(raw.category),
       quantity: sanitize(raw.quantity).slice(0, 80),
       location: sanitize(raw.location).slice(0, 200),
-      reference_url: raw.reference_url ? sanitizeUrl(raw.reference_url) : "",
-      origin: sanitize(raw.origin),
+      reference_url: "",
+      origin: "",
       photo_url: sanitize(raw.photo_url || "").slice(0, 2048),
     };
     const errors = {};
@@ -102,10 +102,6 @@
     if (!CATEGORIES.includes(data.category)) errors.category = "Select a category.";
     if (!data.quantity) errors.quantity = "Enter a quantity.";
     if (data.location.length < 2) errors.location = "Enter a delivery location in Ghana.";
-    if (raw.reference_url && String(raw.reference_url).trim() && !data.reference_url) {
-      errors.reference_url = "Paste a wholesale http(s) link, or leave this blank.";
-    }
-    if (data.origin && !ORIGINS.includes(data.origin)) errors.origin = "Pick China, Turkey, or leave blank.";
     return { ok: Object.keys(errors).length === 0, data, errors };
   }
 
