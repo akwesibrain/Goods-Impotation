@@ -4139,8 +4139,14 @@ body.desk-home {
   border-color: var(--line);
   background: var(--white);
 }
-.desk-home .quote-link:hover {
-  border-color: var(--gold-500);
+.desk-home .quote-link[aria-current="page"] {
+  border-color: var(--navy-800);
+  background: var(--navy-800);
+  color: var(--white);
+}
+.desk-home .quote-link[aria-current="page"] .quote-count,
+.desk-home .quote-link[aria-current="page"] [data-quote-count] {
+  background: var(--gold-500);
   color: var(--navy-900);
 }
 .desk-home .header-account {
@@ -4507,6 +4513,13 @@ body.desk-home {
   background: var(--white);
   color: var(--ink-700);
   border: 1px solid var(--line);
+  box-shadow: var(--shadow-sm);
+}
+.desk-home #quote-list-body {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 1.1rem 1.2rem 1.3rem;
   box-shadow: var(--shadow-sm);
 }
 .desk-home .panel h3 { color: var(--navy-800); font-family: var(--font-body); }

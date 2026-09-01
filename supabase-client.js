@@ -171,12 +171,12 @@ window.continueAfterCustomerAuth = function () {
 
 window.resolveLoginEmail = async function (identifier) {
   const raw = String(identifier || "").trim();
-  if (!raw) throw new Error("Enter your email or Ghana number.");
+  if (!raw) throw new Error("Enter your email or phone.");
   if (raw.includes("@")) return raw.toLowerCase();
   if (!supabaseClient) throw new Error("Account service is not connected yet.");
   const { data, error } = await supabaseClient.rpc("login_email_for_identifier", { p_id: raw });
   if (error) throw new Error("Could not check that number. Try your email.");
-  if (!data) throw new Error("No account uses that Ghana number. Try your email.");
+  if (!data) throw new Error("No account uses that phone. Try your email.");
   return String(data).toLowerCase();
 };
 

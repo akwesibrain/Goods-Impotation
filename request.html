@@ -27,10 +27,10 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="styles.css?v=brand79">
+<link rel="stylesheet" href="styles.css?v=brand80">
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script defer src="validation.js?v=brand4"></script>
-<script defer src="supabase-client.js?v=brand34"></script>
+<script defer src="validation.js?v=brand5"></script>
+<script defer src="supabase-client.js?v=brand35"></script>
 <script defer src="script.js?v=brand53"></script>
 </head>
 <body class="has-tabbar">
@@ -106,8 +106,8 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
       </div>
 
       <div class="field">
-        <label for="email">Email address</label>
-        <input type="email" id="email" name="email" required autocomplete="email" placeholder="you@email.com" maxlength="254">
+        <label for="email">Email or phone</label>
+        <input type="text" id="email" name="email" autocomplete="email" inputmode="email" spellcheck="false" maxlength="254">
         <div class="field-error" id="email-error" hidden></div>
       </div>
       </fieldset>

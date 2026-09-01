@@ -93,8 +93,11 @@
     else if (!isPersonName(data.name)) errors.name = "Use letters, spaces, hyphens, or apostrophes only.";
     if (!data.phone) errors.phone = "Enter a Ghana phone number.";
     else if (!isGhanaPhone(data.phone)) errors.phone = "Enter a Ghana number (e.g. 024 123 4567 or +233 24 123 4567).";
-    if (!data.email) errors.email = "Enter your email address.";
-    else if (!isEmail(data.email)) errors.email = "Enter a valid email address.";
+    const emailOrPhone = asString(raw.email).trim();
+    if (!emailOrPhone) errors.email = "Enter your email or phone.";
+    else if (isEmail(emailOrPhone)) data.email = sanitizeEmail(emailOrPhone).slice(0, 254);
+    else if (isGhanaPhone(emailOrPhone)) data.email = "";
+    else errors.email = "Enter your email or phone.";
     if (data.request_details.length < 10) errors.product = "Describe what you want imported (at least 10 characters).";
     if (!CATEGORIES.includes(data.category)) errors.category = "Select a category.";
     if (!data.quantity) errors.quantity = "Enter a quantity.";
@@ -147,7 +150,7 @@
     };
     const errors = {};
     if (!isEmail(data.email) && !isGhanaPhone(data.email)) {
-      errors.email = "Enter your email or a Ghana phone number.";
+      errors.email = "Enter your email or phone.";
     }
     if (!data.password) errors.password = "Enter your password.";
     return { ok: Object.keys(errors).length === 0, data, errors };
