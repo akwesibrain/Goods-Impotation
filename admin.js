@@ -1101,7 +1101,7 @@ async function loadSettings(client) {
   const { data, error } = await client.from("site_settings").select("*").eq("id", 1).maybeSingle();
   if (error || !data) return;
   const form = document.getElementById("settings-form");
-  ["whatsapp_channel_url", "whatsapp_url", "facebook_url", "instagram_url", "tiktok_url"].forEach((key) => {
+  ["support_phone", "support_email", "whatsapp_channel_url", "whatsapp_url", "facebook_url", "instagram_url", "tiktok_url"].forEach((key) => {
     if (form.elements[key]) form.elements[key].value = data[key] || "";
   });
 }
@@ -1304,6 +1304,8 @@ async function handleSettingsSubmit(e, client) {
 
   try {
     const { error } = await client.from("site_settings").update({
+      support_phone: form.elements.support_phone.value.trim() || null,
+      support_email: form.elements.support_email.value.trim().toLowerCase() || null,
       whatsapp_channel_url: form.elements.whatsapp_channel_url.value.trim() || null,
       whatsapp_url: form.elements.whatsapp_url.value.trim() || null,
       facebook_url: form.elements.facebook_url.value.trim() || null,
@@ -1315,7 +1317,7 @@ async function handleSettingsSubmit(e, client) {
     if (error) throw error;
 
     statusEl.className = "form-status success";
-    statusEl.textContent = "Settings saved. The website will use these links.";
+    statusEl.textContent = "Settings saved. The website will use this phone, email, and these links.";
   } catch (err) {
     statusEl.className = "form-status error";
     statusEl.textContent = err.message || "Couldn't save settings.";

@@ -22,8 +22,8 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script defer src="validation.js?v=brand5"></script>
 <script defer src="supabase-client.js?v=brand35"></script>
-<script defer src="script.js?v=brand53"></script>
-<script defer src="admin.js?v=brand43"></script>
+<script defer src="script.js?v=brand54"></script>
+<script defer src="admin.js?v=brand44"></script>
 </head>
 <body id="admin-page" class="admin-app">
 
@@ -574,6 +574,21 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
         </form>
 
         <form id="settings-form" class="form-card admin-form" novalidate>
+          <span class="eyebrow">Get support</span>
+          <h2>Phone and email on the website</h2>
+          <p class="form-note">These show only in the Get support column at the bottom of the site. Change them here — you do not need to edit the website files.</p>
+
+          <div class="field">
+            <label for="support_phone">Business phone</label>
+            <input type="tel" id="support_phone" name="support_phone" autocomplete="tel" placeholder="054 030 9637">
+            <div class="hint">Ghana number. This is the only place the number is printed on the public site.</div>
+          </div>
+
+          <div class="field">
+            <label for="support_email">Business email</label>
+            <input type="email" id="support_email" name="support_email" autocomplete="email" placeholder="you@email.com">
+          </div>
+
           <span class="eyebrow">WhatsApp group</span>
           <h2>Group invite and social links</h2>
           <p class="form-note">Paste the WhatsApp group invite. The gold floating button on the website will open this link so visitors can join the group.</p>

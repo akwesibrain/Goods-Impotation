@@ -1163,6 +1163,44 @@ async function renderItemPage(client) {
   observeReveals(root);
 }
 
+function ghanaWaDigits(phone) {
+  let digits = String(phone || "").replace(/\D/g, "");
+  if (digits.startsWith("00")) digits = digits.slice(2);
+  if (digits.startsWith("0") && digits.length === 10) digits = "233" + digits.slice(1);
+  else if (digits.length === 9) digits = "233" + digits;
+  return digits || WA_NUMBER;
+}
+
+function formatSupportPhone(raw) {
+  const trimmed = String(raw || "").trim() || "054 030 9637";
+  const intl = ghanaWaDigits(trimmed);
+  let local = intl;
+  if (local.startsWith("233") && local.length >= 12) local = "0" + local.slice(3);
+  const display = /^0\d{9}$/.test(local)
+    ? `${local.slice(0, 3)} ${local.slice(3, 6)} ${local.slice(6)}`
+    : trimmed;
+  return { display, wa: intl };
+}
+
+function applySupportFooter(settings) {
+  const phone = formatSupportPhone(settings && settings.support_phone);
+  const email = String((settings && settings.support_email) || "").trim();
+  document.querySelectorAll("[data-support-phone]").forEach((el) => {
+    el.textContent = phone.display;
+    if (el.tagName === "A") el.href = `https://wa.me/${phone.wa}`;
+  });
+  document.querySelectorAll("[data-support-email]").forEach((el) => {
+    const row = el.closest("li") || el;
+    if (!email) {
+      row.hidden = true;
+      return;
+    }
+    row.hidden = false;
+    el.textContent = email;
+    if (el.tagName === "A") el.href = `mailto:${email}`;
+  });
+}
+
 function applyGroupButton(settings) {
   const url = String((settings && (settings.whatsapp_channel_url || settings.whatsapp_group_url)) || "").trim();
   document.querySelectorAll(".wa-float, [data-group-join]").forEach((btn) => {
@@ -1221,6 +1259,7 @@ async function applyPublicSite() {
     .maybeSingle();
 
   if (data) {
+    applySupportFooter(data);
     applyGroupButton(data);
     applySocialLinks(data);
   }

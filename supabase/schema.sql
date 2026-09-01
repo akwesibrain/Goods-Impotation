@@ -210,12 +210,24 @@ create table if not exists public.site_settings (
   instagram_url         text,
   tiktok_url            text,
   advert_video_url      text,
+  support_phone         text,
+  support_email         text,
   updated_at            timestamptz not null default now()
 );
 
 insert into public.site_settings (id)
 values (1)
 on conflict (id) do nothing;
+
+alter table public.site_settings
+  add column if not exists support_phone text,
+  add column if not exists support_email text;
+
+update public.site_settings
+set
+  support_phone = coalesce(nullif(btrim(support_phone), ''), '054 030 9637'),
+  support_email = coalesce(nullif(btrim(support_email), ''), 'amponsahbrain2007@gmail.com')
+where id = 1;
 
 alter table public.site_settings enable row level security;
 
