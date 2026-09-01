@@ -90,7 +90,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   applyPublicSite().then(() => observeReveals(document));
-  mountAnnounceBar();
+
   mountSiteSearch();
   mountFeatureNav();
   enhanceSearch();
@@ -522,17 +522,6 @@ function showStatus(el, type, msg, waUrl) {
     el.appendChild(document.createElement("br"));
     el.appendChild(link);
   }
-}
-
-function mountAnnounceBar() {
-  if (document.body && document.body.id === "admin-page") return;
-  if (document.querySelector(".announce-bar")) return;
-  const bar = document.createElement("div");
-  bar.className = "announce-bar";
-  bar.textContent = "Quotes in GH₵ · Typical reply within 24 hours · China & Turkey → Ghana";
-  const header = document.querySelector(".site-header");
-  if (header) header.insertBefore(bar, header.firstChild);
-  else document.body.insertBefore(bar, document.body.firstChild);
 }
 
 function looksLikeUrl(value) {
@@ -2034,36 +2023,6 @@ async function mountAccountPage() {
       }
     });
 
-    const bindAccountLoginAlt = (btnId, action, pending, success) => {
-      const btn = document.getElementById(btnId);
-      if (!btn) return;
-      btn.addEventListener("click", async () => {
-        const status = document.getElementById("login-status");
-        const identifier = loginForm.elements.email.value;
-        btn.disabled = true;
-        showStatus(status, "loading", pending);
-        try {
-          await action(identifier);
-          showStatus(status, "success", success);
-        } catch (err) {
-          showStatus(status, "error", (window.friendlyLoginError && window.friendlyLoginError(err)) || err.message || "Could not send that email.");
-        } finally {
-          btn.disabled = false;
-        }
-      });
-    };
-    bindAccountLoginAlt(
-      "account-magic-link",
-      (id) => window.requestLoginLink(id),
-      "Sending a sign-in link…",
-      "Check Gmail for the sign-in link."
-    );
-    bindAccountLoginAlt(
-      "account-forgot-password",
-      (id) => window.requestPasswordReset(id),
-      "Sending a reset link…",
-      "Check Gmail for the reset link, then set a new password."
-    );
   }
 
   const signupForm = document.getElementById("account-signup-form");
