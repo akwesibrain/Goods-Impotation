@@ -27,17 +27,20 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="styles.css?v=brand77">
+<link rel="stylesheet" href="styles.css?v=brand79">
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script defer src="validation.js?v=brand4"></script>
 <script defer src="supabase-client.js?v=brand34"></script>
-<script defer src="script.js?v=brand52"></script>
+<script defer src="script.js?v=brand53"></script>
 </head>
-<body class="has-tabbar">
+<body class="desk-home has-tabbar">
 
 <a class="skip-link" href="#main">Skip to content</a>
-<header class="site-header" style="position:relative;top:auto">
-  <div class="announce-bar">Accra desk · Landed quotes in GH₵ · Official line only</div>
+<header class="site-header desk-head" style="position:relative;top:auto">
+  <div class="announce-bar desk-strip">
+    <span>Mon – Sat 9.00 – 18.00 · Sunday closed</span>
+    <span>Official line only</span>
+  </div>
   <div class="header-main container">
     <a href="index.html" class="nav-logo">
       <img src="assets/logo.png" alt="Mwinbarka Imports logo" width="36" height="36">
@@ -45,14 +48,20 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
     </a>
     <form class="site-search" action="request.html" method="get" role="search">
       <input type="search" name="q" placeholder="What do you want imported?" aria-label="Search what to import">
-      <button type="submit" class="btn btn-gold">Look up</button>
+      <button type="submit" class="btn desk-search-btn" aria-label="Search">Search</button>
     </form>
-    <a href="quote-list.html" class="quote-link">Cart <span class="quote-count" data-quote-count>0</span></a>
-    <a href="request.html" class="btn btn-gold nav-cta">Order Now</a>
+    <div class="desk-utils">
+      <a href="quote-list.html" class="quote-link">Cart <span class="quote-count" data-quote-count>0</span></a>
+      <button type="button" class="header-account" data-open-account aria-label="Account">
+        <span aria-hidden="true">👤</span>
+        <span class="header-account-label">Account</span>
+      </button>
+    </div>
     <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">☰</button>
   </div>
-  <nav class="nav container">
-          <ul class="nav-links">
+  <nav class="nav desk-nav">
+    <div class="container">
+      <ul class="nav-links">
         <li><a href="index.html">Home</a></li>
         <li><a href="about.html">About</a></li>
         <li><a href="how-it-works.html" class="active">How it works</a></li>
@@ -62,6 +71,7 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
         <li><a href="contact.html">Contact</a></li>
         <li class="nav-request"><a href="request.html">Order Now</a></li>
       </ul>
+    </div>
   </nav>
 </header>
 

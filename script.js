@@ -1739,10 +1739,10 @@ function paintAccountDashboard(rows) {
   setText("pill-confirmed", String(counts.Confirmed));
 
   const mix = [
-    ["New", counts.New, "#8ec5ff"],
-    ["Contacted", counts.Contacted, "#5aa6ff"],
-    ["Quoted", counts.Quoted, "#3b82f6"],
-    ["Confirmed", counts.Confirmed, "#1d4ed8"],
+    ["New", counts.New, "#DCC56A"],
+    ["Contacted", counts.Contacted, "#C9A227"],
+    ["Quoted", counts.Quoted, "#23487A"],
+    ["Confirmed", counts.Confirmed, "#0A1F44"],
   ];
   document.querySelectorAll(".udash-ring").forEach((ring, i) => {
     const count = mix[i] ? mix[i][1] : 0;
