@@ -82,7 +82,11 @@ drop policy if exists "Users can update own profile" on public.profiles;
 create policy "Users can update own profile"
   on public.profiles for update to authenticated
   using (id = auth.uid())
-  with check (id = auth.uid());
+  with check (
+    id = auth.uid()
+    and is_staff is not distinct from (select p.is_staff from public.profiles p where p.id = auth.uid())
+    and staff_role is not distinct from (select p.staff_role from public.profiles p where p.id = auth.uid())
+  );
 
 revoke update on table public.profiles from anon, authenticated;
 grant select, insert on table public.profiles to authenticated;
@@ -303,9 +307,12 @@ create policy "Staff can delete reviews"
 -- Public can read; only a signed-in admin can upload.
 -- ============================================================
 
-insert into storage.buckets (id, name, public)
-values ('media', 'media', true)
-on conflict (id) do update set public = true;
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('media', 'media', true, 5242880, array['image/jpeg', 'image/png', 'image/webp'])
+on conflict (id) do update
+  set public = true,
+      file_size_limit = 5242880,
+      allowed_mime_types = array['image/jpeg', 'image/png', 'image/webp'];
 
 drop policy if exists "Public can read media" on storage.objects;
 create policy "Public can read media"
@@ -344,6 +351,7 @@ create policy "Anyone can upload request photos"
   with check (
     bucket_id = 'media'
     and name like 'requests/%'
+    and coalesce(storage.extension(name), '') in ('jpg', 'jpeg', 'png', 'webp')
   );
 
 -- ============================================================
@@ -548,7 +556,35 @@ $$;
 revoke all on function private.is_owner() from public;
 grant execute on function private.is_owner() to anon, authenticated;
 
-grant update (is_staff, staff_role) on table public.profiles to authenticated;
+-- Privilege columns are never updatable by browser roles. Owners use set_staff_role().
+revoke update (is_staff, staff_role) on table public.profiles from authenticated, anon, public;
+
+create or replace function public.set_staff_role(target_id uuid, make_staff boolean, new_role text default 'assistant')
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not private.is_owner() then
+    raise exception 'Only owners can change staff roles';
+  end if;
+  if target_id is null then
+    raise exception 'Missing profile';
+  end if;
+  if new_role is null or new_role not in ('owner', 'assistant') then
+    raise exception 'Invalid staff role';
+  end if;
+  update public.profiles
+  set is_staff = make_staff,
+      staff_role = case when make_staff then new_role else 'assistant' end,
+      updated_at = now()
+  where id = target_id;
+end;
+$$;
+
+revoke all on function public.set_staff_role(uuid, boolean, text) from public;
+grant execute on function public.set_staff_role(uuid, boolean, text) to authenticated;
 
 alter table public.profiles
   add column if not exists email text not null default '',
@@ -571,7 +607,7 @@ alter table public.profiles add constraint profiles_preferred_origin_check
 
 grant update (
   full_name, phone, email, company_name, whatsapp, region, city, address, landmark,
-  preferred_origin, desk_notes, notify_sms, notify_whatsapp, notify_email, updated_at
+  preferred_origin, notify_sms, notify_whatsapp, notify_email, updated_at
 ) on table public.profiles to authenticated;
 
 drop policy if exists "Owners can manage staff profiles" on public.profiles;
@@ -1007,4 +1043,7 @@ end;
 $$;
 
 revoke all on function public.login_email_for_identifier(text) from public;
-grant execute on function public.login_email_for_identifier(text) to anon, authenticated;
+-- Browser roles must not resolve phone → email (account oracle).
+-- Edge Function auth-with-identifier uses service_role instead.
+revoke all on function public.login_email_for_identifier(text) from anon, authenticated;
+grant execute on function public.login_email_for_identifier(text) to service_role;

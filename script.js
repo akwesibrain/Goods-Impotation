@@ -928,6 +928,11 @@ function setupPhotoPreview(form) {
       input.value = "";
       return;
     }
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      showToast("Use a JPG, PNG, or WebP photo.");
+      input.value = "";
+      return;
+    }
     const img = document.createElement("img");
     img.src = URL.createObjectURL(file);
     img.alt = "Photo preview";
@@ -938,10 +943,13 @@ function setupPhotoPreview(form) {
 async function uploadRequestPhoto(file) {
   const client = window.getSupabaseClient && window.getSupabaseClient();
   if (!client) return "";
-  const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+  const allowed = ["image/jpeg", "image/png", "image/webp"];
+  if (!allowed.includes(file.type)) throw new Error("Use a JPG, PNG, or WebP photo.");
+  if (file.size > 5 * 1024 * 1024) throw new Error("Please choose a photo under 5 MB");
+  const ext = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
   const path = `requests/${(crypto.randomUUID && crypto.randomUUID()) || Date.now()}.${ext}`;
   const { error } = await client.storage.from("media").upload(path, file, {
-    contentType: file.type || "image/jpeg",
+    contentType: file.type,
     upsert: false,
   });
   if (error) throw error;
@@ -1194,8 +1202,20 @@ function applySupportFooter(settings) {
   });
 }
 
+function safeHttpsUrl(raw) {
+  const url = String(raw || "").trim();
+  if (!url) return "";
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "https:") return "";
+    return parsed.toString();
+  } catch (_) {
+    return "";
+  }
+}
+
 function applyGroupButton(settings) {
-  const url = String((settings && (settings.whatsapp_channel_url || settings.whatsapp_group_url)) || "").trim();
+  const url = safeHttpsUrl((settings && (settings.whatsapp_channel_url || settings.whatsapp_group_url)) || "");
   document.querySelectorAll(".wa-float, [data-group-join]").forEach((btn) => {
     if (btn.classList.contains("wa-float")) {
       btn.setAttribute("aria-label", "Join the group");
@@ -1207,11 +1227,11 @@ function applyGroupButton(settings) {
 
 function applySocialLinks(settings) {
   const items = [
-    ["Facebook", settings.facebook_url],
-    ["Instagram", settings.instagram_url],
-    ["Chat", settings.whatsapp_url || settings.whatsapp_channel_url],
-    ["TikTok", settings.tiktok_url],
-  ].filter(([, url]) => url && String(url).trim());
+    ["Facebook", safeHttpsUrl(settings.facebook_url)],
+    ["Instagram", safeHttpsUrl(settings.instagram_url)],
+    ["Chat", safeHttpsUrl(settings.whatsapp_url || settings.whatsapp_channel_url)],
+    ["TikTok", safeHttpsUrl(settings.tiktok_url)],
+  ].filter(([, url]) => url);
 
   if (!items.length) return;
 

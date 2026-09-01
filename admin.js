@@ -150,7 +150,16 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     let email = login.email;
     try {
-      if (window.resolveLoginEmail) email = await window.resolveLoginEmail(login.email);
+      if (window.signInWithIdentifier) {
+        await window.signInWithIdentifier(login);
+      } else {
+        if (window.resolveLoginEmail) email = await window.resolveLoginEmail(login.email);
+        const { error } = await client.auth.signInWithPassword({
+          email,
+          password: login.password,
+        });
+        if (error) throw error;
+      }
     } catch (err) {
       btn.disabled = false;
       btn.classList.remove("is-loading");
@@ -159,21 +168,12 @@ document.addEventListener("DOMContentLoaded", () => {
       statusEl.textContent = (window.friendlyLoginError && window.friendlyLoginError(err)) || err.message;
       return;
     }
-    const { error } = await client.auth.signInWithPassword({
-      email,
-      password: login.password,
-    });
 
     btn.disabled = false;
     btn.classList.remove("is-loading");
     btn.removeAttribute("aria-busy");
 
-    if (error) {
-      statusEl.className = "form-status error";
-      statusEl.textContent = (window.friendlyLoginError && window.friendlyLoginError(error)) || error.message;
-      return;
-    }
-    if (typeof window.rememberStaffPassword === "function") window.rememberStaffPassword(login.password);
+    if (typeof window.clearStaffPassword === "function") window.clearStaffPassword();
     if (typeof window.markStaffWelcome === "function") window.markStaffWelcome();
     statusEl.className = "form-status";
     statusEl.textContent = "";
@@ -786,10 +786,17 @@ function escapeAttr(value) {
 }
 
 async function uploadMedia(client, file, folder) {
-  const safeName = file.name.replace(/[^\w.\-]+/g, "-");
-  const path = `${folder}/${Date.now()}-${safeName}`;
+  const allowed = ["image/jpeg", "image/png", "image/webp"];
+  if (!allowed.includes(file.type)) {
+    throw new Error("Use a JPG, PNG, or WebP image.");
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    throw new Error("Keep images under 5 MB.");
+  }
+  const ext = (file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg");
+  const path = `${folder}/${Date.now()}-${(crypto.randomUUID && crypto.randomUUID()) || "img"}.${ext}`;
   const { error } = await client.storage.from("media").upload(path, file, {
-    contentType: file.type || undefined,
+    contentType: file.type,
     upsert: false,
   });
   if (error) throw error;
@@ -1139,15 +1146,12 @@ function fillStaffLogin(profile) {
   if (phoneEl && !phoneEl.matches(":focus")) phoneEl.value = phone;
   const pwEl = document.getElementById("staff-detail-password");
   const hint = document.getElementById("staff-password-hint");
-  const saved = window.readStaffPassword ? window.readStaffPassword() : "";
   if (pwEl) {
-    pwEl.value = saved;
-    pwEl.placeholder = saved ? "" : "Hidden until you sign in this session";
+    pwEl.value = "";
+    pwEl.placeholder = "Passwords are never shown here";
   }
   if (hint) {
-    hint.textContent = saved
-      ? "Tap the eye to show it. It stays on this device until you close the tab or log out."
-      : "Sign in once this session to show the password here. You can still set a new one below.";
+    hint.textContent = "For security, this desk never stores or displays your password. Use Change password below.";
   }
 }
 
@@ -1302,15 +1306,28 @@ async function handleSettingsSubmit(e, client) {
   const btn = form.querySelector('button[type="submit"]');
   btn.disabled = true;
 
+  const httpsOrEmpty = (value, label) => {
+    const raw = String(value || "").trim();
+    if (!raw) return null;
+    try {
+      const u = new URL(raw);
+      if (u.protocol !== "https:") throw new Error(label + " must start with https://");
+      return u.toString();
+    } catch (err) {
+      if (String(err.message || "").includes("must start")) throw err;
+      throw new Error(label + " must be a valid https:// link");
+    }
+  };
+
   try {
     const { error } = await client.from("site_settings").update({
       support_phone: form.elements.support_phone.value.trim() || null,
       support_email: form.elements.support_email.value.trim().toLowerCase() || null,
-      whatsapp_channel_url: form.elements.whatsapp_channel_url.value.trim() || null,
-      whatsapp_url: form.elements.whatsapp_url.value.trim() || null,
-      facebook_url: form.elements.facebook_url.value.trim() || null,
-      instagram_url: form.elements.instagram_url.value.trim() || null,
-      tiktok_url: form.elements.tiktok_url.value.trim() || null,
+      whatsapp_channel_url: httpsOrEmpty(form.elements.whatsapp_channel_url.value, "Group invite"),
+      whatsapp_url: httpsOrEmpty(form.elements.whatsapp_url.value, "WhatsApp link"),
+      facebook_url: httpsOrEmpty(form.elements.facebook_url.value, "Facebook link"),
+      instagram_url: httpsOrEmpty(form.elements.instagram_url.value, "Instagram link"),
+      tiktok_url: httpsOrEmpty(form.elements.tiktok_url.value, "TikTok link"),
       advert_video_url: null,
       updated_at: new Date().toISOString(),
     }).eq("id", 1);

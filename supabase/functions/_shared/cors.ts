@@ -7,6 +7,7 @@ export function isAllowedOrigin(origin: string): boolean {
     if (LOCAL_HOSTS.has(url.hostname)) return true;
     if (url.protocol !== "https:") return false;
     if (url.hostname === "goods-impotation.vercel.app") return true;
+    if (url.hostname.endsWith(".netlify.app")) return true;
     return /^goods-impotation[-.].+\.vercel\.app$/.test(url.hostname);
   } catch {
     return false;
