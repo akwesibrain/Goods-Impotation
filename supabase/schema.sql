@@ -197,8 +197,9 @@ create policy "Staff can delete products"
 
 -- ============================================================
 -- Site settings — one row. Channel link and social URLs.
--- The public site reads this so the floating button and video gate
+-- The public site reads this so the floating group button and video gate
 -- pick up whatever the admin pasted in.
+-- whatsapp_channel_url holds the WhatsApp group invite (chat.whatsapp.com/...).
 -- ============================================================
 
 create table if not exists public.site_settings (

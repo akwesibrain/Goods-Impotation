@@ -679,11 +679,7 @@ function mountCatalogSearch() {
 }
 
 function polishPublicChrome() {
-  document.querySelectorAll(".wa-float").forEach((el) => {
-    if (el.getAttribute("aria-label") === "Join our channel") {
-      el.setAttribute("aria-label", "Chat with the desk");
-    }
-  });
+  applyGroupButton(null);
 }
 
 function unstickPublicHeader() {
@@ -1167,14 +1163,15 @@ async function renderItemPage(client) {
   observeReveals(root);
 }
 
-function applyChannelButton(settings) {
-  const btn = document.querySelector(".wa-float");
-  if (!btn) return;
-  const channel = (settings.whatsapp_channel_url || "").trim();
-  if (!channel) return;
-  btn.href = channel;
-  btn.setAttribute("aria-label", "Join our channel");
-  btn.title = "Join our channel";
+function applyGroupButton(settings) {
+  const url = String((settings && (settings.whatsapp_channel_url || settings.whatsapp_group_url)) || "").trim();
+  document.querySelectorAll(".wa-float, [data-group-join]").forEach((btn) => {
+    if (btn.classList.contains("wa-float")) {
+      btn.setAttribute("aria-label", "Join the group");
+      btn.title = "Join the group";
+    }
+    if (url) btn.href = url;
+  });
 }
 
 function applySocialLinks(settings) {
@@ -1224,7 +1221,7 @@ async function applyPublicSite() {
     .maybeSingle();
 
   if (data) {
-    applyChannelButton(data);
+    applyGroupButton(data);
     applySocialLinks(data);
   }
 

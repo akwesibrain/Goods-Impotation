@@ -880,7 +880,13 @@ header.site-header.tf-head {
 
 @media (max-width: 860px) {
   .has-tabbar { padding-bottom: 4.5rem; }
-  .has-tabbar .wa-float { display: none; }
+  .has-tabbar .wa-float {
+    display: flex;
+    bottom: calc(4.6rem + env(safe-area-inset-bottom));
+    z-index: 66;
+  }
+  .item-page.has-tabbar .wa-float,
+  .has-tabbar:has(.request-sticky) .wa-float { display: none; }
   .has-tabbar .quote-link { display: none; }
   .header-phone,
   .header-account { display: inline-flex; }
