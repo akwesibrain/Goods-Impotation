@@ -862,7 +862,7 @@ function renderQuoteListPage() {
   if (!wrap) return;
   const items = getQuoteList();
   if (!items.length) {
-    wrap.innerHTML = `<p class="empty-note">Your cart is empty. Use Add to cart on Products, then send the list — we confirm the landed GH₵ on the official line.</p>
+    wrap.innerHTML = `<p class="empty-note">Your cart is empty. Use Add to cart on Products, then send the list — we confirm the landed GH₵ on chat.</p>
       <a class="btn btn-gold" href="categories.html">Browse products</a>`;
     return;
   }
@@ -1131,8 +1131,8 @@ async function renderItemPage(client) {
     </section>
     <section class="item-block">
       <h2>Sourcing agent</h2>
-      <p><strong>Mwinbarka Imports</strong> — Accra, Ghana</p>
-      <p class="muted">Direct source from China and Turkey. Quotes and payment terms stay on the official line.</p>
+      <p><strong>Mwinbarka Imports</strong> — Ghana</p>
+      <p class="muted">Direct source from China and Turkey. Quotes and payment terms stay on chat.</p>
       <a class="btn btn-outline-dark" href="https://wa.me/${WA_NUMBER}" target="_blank" rel="noopener">Open official chat</a>
     </section>
     <section class="item-block">
@@ -1271,11 +1271,11 @@ async function applyPublicSite() {
 }
 
 const FALLBACK_REVIEWS = [
-  { author_name: "Ama", location: "Accra", rating: 5, quote: "Very good service. My things came exactly as I ordered. Will definitely order again." },
+  { author_name: "Ama", location: "Tema", rating: 5, quote: "Very good service. My things came exactly as I ordered. Will definitely order again." },
   { author_name: "Kofi", location: "Kumasi", rating: 5, quote: "I was a bit worried at first but everything went well. My items arrived safely." },
   { author_name: "Efua", location: "Takoradi", rating: 5, quote: "The communication was good and they kept me updated. Delivery was also smooth." },
   { author_name: "Yakubu", location: "Tamale", rating: 5, quote: "I got exactly what I ordered. The price was also reasonable." },
-  { author_name: "Adwoa", location: "Accra", rating: 5, quote: "Second time ordering from them and so far so good. No complaints." },
+  { author_name: "Adwoa", location: "Kumasi", rating: 5, quote: "Second time ordering from them and so far so good. No complaints." },
 ];
 
 function starText(rating) {
@@ -1384,7 +1384,7 @@ async function bindReviewForm(client) {
     }
     const { author_name, quote, location, rating } = parsed.data;
     if (!client) {
-      showStatus(statusEl, "error", "Reviews are not connected yet. Write the desk on the official line.");
+      showStatus(statusEl, "error", "Reviews are not connected yet. Write the desk on chat.");
       return;
     }
     btn.disabled = true;
@@ -1644,7 +1644,8 @@ async function prefillRequestFromAccount() {
     form.elements.email.value = profile.email;
   }
   if (form.elements.location && !form.elements.location.value) {
-    const place = [profile.city, profile.region].filter(Boolean).join(", ");
+    const regionLabel = profile.region === "Greater Accra" ? "Capital region" : profile.region;
+    const place = [profile.city, regionLabel].filter(Boolean).join(", ");
     if (place) form.elements.location.value = place;
   }
 }
@@ -2233,6 +2234,13 @@ function cleanPublicBlurb(text) {
   return String(text || "")
     .replace(/\s*Starting GH₵ is factory wholesale plus GH₵50(; Accra confirms the landed quote)?(\. Accra confirms the landed quote on the official line)?\.?/gi, "")
     .replace(/\s*starting GH₵ \(factory wholesale \+ GH₵50\)[^.]*\.?/gi, "")
+    .replace(/Ask the Accra desk/gi, "Ask the desk")
+    .replace(/Ask Accra/gi, "Ask the desk")
+    .replace(/Accra quotes/gi, "The desk quotes")
+    .replace(/Accra types/gi, "Staff type")
+    .replace(/Accra confirms/gi, "The desk confirms")
+    .replace(/for Accra homes/gi, "for Ghana homes")
+    .replace(/\bAccra\b/gi, "the desk")
     .replace(/\s+/g, " ")
     .trim();
 }

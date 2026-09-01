@@ -27,17 +27,17 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="styles.css?v=brand80">
+<link rel="stylesheet" href="styles.css?v=brand81">
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script defer src="validation.js?v=brand5"></script>
+<script defer src="validation.js?v=brand6"></script>
 <script defer src="supabase-client.js?v=brand35"></script>
-<script defer src="script.js?v=brand54"></script>
+<script defer src="script.js?v=brand55"></script>
 </head>
 <body class="has-tabbar">
 
 <a class="skip-link" href="#main">Skip to content</a>
 <header class="site-header" style="position:relative;top:auto">
-  <div class="announce-bar">Accra desk · Landed quotes in GH₵ · Official line only</div>
+  <div class="announce-bar">Landed quotes in GH₵ · Chat only</div>
   <div class="header-main container">
     <a href="index.html" class="nav-logo">
       <img src="assets/logo.png" alt="Mwinbarka Imports logo" width="36" height="36">
@@ -68,12 +68,8 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
 <section class="page-hero" id="main">
   <div class="container">
     <span class="eyebrow">MW–01 · New file</span>
-    <h1>Start your order. We’ll price the lane.</h1>
-    <p>Name the product, quantity, and where in Ghana it should land. You’ll see a confirmation first — then the official chat opens so our agent can confirm the GH₵ quote and payment.</p>
-    <div class="page-hero-actions">
-      <a href="#request-form" class="btn btn-gold">Start Your Order</a>
-      <a href="how-it-works.html" class="btn btn-outline">How It Works</a>
-    </div>
+    <h1>Tell us what to source. We’ll quote in GH₵.</h1>
+    <p>Name the product, quantity, and where in Ghana it should land. You’ll see a confirmation first — then chat opens so our agent can confirm the GH₵ quote and payment.</p>
   </div>
 </section>
 
@@ -82,7 +78,7 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
     <ol class="process-list">
       <li>Tell us the product — name, category, photo, and quantity.</li>
       <li>You’ll see “Order received” first. Then the official chat opens.</li>
-      <li>Our agent confirms the GH₵ price and payment details on the official line.</li>
+      <li>Our agent confirms the GH₵ price and payment details on chat.</li>
     </ol>
   </div>
 </section>
@@ -101,7 +97,7 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
       <div class="field">
         <label for="phone">Phone / chat number</label>
         <input type="tel" id="phone" name="phone" required autocomplete="tel" inputmode="tel" placeholder="0XX XXX XXXX" maxlength="20">
-        <div class="hint">Ghana number. We’ll reply on the official line.</div>
+        <div class="hint">Ghana number. We’ll reply on chat.</div>
         <div class="field-error" id="phone-error" hidden></div>
       </div>
 
@@ -171,7 +167,7 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
         </div>
         <div class="field">
           <label for="location">Delivery location in Ghana</label>
-          <input type="text" id="location" name="location" required placeholder="e.g. Accra, East Legon" autocomplete="address-level2" maxlength="200">
+          <input type="text" id="location" name="location" required placeholder="e.g. East Legon, Kumasi" autocomplete="address-level2" maxlength="200">
           <div class="field-error" id="location-error" hidden></div>
         </div>
       </div>
@@ -191,7 +187,7 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
         <li>You see “Order received”, then the official chat opens with your order written.</li>
         <li>We check China or Turkey pricing.</li>
         <li>You get one GH₵ landed quote — goods, pickup, sea shipping, clearing.</li>
-        <li>Nothing is paid on this website. Terms are agreed on the official line only.</li>
+        <li>Nothing is paid on this website. Terms are agreed on chat only.</li>
       </ol>
     </aside>
   </div>
@@ -225,7 +221,7 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
     </div>
     <div class="footer-bottom">
       <span>© 2026 Mwinbarka Imports. All rights reserved.</span>
-      <span>Accra, Ghana</span>
+      <span>Ghana</span>
     </div>
   </div>
 </footer>
@@ -240,7 +236,7 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
 <div id="order-received" class="order-modal" hidden>
   <div class="order-modal-card" role="dialog" aria-labelledby="order-received-title" aria-modal="true">
     <h2 id="order-received-title">Order received</h2>
-    <p>Your import request is with the Accra desk. Continue to the official line so we can confirm the GH₵ quote and payment details. Nothing is charged on this website.</p>
+    <p>Your import request is with the desk. Continue to chat so we can confirm the GH₵ quote and payment details. Nothing is charged on this website.</p>
     <button type="button" class="btn btn-gold" id="order-received-continue">Continue to chat</button>
   </div>
 </div>

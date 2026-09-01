@@ -171,7 +171,7 @@
     if (data.full_name.length < 2) errors.full_name = "Name must be at least 2 characters.";
     else if (!isPersonName(data.full_name)) errors.full_name = "Use letters, spaces, hyphens, or apostrophes only.";
     if (data.phone && !isGhanaPhone(data.phone)) errors.phone = "Enter a Ghana phone number.";
-    if (data.whatsapp && !isGhanaPhone(data.whatsapp)) errors.whatsapp = "Enter a Ghana number for the official line.";
+    if (data.whatsapp && !isGhanaPhone(data.whatsapp)) errors.whatsapp = "Enter a Ghana number we can reach you on.";
     return { ok: Object.keys(errors).length === 0, data, errors };
   }
 
