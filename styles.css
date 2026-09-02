@@ -3096,9 +3096,10 @@ body.account-drawer-open { overflow: hidden; }
 
 /* ---------------- Customer account dashboard ---------------- */
 body.account-page {
-  background: #e8eef5;
+  background: #EEF1F5;
   background-image: none;
   min-height: 100dvh;
+  color: var(--ink-700);
 }
 body.account-page.has-tabbar { padding-bottom: 0; }
 body.account-page .site-header,
@@ -3117,8 +3118,8 @@ body.account-page .account-backdrop {
   align-items: stretch;
 }
 .udash-side {
-  background: #2c2c2c;
-  color: #fff;
+  background: var(--navy-800);
+  color: var(--white);
   display: flex;
   flex-direction: column;
   padding: 1.6rem 1.05rem 1.1rem;
@@ -3135,8 +3136,9 @@ body.account-page .account-backdrop {
   height: 78px;
   margin: 0 auto 0.85rem;
   border-radius: 50%;
-  background: #3a3a3a;
-  color: #fff;
+  background: var(--navy-700);
+  color: var(--gold-400);
+  border: 1px solid rgba(201, 162, 39, 0.35);
   display: grid;
   place-items: center;
   font-family: var(--font-body);
@@ -3157,13 +3159,13 @@ body.account-page .account-backdrop {
   font-family: var(--font-body);
   font-size: 1.05rem;
   font-weight: 700;
-  color: #fff;
+  color: var(--white);
   text-transform: lowercase;
 }
 .udash-profile small {
   display: block;
   margin-top: 0.2rem;
-  color: #b9b9b9;
+  color: rgba(255, 255, 255, 0.62);
   font-size: 0.78rem;
 }
 .udash-nav {
@@ -3179,7 +3181,7 @@ body.account-page .account-backdrop {
   width: 100%;
   border: 0;
   background: transparent;
-  color: #f2f2f2;
+  color: rgba(255, 255, 255, 0.88);
   font: 600 0.95rem var(--font-body);
   text-align: left;
   padding: 0.72rem 0.9rem;
@@ -3198,18 +3200,18 @@ body.account-page .account-backdrop {
   flex-shrink: 0;
 }
 .udash-link.active {
-  background: #fff;
-  color: #3b82f6;
+  background: var(--gold-500);
+  color: var(--navy-900);
 }
 .udash-link:hover:not(.active) { background: rgba(255,255,255,0.08); }
 .udash-side-foot { margin-top: auto; padding-top: 1rem; }
 .udash-site {
   display: block;
   margin: 0.7rem 0.9rem 0;
-  color: #9aa0a8;
+  color: rgba(255, 255, 255, 0.55);
   font-size: 0.78rem;
 }
-.udash-site:hover { color: #fff; }
+.udash-site:hover { color: var(--gold-400); }
 
 .udash-main {
   padding: 1.4rem 1.6rem 2rem;
@@ -3227,7 +3229,7 @@ body.account-page .account-backdrop {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #c8cdd4;
+  color: var(--navy-800);
   margin: 0;
   flex: 1;
 }
@@ -3235,19 +3237,20 @@ body.account-page .account-backdrop {
   display: none;
   width: 40px;
   height: 40px;
-  border: 0;
+  border: 1px solid var(--line);
   border-radius: 10px;
-  background: #fff;
-  color: #2c2c2c;
+  background: var(--white);
+  color: var(--navy-800);
   font-size: 1.15rem;
   cursor: pointer;
 }
 .udash-search {
   display: flex;
   align-items: center;
-  background: #fff;
-  border-radius: 999px;
-  box-shadow: 0 8px 20px rgba(31, 45, 68, 0.08);
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
   overflow: hidden;
 }
 .udash-search input {
@@ -3257,6 +3260,7 @@ body.account-page .account-backdrop {
   width: min(240px, 42vw);
   font: inherit;
   font-size: 0.92rem;
+  color: var(--ink-700);
 }
 .udash-search input:focus { outline: none; }
 .udash-search button {
@@ -3267,7 +3271,7 @@ body.account-page .account-backdrop {
   display: grid;
   place-items: center;
   cursor: pointer;
-  color: #7b8491;
+  color: var(--ink-300);
 }
 .udash-search svg {
   width: 18px;
@@ -3278,14 +3282,32 @@ body.account-page .account-backdrop {
 }
 
 .udash-auth { max-width: 520px; }
+.udash-auth .eyebrow { color: var(--gold-600); }
+.udash-auth .form-card h2,
+.udash-card-form h2 {
+  color: var(--navy-800);
+}
 .udash-card-form {
-  background: #fff;
-  border: 0;
-  border-radius: 18px;
-  box-shadow: 0 12px 32px rgba(31, 45, 68, 0.08);
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
   padding: 1.35rem 1.3rem 1.2rem;
 }
 .udash-card-form + .udash-card-form { margin-top: 1rem; }
+.account-page .account-tabs .chip {
+  background: var(--white);
+  border-color: var(--line);
+  color: var(--navy-800);
+}
+.account-page .account-tabs .chip.active {
+  background: var(--navy-800);
+  border-color: var(--navy-800);
+  color: var(--gold-400);
+}
+.account-page .account-tabs .chip:hover {
+  border-color: var(--gold-500);
+}
 
 .udash-metrics {
   display: grid;
@@ -3294,11 +3316,12 @@ body.account-page .account-backdrop {
   margin-bottom: 1rem;
 }
 .udash-metric {
-  background: #fff;
-  border-radius: 18px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
   min-height: 132px;
   padding: 1.15rem 1.2rem;
-  box-shadow: 0 12px 28px rgba(31, 45, 68, 0.08);
+  box-shadow: var(--shadow-sm);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -3308,7 +3331,7 @@ body.account-page .account-backdrop {
   display: block;
   font-size: 1.7rem;
   line-height: 1.1;
-  color: #1f2937;
+  color: var(--navy-800);
   font-family: var(--font-body);
   font-weight: 700;
 }
@@ -3316,13 +3339,14 @@ body.account-page .account-backdrop {
   display: block;
   margin-top: 0.35rem;
   font-style: normal;
-  color: #67c23a;
+  color: var(--gold-600);
   font-size: 0.82rem;
   font-weight: 600;
 }
 .udash-metric-blue {
-  background: linear-gradient(180deg, #5eb0ff 0%, #3d94f5 100%);
-  color: #fff;
+  background: linear-gradient(180deg, var(--navy-700) 0%, var(--navy-800) 100%);
+  color: var(--white);
+  border-color: transparent;
   display: grid;
   align-content: center;
   justify-items: start;
@@ -3331,6 +3355,7 @@ body.account-page .account-backdrop {
   font-size: 2rem;
   font-weight: 700;
   letter-spacing: -0.03em;
+  color: var(--gold-400);
 }
 .udash-metric-blue small {
   margin-top: 0.25rem;
@@ -3340,7 +3365,7 @@ body.account-page .account-backdrop {
 .udash-mini-ico {
   width: 42px;
   height: 42px;
-  color: #9aa7b8;
+  color: var(--ink-300);
   fill: none;
   stroke: currentColor;
   stroke-width: 1.6;
@@ -3356,17 +3381,18 @@ body.account-page .account-backdrop {
   margin-bottom: 1rem;
 }
 .udash-chart-card {
-  background: #fff;
-  border-radius: 18px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
   min-height: 230px;
   padding: 1rem 1.1rem 1.15rem;
-  box-shadow: 0 12px 28px rgba(31, 45, 68, 0.08);
+  box-shadow: var(--shadow-sm);
 }
 .udash-chart-card h2 {
   font-family: var(--font-body);
   font-size: 0.92rem;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--ink-500);
   margin-bottom: 0.4rem;
 }
 .udash-rings {
@@ -3379,13 +3405,14 @@ body.account-page .account-backdrop {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background: conic-gradient(var(--ring, #8ec5ff) calc(var(--p, 0) * 1%), #e8eef6 0);
+  background: conic-gradient(var(--ring, var(--gold-500)) calc(var(--p, 0) * 1%), #E8ECF1 0);
   -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 10px), #000 calc(100% - 9px));
   mask: radial-gradient(farthest-side, transparent calc(100% - 10px), #000 calc(100% - 9px));
 }
-.udash-ring[data-ring="1"] { inset: 14px; --ring: #5aa6ff; }
-.udash-ring[data-ring="2"] { inset: 28px; --ring: #3b82f6; }
-.udash-ring[data-ring="3"] { inset: 42px; --ring: #1d4ed8; }
+.udash-ring[data-ring="0"] { --ring: var(--gold-400); }
+.udash-ring[data-ring="1"] { inset: 14px; --ring: var(--gold-500); }
+.udash-ring[data-ring="2"] { inset: 28px; --ring: var(--navy-600); }
+.udash-ring[data-ring="3"] { inset: 42px; --ring: var(--navy-800); }
 .udash-legend {
   list-style: none;
   margin: 0;
@@ -3394,7 +3421,7 @@ body.account-page .account-backdrop {
   flex-wrap: wrap;
   gap: 0.45rem 0.85rem;
   justify-content: center;
-  color: #6b7280;
+  color: var(--ink-500);
   font-size: 0.75rem;
 }
 .udash-legend i {
@@ -3425,11 +3452,11 @@ body.account-page .account-backdrop {
   width: 100%;
   max-width: 28px;
   border-radius: 6px 6px 2px 2px;
-  background: linear-gradient(180deg, #7ec2ff, #3b82f6);
+  background: linear-gradient(180deg, var(--gold-400), var(--navy-800));
   min-height: 8px;
 }
 .udash-bar small {
-  color: #9aa3ae;
+  color: var(--ink-300);
   font-size: 0.68rem;
 }
 
@@ -3439,15 +3466,15 @@ body.account-page .account-backdrop {
   gap: 1rem;
 }
 .udash-pill {
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   min-height: 92px;
   padding: 1rem 1.15rem;
-  color: #fff;
+  color: var(--white);
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: 0.2rem;
-  box-shadow: 0 10px 22px rgba(31, 45, 68, 0.12);
+  box-shadow: var(--shadow-sm);
 }
 .udash-pill span {
   text-transform: lowercase;
@@ -3458,19 +3485,19 @@ body.account-page .account-backdrop {
   font-size: 1.55rem;
   font-weight: 700;
 }
-.udash-pill-1 { background: #7ec4ff; }
-.udash-pill-2 { background: #2563eb; }
-.udash-pill-3 { background: #3b82f6; }
+.udash-pill-1 { background: var(--navy-700); }
+.udash-pill-2 { background: var(--navy-800); }
+.udash-pill-3 { background: var(--navy-900); color: var(--gold-400); }
 
 .udash .account-order-list { margin-top: 0.85rem; }
 .udash .account-order {
-  background: #f7f9fc;
-  border: 0;
+  background: #F3F5F8;
+  border: 1px solid var(--line);
   border-radius: 12px;
   padding: 0.85rem 0.95rem;
   margin-bottom: 0.55rem;
 }
-.udash .empty-note { color: #6b7280; }
+.udash .empty-note { color: var(--ink-500); }
 
 .udash-scrim {
   display: none;
@@ -3515,18 +3542,19 @@ body.account-page .account-backdrop {
   display: flex;
   align-items: center;
   gap: 1rem;
-  background: #fff;
-  border-radius: 18px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
   padding: 1.15rem 1.25rem;
-  box-shadow: 0 12px 32px rgba(31, 45, 68, 0.08);
+  box-shadow: var(--shadow-sm);
   margin-bottom: 1rem;
 }
 .udash-hero-avatar {
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: #2c2c2c;
-  color: #fff;
+  background: var(--navy-800);
+  color: var(--gold-400);
   display: grid;
   place-items: center;
   font-weight: 700;
@@ -3538,6 +3566,7 @@ body.account-page .account-backdrop {
   font-family: var(--font-body);
   font-size: 1.15rem;
   margin: 0 0 0.15rem;
+  color: var(--navy-800);
 }
 .udash-hero-tags {
   display: flex;
@@ -3546,7 +3575,7 @@ body.account-page .account-backdrop {
   margin: 0.45rem 0 0;
 }
 .udash-hero-tags span {
-  background: #eef3f9;
+  background: #F3F5F8;
   color: #4b5563;
   border-radius: 999px;
   font-size: 0.75rem;
