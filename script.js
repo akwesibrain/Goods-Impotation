@@ -410,6 +410,7 @@ function mountMotion() {
     document.querySelectorAll(".reveal").forEach((el) => el.classList.add("is-in"));
     return;
   }
+  document.documentElement.classList.add("mw-motion");
   if (!revealObserver) {
     revealObserver = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
@@ -417,9 +418,10 @@ function mountMotion() {
         entry.target.classList.add("is-in");
         revealObserver.unobserve(entry.target);
       });
-    }, { rootMargin: "0px 0px -8% 0px", threshold: 0.1 });
+    }, { rootMargin: "0px 0px -6% 0px", threshold: 0.08 });
   }
   observeReveals(document);
+  window.setTimeout(() => observeReveals(document), 400);
 }
 
 function observeReveals(root) {
@@ -457,10 +459,24 @@ function observeReveals(root) {
     ".panel",
     ".home-faq .faq-item",
     ".step-cards article",
+    ".desk-cats",
+    ".desk-tiles a",
+    ".desk-banner",
+    ".desk-cat-chips a",
+    ".footer-grid > div",
+    ".page-hero-auth",
+    ".udash-auth",
+    ".tf-services .section-head",
+    ".section > .container > h2",
+    ".section > .container > .section-note",
+    ".contact-grid > *",
+    ".loc-facts li",
+    ".quote-summary",
+    ".empty-note",
   ].join(","));
   const fold = window.innerHeight * 0.92;
   nodes.forEach((el) => {
-    if (el.closest(".tf-hero, .desk-stage, .page-hero, .site-header, .tabbar")) return;
+    if (el.closest(".site-header, .tabbar, .wa-float")) return;
     if (el.classList.contains("skeleton-card")) return;
     if (el.closest("[hidden]")) return;
     if (el.classList.contains("is-in")) return;
@@ -474,9 +490,13 @@ function observeReveals(root) {
       return;
     }
     el.classList.add("reveal");
+    if (el.matches(".desk-cats, .desk-banner")) el.classList.add("reveal-soft");
+    if (el.matches(".desk-tiles a, .desk-cat-chips a, .stamp-grid article, .step-cards article, .product-card, .category-card, .footer-grid > div")) {
+      el.classList.add("reveal-stagger");
+    }
     const parent = el.parentElement;
     const idx = parent ? Math.max(0, [...parent.children].indexOf(el)) : 0;
-    el.style.setProperty("--stagger", `${Math.min(idx, 6) * 50}ms`);
+    el.style.setProperty("--stagger", `${Math.min(idx, 8) * 55}ms`);
     revealObserver.observe(el);
   });
 }

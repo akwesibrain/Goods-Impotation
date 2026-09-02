@@ -3949,8 +3949,12 @@ header.site-header.desk-head,
 }
 
 @keyframes mwRise {
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0; transform: translateY(14px); }
   to { opacity: 1; transform: none; }
+}
+@keyframes mwFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 @keyframes mwHeroDrift {
   from { transform: scale(1.06); }
@@ -3976,6 +3980,10 @@ header.site-header.desk-head,
 @keyframes mwPageIn {
   from { opacity: 0; }
 }
+@keyframes mwHeaderIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: none; }
+}
 
 @view-transition { navigation: auto; }
 @media (prefers-reduced-motion: reduce) {
@@ -3986,6 +3994,17 @@ header.site-header.desk-head,
   ::view-transition-new(root) { animation: mwPageIn 220ms var(--ease-out) both; }
 }
 
+html.mw-motion body {
+  animation: mwFade 0.35s var(--ease-out) both;
+}
+html.mw-motion .site-header.desk-head,
+html.mw-motion .site-header.tf-head {
+  animation: mwHeaderIn 0.45s var(--ease-out) both;
+}
+html.mw-motion .desk-nav .nav-links {
+  animation: mwRise 0.5s var(--ease-out) 0.08s both;
+}
+
 .tf-hero .hero-route { animation: mwRise 0.5s var(--ease-out) both; }
 .tf-hero h1 { animation: mwRise 0.62s var(--ease-out) 0.06s both; }
 .tf-hero .lead { animation: mwRise 0.62s var(--ease-out) 0.14s both; }
@@ -3993,18 +4012,26 @@ header.site-header.desk-head,
 .tf-hero .trust-row { animation: mwRise 0.62s var(--ease-out) 0.3s both; }
 .tf-hero-media img { animation: mwHeroDrift 16s ease-out 1 both; }
 
-.page-hero h1 { animation: mwRise 0.55s var(--ease-out) both; }
-.page-hero p { animation: mwRise 0.55s var(--ease-out) 0.08s both; }
+.page-hero h1,
+.page-hero-auth h1 { animation: mwRise 0.55s var(--ease-out) both; }
+.page-hero p,
+.page-hero-auth p { animation: mwRise 0.55s var(--ease-out) 0.08s both; }
+.account-tabs { animation: mwRise 0.5s var(--ease-out) 0.12s both; }
 
 .reveal {
   opacity: 0;
-  transform: translateY(14px);
-  transition: opacity 0.5s var(--ease-out), transform 0.5s var(--ease-out);
+  transform: translateY(16px);
+  transition: opacity 0.55s var(--ease-out), transform 0.55s var(--ease-out);
   transition-delay: var(--stagger, 0ms);
+  will-change: opacity, transform;
+}
+.reveal.reveal-soft {
+  transform: translateY(10px);
 }
 .reveal.is-in {
   opacity: 1;
   transform: none;
+  will-change: auto;
 }
 
 .chip {
@@ -4014,7 +4041,12 @@ header.site-header.desk-head,
   transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
 }
 .qty-controls button:active { transform: scale(0.92); }
-.why-card {
+.why-card,
+.stamp-grid article,
+.step-cards article,
+.review-card,
+.form-card,
+.panel {
   transition: transform 0.22s var(--ease-out), box-shadow 0.22s ease, border-color 0.22s ease;
 }
 .category-card img {
@@ -4022,6 +4054,15 @@ header.site-header.desk-head,
 }
 .product-card img {
   transition: transform 0.55s var(--ease-out);
+}
+.desk-cats a {
+  transition: color 0.18s ease, background 0.18s ease, padding-left 0.18s var(--ease-out);
+}
+.desk-cat-chips a {
+  transition: transform 0.18s var(--ease-out), background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+.footer-grid a {
+  transition: color 0.18s ease, transform 0.18s ease;
 }
 .tabbar a,
 .tabbar button {
@@ -4059,7 +4100,10 @@ header.site-header.desk-head,
   }
   .category-card:hover { transform: translateY(-3px); }
   .category-card:hover img { transform: scale(1.05); }
-  .why-card:hover {
+  .why-card:hover,
+  .stamp-grid article:hover,
+  .step-cards article:hover,
+  .review-card:hover {
     transform: translateY(-3px);
     box-shadow: var(--shadow-md);
   }
@@ -4067,6 +4111,14 @@ header.site-header.desk-head,
   .quote-link:hover { transform: translateY(-1px); }
   .nav-logo:hover { opacity: 0.92; }
   .wa-float:hover { transform: scale(1.06); }
+  .desk-cats a:hover { padding-left: 0.35rem; }
+  .desk-cat-chips a:hover { transform: translateY(-2px); }
+  .footer-grid a:hover { transform: translateX(2px); }
+  .desk-tiles a:hover {
+    transform: translateY(-3px);
+    border-color: rgba(201, 162, 39, 0.55);
+    box-shadow: var(--shadow-sm);
+  }
 }
 
 @media (min-width: 861px) {
@@ -4089,6 +4141,9 @@ header.site-header.desk-head,
   .nav-links a.active::after {
     transform: scaleX(1);
   }
+  .desk-home .desk-nav .nav-links a::after {
+    display: none;
+  }
 }
 
 @media (max-width: 860px) {
@@ -4105,6 +4160,10 @@ header.site-header.desk-head,
     transform: none !important;
     transition: none !important;
   }
+  html.mw-motion body,
+  html.mw-motion .site-header.desk-head,
+  html.mw-motion .site-header.tf-head,
+  html.mw-motion .desk-nav .nav-links,
   .tf-hero .hero-route,
   .tf-hero h1,
   .tf-hero .lead,
@@ -4113,6 +4172,9 @@ header.site-header.desk-head,
   .tf-hero-media img,
   .page-hero h1,
   .page-hero p,
+  .page-hero-auth h1,
+  .page-hero-auth p,
+  .account-tabs,
   .form-status.success,
   .form-status.error,
   .form-status.loading,
@@ -4958,17 +5020,6 @@ body.account-page {
 }
 .order-modal.is-open .order-modal-card {
   animation: mwRise 0.4s var(--ease-out) both;
-}
-
-.desk-tiles a {
-  transition: transform 0.18s var(--ease-out), border-color 0.18s ease, box-shadow 0.18s ease;
-}
-@media (hover: hover) and (pointer: fine) {
-  .desk-tiles a:hover {
-    transform: translateY(-3px);
-    border-color: rgba(201, 162, 39, 0.55);
-    box-shadow: var(--shadow-sm);
-  }
 }
 
 @media (max-width: 640px) {
