@@ -447,7 +447,6 @@ function observeReveals(root) {
     ".product-card",
     ".cta-band",
     ".trust-plate",
-    ".loc-grid > *",
     ".catalog-lane",
     ".item-info",
     ".item-block",
@@ -457,7 +456,6 @@ function observeReveals(root) {
     ".udash-hero",
     ".panel",
     ".home-faq .faq-item",
-    ".trust-strip-row div",
     ".step-cards article",
   ].join(","));
   const fold = window.innerHeight * 0.92;
@@ -1956,6 +1954,7 @@ async function mountAccountPage() {
     if (!profile) {
       authBox.hidden = false;
       signedBox.hidden = true;
+      document.body.classList.add("account-guest");
       if (nameEl) nameEl.textContent = "Guest";
       if (roleEl) roleEl.textContent = "Log in to your desk file";
       if (avatar) {
@@ -1975,6 +1974,7 @@ async function mountAccountPage() {
     if (nextParam && window.continueAfterCustomerAuth && window.continueAfterCustomerAuth()) return;
     authBox.hidden = true;
     signedBox.hidden = false;
+    document.body.classList.remove("account-guest");
     const displayName = profile.full_name || "Customer";
     if (nameEl) nameEl.textContent = displayName;
     if (roleEl) roleEl.textContent = profile.company_name || "Mwinbarka customer";

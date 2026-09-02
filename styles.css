@@ -3102,13 +3102,55 @@ body.account-page {
   color: var(--ink-700);
 }
 body.account-page.has-tabbar { padding-bottom: 0; }
-body.account-page .site-header,
+body.account-page:not(.account-guest) .site-header,
 body.account-page .site-footer,
 body.account-page .wa-float,
 body.account-page .tabbar,
 body.account-page .account-drawer,
 body.account-page .account-backdrop {
   display: none !important;
+}
+body.account-page.account-guest .site-header {
+  display: block !important;
+}
+body.account-page.account-guest .udash-side,
+body.account-page.account-guest .udash-scrim,
+body.account-page.account-guest .udash-head {
+  display: none !important;
+}
+body.account-page.account-guest .udash {
+  grid-template-columns: 1fr;
+  min-height: auto;
+}
+body.account-page.account-guest .udash-main {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 2.5rem;
+}
+body.account-page.account-guest .udash-auth {
+  max-width: none;
+}
+body.account-page.account-guest .udash-card-form {
+  background: var(--white);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-sm);
+}
+body.account-page.account-guest .account-tabs {
+  margin-bottom: 1.1rem;
+}
+body.account-page.account-guest .page-hero-auth {
+  display: block;
+  padding: 1.6rem 0 0.4rem;
+}
+body.account-page.account-guest .page-hero-auth h1 {
+  color: var(--navy-800);
+  font-size: clamp(1.7rem, 3.5vw, 2.2rem);
+  max-width: 16ch;
+}
+body.account-page.account-guest .page-hero-auth p {
+  color: var(--ink-500);
+  margin-top: 0.55rem;
+  max-width: 42ch;
 }
 
 .udash {
@@ -3576,8 +3618,9 @@ body.account-page .account-backdrop {
 }
 .udash-hero-tags span {
   background: #F3F5F8;
-  color: #4b5563;
-  border-radius: 999px;
+  color: var(--ink-500);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
   font-size: 0.75rem;
   padding: 0.22rem 0.65rem;
 }
