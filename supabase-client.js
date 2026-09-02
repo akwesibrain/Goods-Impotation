@@ -79,49 +79,78 @@ window.isStaffSession = async function () {
 
 window.signInCustomer = async function ({ email, password }) {
   if (!supabaseClient) throw new Error("Account service is not connected yet.");
-  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-  if (error) throw error;
-  if (window.markAdvertSkippedForAccount) window.markAdvertSkippedForAccount();
-  return true;
+  try {
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ 
+      email, 
+      password 
+    });
+    if (error) throw error;
+    if (!data.session) throw new Error("No session returned from sign in.");
+    if (window.markAdvertSkippedForAccount) window.markAdvertSkippedForAccount();
+    return true;
+  } catch (err) {
+    throw new Error(err.message || "Sign in failed. Please check your email and password.");
+  }
 };
 
 window.signUpCustomer = async function ({ email, password, fullName, phone }) {
   if (!supabaseClient) throw new Error("Account service is not connected yet.");
-  const { data, error } = await supabaseClient.auth.signUp({
-    email,
-    password,
-    options: { data: { full_name: fullName || "", phone: phone || "" } },
-  });
-  if (error) throw error;
-  if (window.markAdvertSkippedForAccount) window.markAdvertSkippedForAccount();
-  if (data.session && data.user) {
-    const forms = window.MwinbarkaForms;
-    await supabaseClient.from("profiles").upsert({
-      id: data.user.id,
-      full_name: forms ? forms.sanitize(fullName || "").slice(0, 100) : (fullName || ""),
-      phone: forms ? forms.sanitizePhone(phone || "").slice(0, 20) : (phone || ""),
-    }, { onConflict: "id" });
+  try {
+    const { data, error } = await supabaseClient.auth.signUp({
+      email,
+      password,
+      options: { 
+        data: { 
+          full_name: fullName || "", 
+          phone: phone || "" 
+        } 
+      },
+    });
+    if (error) throw error;
+    if (data.user) {
+      const forms = window.MwinbarkaForms;
+      await supabaseClient.from("profiles").upsert({
+        id: data.user.id,
+        full_name: forms ? forms.sanitize(fullName || "").slice(0, 100) : (fullName || ""),
+        phone: forms ? forms.sanitizePhone(phone || "").slice(0, 20) : (phone || ""),
+        created_at: new Date().toISOString(),
+      }, { onConflict: "id" });
+      
+      if (data.session) {
+        if (window.markAdvertSkippedForAccount) window.markAdvertSkippedForAccount();
+      }
+    }
+    return { needsConfirm: !!(data.user && !data.session) };
+  } catch (err) {
+    throw new Error(err.message || "Sign up failed. Please try again.");
   }
-  return { needsConfirm: !!(data.user && !data.session) };
 };
 
 window.signOutCustomer = async function (everywhere) {
   if (!supabaseClient) return;
-  await supabaseClient.auth.signOut({ scope: everywhere ? "global" : "local" });
+  try {
+    await supabaseClient.auth.signOut({ scope: everywhere ? "global" : "local" });
+  } catch (err) {
+    console.error("Sign out error:", err);
+  }
 };
 
 window.updateMyPassword = async function ({ currentPassword, newPassword }) {
   if (!supabaseClient) throw new Error("Account service is not connected yet.");
   const user = await window.getSessionUser();
   if (!user || !user.email) throw new Error("Please log in first.");
-  const { error: checkError } = await supabaseClient.auth.signInWithPassword({
-    email: user.email,
-    password: currentPassword,
-  });
-  if (checkError) throw new Error("Current password is wrong.");
-  const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
-  if (error) throw error;
-  return true;
+  try {
+    const { error: checkError } = await supabaseClient.auth.signInWithPassword({
+      email: user.email,
+      password: currentPassword,
+    });
+    if (checkError) throw new Error("Current password is wrong.");
+    const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    throw new Error(err.message || "Could not update password.");
+  }
 };
 
 window.updateMyEmail = async function ({ currentPassword, newEmail, emailRedirectTo }) {
@@ -133,17 +162,21 @@ window.updateMyEmail = async function ({ currentPassword, newEmail, emailRedirec
   if (next === String(user.email).toLowerCase()) {
     throw new Error("That is already the login email.");
   }
-  const { error: checkError } = await supabaseClient.auth.signInWithPassword({
-    email: user.email,
-    password: currentPassword,
-  });
-  if (checkError) throw new Error("Current password is wrong.");
-  const { error } = await supabaseClient.auth.updateUser(
-    { email: next },
-    { emailRedirectTo: emailRedirectTo || window.location.href.split("#")[0] },
-  );
-  if (error) throw error;
-  return true;
+  try {
+    const { error: checkError } = await supabaseClient.auth.signInWithPassword({
+      email: user.email,
+      password: currentPassword,
+    });
+    if (checkError) throw new Error("Current password is wrong.");
+    const { error } = await supabaseClient.auth.updateUser(
+      { email: next },
+      { emailRedirectTo: emailRedirectTo || window.location.href.split("#")[0] },
+    );
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    throw new Error(err.message || "Could not update email.");
+  }
 };
 
 window.updateMyProfile = async function (fields) {
@@ -166,40 +199,53 @@ window.updateMyProfile = async function (fields) {
   if (typeof fields.notify_sms === "boolean") payload.notify_sms = fields.notify_sms;
   if (typeof fields.notify_whatsapp === "boolean") payload.notify_whatsapp = fields.notify_whatsapp;
   if (typeof fields.notify_email === "boolean") payload.notify_email = fields.notify_email;
-  const { error } = await supabaseClient
-    .from("profiles")
-    .update(payload)
-    .eq("id", user.id);
-  if (error) throw error;
-  return true;
+  try {
+    const { error } = await supabaseClient
+      .from("profiles")
+      .update(payload)
+      .eq("id", user.id);
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    throw new Error(err.message || "Could not save profile.");
+  }
 };
 
 window.updateMyAlerts = async function ({ notify_sms, notify_whatsapp, notify_email }) {
   const user = await window.getSessionUser();
   if (!user || !supabaseClient) throw new Error("Please log in first.");
-  const { error } = await supabaseClient
-    .from("profiles")
-    .update({
-      notify_sms: !!notify_sms,
-      notify_whatsapp: !!notify_whatsapp,
-      notify_email: !!notify_email,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", user.id);
-  if (error) throw error;
-  return true;
+  try {
+    const { error } = await supabaseClient
+      .from("profiles")
+      .update({
+        notify_sms: !!notify_sms,
+        notify_whatsapp: !!notify_whatsapp,
+        notify_email: !!notify_email,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", user.id);
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    throw new Error(err.message || "Could not update alerts.");
+  }
 };
 
 window.fetchMyOrders = async function () {
   const user = await window.getSessionUser();
   if (!user || !supabaseClient) return [];
-  const { data, error } = await supabaseClient
-    .from("requests")
-    .select("id, request_details, category, quantity, status, shipment_status, created_at, location")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
-  if (error) throw error;
-  return data || [];
+  try {
+    const { data, error } = await supabaseClient
+      .from("requests")
+      .select("id, request_details, category, quantity, status, shipment_status, created_at, location")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    return data || [];
+  } catch (err) {
+    console.error("Error fetching orders:", err);
+    return [];
+  }
 };
 
 window.saveRequestToSupabase = async function (data) {
@@ -231,14 +277,18 @@ window.saveRequestToSupabase = async function (data) {
     user_id: user ? user.id : null,
   };
   if (requestId) row.id = requestId;
-  const { error } = await supabaseClient.from("requests").insert([row]);
-  if (error) throw error;
-  if (requestId) {
-    supabaseClient.functions.invoke("notify-new-request", {
-      body: { request_id: requestId },
-    }).catch(() => {});
+  try {
+    const { error } = await supabaseClient.from("requests").insert([row]);
+    if (error) throw error;
+    if (requestId) {
+      supabaseClient.functions.invoke("notify-new-request", {
+        body: { request_id: requestId },
+      }).catch(() => {});
+    }
+    return requestId || null;
+  } catch (err) {
+    throw new Error(err.message || "Could not save request.");
   }
-  return requestId || null;
 };
 
 // The admin dashboard needs the client itself (for login and for
