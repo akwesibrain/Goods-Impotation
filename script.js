@@ -1225,8 +1225,10 @@ function applyGroupButton(settings) {
   const url = safeHttpsUrl((settings && (settings.whatsapp_channel_url || settings.whatsapp_group_url)) || "");
   document.querySelectorAll(".wa-float, [data-group-join]").forEach((btn) => {
     if (btn.classList.contains("wa-float")) {
-      btn.setAttribute("aria-label", "Join the group");
-      btn.title = "Join the group";
+      btn.href = "https://wa.me/233201128707";
+      btn.setAttribute("aria-label", "Chat on WhatsApp");
+      btn.title = "Chat on WhatsApp";
+      return;
     }
     if (url) btn.href = url;
   });
