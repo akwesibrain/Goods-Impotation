@@ -26,7 +26,7 @@ const SUPABASE_URL = "https://kajtwabmwbncfgvehqmm.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImthanR3YWJtd2JuY2ZndmVocW1tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxODAxMzQsImV4cCI6MjEwMjc1NjEzNH0.U7KYHYne3umDVLMyR6qcdS_7RobiiOrCESdGT1ng1p8";
 
 /** Official production site — used for auth/email redirects. */
-const SITE_ORIGIN = "https://www.mwinbarakaimports.shop";
+const SITE_ORIGIN = "https://mwinbarakaimports.shop";
 
 let supabaseClient = null;
 
