@@ -1172,5 +1172,5 @@ begin
 end;
 $$;
 
-revoke all on function public.transfer_adminship(text) from public;
+revoke all on function public.transfer_adminship(text) from public, anon;
 grant execute on function public.transfer_adminship(text) to authenticated;
