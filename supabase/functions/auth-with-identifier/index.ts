@@ -12,10 +12,13 @@ function json(req: Request, body: Record<string, unknown>, status = 200) {
 function isSafeRedirect(url: string) {
   try {
     const u = new URL(url);
-    if (u.protocol !== "https:" && u.hostname !== "localhost" && u.hostname !== "127.0.0.1") {
-      return false;
-    }
-    return true;
+    if (u.hostname === "localhost" || u.hostname === "127.0.0.1") return true;
+    if (u.protocol !== "https:") return false;
+    if (u.hostname === "www.mwinbarakaimports.shop") return true;
+    if (u.hostname === "mwinbarakaimports.shop") return true;
+    if (u.hostname === "goods-impotation.vercel.app") return true;
+    if (u.hostname.endsWith(".netlify.app")) return true;
+    return /^goods-impotation[-.].+\.vercel\.app$/.test(u.hostname);
   } catch {
     return false;
   }

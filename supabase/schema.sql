@@ -1047,3 +1047,119 @@ revoke all on function public.login_email_for_identifier(text) from public;
 -- Edge Function auth-with-identifier uses service_role instead.
 revoke all on function public.login_email_for_identifier(text) from anon, authenticated;
 grant execute on function public.login_email_for_identifier(text) to service_role;
+-- ============================================================
+-- Adminship transfer (owner-only, audited)
+-- ============================================================
+
+create table if not exists public.adminship_transfers (
+  id                   uuid primary key default gen_random_uuid(),
+  previous_owner_id    uuid not null references public.profiles(id),
+  previous_owner_email text not null,
+  new_owner_id         uuid not null references public.profiles(id),
+  new_owner_email      text not null,
+  status               text not null default 'completed'
+                       check (status in ('completed', 'failed')),
+  created_at           timestamptz not null default now()
+);
+
+alter table public.adminship_transfers enable row level security;
+
+drop policy if exists "Owners can read adminship transfers" on public.adminship_transfers;
+create policy "Owners can read adminship transfers"
+  on public.adminship_transfers for select to authenticated
+  using (private.is_owner());
+
+revoke all on table public.adminship_transfers from anon, public;
+grant select on table public.adminship_transfers to authenticated;
+
+create or replace function public.transfer_adminship(new_owner_email text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  actor_id uuid := auth.uid();
+  actor_email text;
+  target_email text := lower(trim(coalesce(new_owner_email, '')));
+  target_id uuid;
+  target_row public.profiles%rowtype;
+  transfer_id uuid;
+begin
+  if actor_id is null then
+    raise exception 'Not signed in';
+  end if;
+  if not private.is_owner() then
+    raise exception 'Only the current owner can transfer adminship';
+  end if;
+  if target_email = '' or position('@' in target_email) = 0 then
+    raise exception 'Enter a valid registered email';
+  end if;
+
+  select coalesce(nullif(p.email, ''), u.email)
+    into actor_email
+  from public.profiles p
+  left join auth.users u on u.id = p.id
+  where p.id = actor_id;
+
+  select p.* into target_row
+  from public.profiles p
+  where lower(trim(p.email)) = target_email
+  limit 1;
+
+  if target_row.id is null then
+    select p.* into target_row
+    from public.profiles p
+    join auth.users u on u.id = p.id
+    where lower(trim(u.email)) = target_email
+    limit 1;
+  end if;
+
+  if target_row.id is null then
+    raise exception 'No registered account found for that email';
+  end if;
+
+  target_id := target_row.id;
+  if target_id = actor_id then
+    raise exception 'You already own this desk';
+  end if;
+
+  -- Promote the selected user to owner/admin.
+  update public.profiles
+  set is_staff = true,
+      staff_role = 'owner',
+      email = case when coalesce(email, '') = '' then target_email else email end,
+      updated_at = now()
+  where id = target_id;
+
+  -- Demote the previous owner (keeps staff access as assistant).
+  update public.profiles
+  set staff_role = 'assistant',
+      is_staff = true,
+      updated_at = now()
+  where id = actor_id;
+
+  insert into public.adminship_transfers (
+    previous_owner_id, previous_owner_email,
+    new_owner_id, new_owner_email, status
+  ) values (
+    actor_id, coalesce(actor_email, ''),
+    target_id, target_email, 'completed'
+  )
+  returning id into transfer_id;
+
+  return jsonb_build_object(
+    'ok', true,
+    'transfer_id', transfer_id,
+    'previous_owner_id', actor_id,
+    'previous_owner_email', coalesce(actor_email, ''),
+    'new_owner_id', target_id,
+    'new_owner_email', target_email,
+    'status', 'completed',
+    'transferred_at', now()
+  );
+end;
+$$;
+
+revoke all on function public.transfer_adminship(text) from public;
+grant execute on function public.transfer_adminship(text) to authenticated;

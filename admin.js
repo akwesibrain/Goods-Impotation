@@ -246,6 +246,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("staff-email-form")?.addEventListener("submit", (e) => handleStaffEmailSubmit(e, client));
   document.getElementById("staff-password-form")?.addEventListener("submit", (e) => handleStaffPasswordSubmit(e, client));
   document.getElementById("staff-phone-form")?.addEventListener("submit", (e) => handleStaffPhoneSubmit(e, client));
+  document.getElementById("transfer-adminship-form")?.addEventListener("submit", handleTransferAdminshipSubmit);
   document.getElementById("sms-settings-form").addEventListener("submit", (e) => handleSmsSettingsSubmit(e, client));
   document.getElementById("sms-send-form").addEventListener("submit", (e) => handleSmsSend(e, client));
   document.getElementById("sms-broadcast-form")?.addEventListener("submit", (e) => handleSmsBroadcast(e, client));
@@ -1119,6 +1120,49 @@ function fillStaffLogin(profile) {
   if (hint) {
     hint.textContent = "For security, this desk never stores or displays your password. Use Change password below.";
   }
+  const management = document.getElementById("admin-management-card");
+  if (management) {
+    const isOwner = !!(profile && profile.is_staff && profile.staff_role === "owner");
+    management.hidden = !isOwner;
+  }
+}
+
+async function handleTransferAdminshipSubmit(e) {
+  e.preventDefault();
+  const form = e.target;
+  const statusEl = document.getElementById("transfer-adminship-status");
+  const btn = form.querySelector('button[type="submit"]');
+  const email = String(form.elements.new_owner_email.value || "").trim().toLowerCase();
+  const confirmText = String(form.elements.confirm_text.value || "").trim();
+  if (!email || !email.includes("@")) {
+    statusEl.className = "form-status error";
+    statusEl.textContent = "Enter the registered email of the new owner.";
+    return;
+  }
+  if (confirmText !== "TRANSFER") {
+    statusEl.className = "form-status error";
+    statusEl.textContent = "Type TRANSFER in capitals to confirm.";
+    return;
+  }
+  const sure = window.confirm(
+    "Transfer adminship to " + email + "?\n\nYou will lose owner privileges. This cannot be undone from this screen."
+  );
+  if (!sure) return;
+  btn.disabled = true;
+  statusEl.className = "form-status loading";
+  statusEl.textContent = "Transferring ownership…";
+  try {
+    if (!window.transferAdminship) throw new Error("Account service is not connected yet.");
+    const result = await window.transferAdminship(email);
+    statusEl.className = "form-status success";
+    statusEl.textContent = "Ownership moved to " + ((result && result.new_owner_email) || email) + ". Reloading…";
+    form.reset();
+    window.setTimeout(() => window.location.reload(), 1200);
+  } catch (err) {
+    statusEl.className = "form-status error";
+    statusEl.textContent = friendlyAuthError(err);
+  }
+  btn.disabled = false;
 }
 
 function friendlyAuthError(err) {

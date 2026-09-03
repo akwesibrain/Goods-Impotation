@@ -4468,7 +4468,7 @@ body.desk-home {
   font-size: 0.78rem;
   font-weight: 600;
   line-height: 1.25;
-  transition: border-color 0.18s ease, transform 0.18s ease;
+  transition: border-color 0.18s ease, transform 0.18s var(--ease-out), box-shadow 0.18s ease;
 }
 .desk-tiles a:hover { border-color: var(--gold-500); }
 .desk-tile-ico {

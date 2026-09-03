@@ -21,9 +21,9 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
 <link rel="stylesheet" href="styles.css?v=brand86">
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script defer src="validation.js?v=brand7"></script>
-<script defer src="supabase-client.js?v=brand36"></script>
+<script defer src="supabase-client.js?v=brand37"></script>
 <script defer src="script.js?v=brand61"></script>
-<script defer src="admin.js?v=brand46"></script>
+<script defer src="admin.js?v=brand47"></script>
 </head>
 <body id="admin-page" class="admin-app">
 
@@ -564,6 +564,24 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
           <button type="submit" class="btn btn-gold">Save new password</button>
           <div id="staff-password-status" class="form-status"></div>
         </form>
+
+        <div class="form-card admin-form" id="admin-management-card" hidden>
+          <span class="eyebrow">Admin management</span>
+          <h2>Transfer adminship</h2>
+          <p class="form-note">Only the current owner can transfer desk ownership. Enter the email of another registered account. After transfer, you become an assistant and they become the owner.</p>
+          <form id="transfer-adminship-form" novalidate>
+            <div class="field">
+              <label for="transfer-owner-email">New owner email</label>
+              <input type="email" id="transfer-owner-email" name="new_owner_email" required autocomplete="email" placeholder="registered@email.com">
+            </div>
+            <div class="field">
+              <label for="transfer-owner-confirm">Type TRANSFER to confirm</label>
+              <input type="text" id="transfer-owner-confirm" name="confirm_text" required autocomplete="off" placeholder="TRANSFER" spellcheck="false">
+            </div>
+            <button type="submit" class="btn btn-gold">Transfer Adminship</button>
+            <div id="transfer-adminship-status" class="form-status"></div>
+          </form>
+        </div>
 
         <form id="settings-form" class="form-card admin-form" novalidate>
           <span class="eyebrow">Get support</span>

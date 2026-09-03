@@ -3,4 +3,4 @@ Allow: /
 Disallow: /admin
 Disallow: /admin.html
 
-Sitemap: https://goods-impotation.vercel.app/sitemap.xml
+Sitemap: https://www.mwinbarakaimports.shop/sitemap.xml

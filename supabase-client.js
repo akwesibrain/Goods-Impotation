@@ -25,6 +25,9 @@
 const SUPABASE_URL = "https://kajtwabmwbncfgvehqmm.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImthanR3YWJtd2JuY2ZndmVocW1tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxODAxMzQsImV4cCI6MjEwMjc1NjEzNH0.U7KYHYne3umDVLMyR6qcdS_7RobiiOrCESdGT1ng1p8";
 
+/** Official production site — used for auth/email redirects. */
+const SITE_ORIGIN = "https://www.mwinbarakaimports.shop";
+
 let supabaseClient = null;
 
 if (
@@ -37,6 +40,7 @@ if (
   supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: {
       persistSession: true,
+      autoRefreshToken: true,
       detectSessionInUrl: true,
       flowType: "pkce",
     },
@@ -110,11 +114,15 @@ window.normalizeLogin = function ({ email, password }) {
 };
 
 window.authRedirectUrl = function (page) {
-  try {
-    return new URL(page, window.location.href).toString();
-  } catch (_) {
-    return page;
-  }
+  const file = String(page || "account.html").replace(/^\/+/, "").split(/[?#]/)[0];
+  const allowed = {
+    "account.html": true,
+    "auth-callback.html": true,
+    "reset-password.html": true,
+    "admin.html": true,
+  };
+  const safe = allowed[file] ? file : "account.html";
+  return SITE_ORIGIN + "/" + safe;
 };
 
 const AUTH_NEXT_KEY = "mwinbarka_after_auth";
@@ -287,10 +295,13 @@ window.friendlyLoginError = function (err) {
   const raw = String((err && err.message) || err || "");
   const text = raw.toLowerCase();
   if (text.includes("invalid login") || text.includes("invalid credentials") || text.includes("invalid_credentials")) {
-    return "Email or password is wrong. Chrome may be filling an old password — tap the eye, type it again, or use the email sign-in link.";
+    return "Email or password is wrong. Chrome may be filling an old password — tap the eye and type it again.";
   }
   if (text.includes("email not confirmed")) {
     return "Confirm this email first, then sign in.";
+  }
+  if (text.includes("user already registered") || text.includes("already been registered")) {
+    return "That email already has an account. Log in instead.";
   }
   if (text.includes("rate") || text.includes("too many")) {
     return "Too many tries. Wait a minute, then try again.";
@@ -314,6 +325,7 @@ window.clearStaffPassword = function () {
 window.signInCustomer = async function ({ email, password }) {
   if (!supabaseClient) throw new Error("Account service is not connected yet.");
   const login = window.normalizeLogin({ email, password });
+  if (!login.email) throw new Error("Enter your email or phone.");
   if (!login.password) throw new Error("Enter your password.");
   await window.signInWithIdentifier(login);
   const staff = await window.isStaffSession();
@@ -323,21 +335,23 @@ window.signInCustomer = async function ({ email, password }) {
 
 window.signUpCustomer = async function ({ email, password, fullName, phone }) {
   if (!supabaseClient) throw new Error("Account service is not connected yet.");
+  const cleanEmail = String(email || "").trim().toLowerCase();
+  const cleanPassword = String(password == null ? "" : password);
+  if (!cleanEmail || !cleanEmail.includes("@")) throw new Error("Enter a valid email address.");
+  if (!cleanPassword) throw new Error("Enter your password.");
   const { data, error } = await supabaseClient.auth.signUp({
-    email,
-    password,
-    options: { data: { full_name: fullName || "", phone: phone || "" } },
+    email: cleanEmail,
+    password: cleanPassword,
+    options: {
+      data: {
+        full_name: String(fullName || "").trim(),
+        phone: String(phone || "").trim(),
+      },
+      emailRedirectTo: window.authRedirectUrl("account.html"),
+    },
   });
   if (error) throw error;
-  if (data.session && data.user) {
-    const forms = window.MwinbarkaForms;
-    await supabaseClient.from("profiles").upsert({
-      id: data.user.id,
-      full_name: forms ? forms.sanitize(fullName || "").slice(0, 100) : (fullName || ""),
-      phone: forms ? forms.sanitizePhone(phone || "").slice(0, 20) : (phone || ""),
-      email: data.user.email || email || "",
-    }, { onConflict: "id" });
-  }
+  // Profile row is created by the on_auth_user_created database trigger.
   return { needsConfirm: !!(data.user && !data.session) };
 };
 
@@ -345,6 +359,17 @@ window.signOutCustomer = async function (everywhere) {
   if (window.clearStaffPassword) window.clearStaffPassword();
   if (!supabaseClient) return;
   await supabaseClient.auth.signOut({ scope: everywhere ? "global" : "local" });
+};
+
+window.transferAdminship = async function (newOwnerEmail) {
+  if (!supabaseClient) throw new Error("Account service is not connected yet.");
+  const email = String(newOwnerEmail || "").trim().toLowerCase();
+  if (!email || !email.includes("@")) throw new Error("Enter the new owner's registered email.");
+  const { data, error } = await supabaseClient.rpc("transfer_adminship", {
+    new_owner_email: email,
+  });
+  if (error) throw new Error(error.message || "Could not transfer adminship.");
+  return data;
 };
 
 window.updateMyPassword = async function ({ currentPassword, newPassword }) {
@@ -378,7 +403,7 @@ window.updateMyEmail = async function ({ currentPassword, newEmail, emailRedirec
   if (checkError) throw new Error("Current password is wrong.");
   const { error } = await supabaseClient.auth.updateUser(
     { email: next },
-    { emailRedirectTo: emailRedirectTo || window.location.href.split("#")[0] },
+    { emailRedirectTo: emailRedirectTo || window.authRedirectUrl("account.html") },
   );
   if (error) throw error;
   await supabaseClient.from("profiles").update({
