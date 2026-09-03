@@ -50,6 +50,23 @@ async function sendTxtConnect(apiKey: string, sender: string, to: string, messag
   }
 }
 
+function authorizedCaller(req: Request) {
+  const secret = String(Deno.env.get("NOTIFY_WEBHOOK_SECRET") || "").trim();
+  const headerSecret = String(req.headers.get("x-notify-secret") || "").trim();
+  if (secret && headerSecret && secret === headerSecret) return "webhook";
+
+  const auth = String(req.headers.get("authorization") || "");
+  const token = auth.toLowerCase().startsWith("bearer ") ? auth.slice(7).trim() : "";
+  if (!token) return "";
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1] || ""));
+    if (payload.role === "authenticated" && payload.sub) return "jwt";
+  } catch (_err) {
+    return "";
+  }
+  return "";
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeadersFor(req) });
@@ -59,6 +76,9 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const mode = authorizedCaller(req);
+    if (!mode) return json(req, { error: "Unauthorized" }, 401);
+
     const body = await req.json().catch(() => ({}));
     const requestId = String(body.request_id || "").trim();
     if (!requestId) return json(req, { ok: true });
@@ -68,12 +88,45 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "",
     );
 
-    const { data: order } = await admin
+    if (mode === "jwt") {
+      const auth = String(req.headers.get("authorization") || "");
+      const token = auth.slice(7).trim();
+      const userClient = createClient(
+        Deno.env.get("SUPABASE_URL") || "",
+        Deno.env.get("SUPABASE_ANON_KEY") || "",
+        { global: { headers: { Authorization: `Bearer ${token}` } } },
+      );
+      const { data: userData } = await userClient.auth.getUser();
+      const user = userData.user;
+      if (!user) return json(req, { error: "Unauthorized" }, 401);
+
+      const { data: profile } = await admin
+        .from("profiles")
+        .select("is_staff")
+        .eq("id", user.id)
+        .maybeSingle();
+      const isStaff = !!(profile && profile.is_staff);
+
+      const { data: owned } = await admin
+        .from("requests")
+        .select("id, user_id")
+        .eq("id", requestId)
+        .maybeSingle();
+      if (!owned) return json(req, { ok: true });
+      if (!isStaff && owned.user_id !== user.id) {
+        return json(req, { error: "Forbidden" }, 403);
+      }
+    }
+
+    // Claim the notify slot first so replays cannot spam SMS.
+    const { data: order, error: claimError } = await admin
       .from("requests")
-      .select("id, name, phone, status, shipment_status, created_at")
+      .update({ staff_notified_at: new Date().toISOString() })
       .eq("id", requestId)
+      .is("staff_notified_at", null)
+      .select("id, name, phone, status, shipment_status, created_at")
       .maybeSingle();
-    if (!order?.phone) return json(req, { ok: true });
+    if (claimError || !order?.phone) return json(req, { ok: true });
 
     const created = order.created_at ? new Date(String(order.created_at)).getTime() : 0;
     if (created && Date.now() - created > 5 * 60 * 1000) {

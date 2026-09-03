@@ -79,6 +79,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (staffName && profile) staffName.textContent = profile.full_name || "Staff";
     if (staffAvatar && profile) staffAvatar.textContent = initials(profile.full_name || profile.email || "MW");
     fillStaffLogin(profile);
+    showStaffWelcome(profile);
     await Promise.all([
       loadRequests(client),
       loadProducts(client),
@@ -106,6 +107,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const showSignedOut = () => {
     closeAdminMenu();
+    hideStaffWelcome();
     loginSection.style.display = "flex";
     dashboard.style.display = "none";
     dashboard.classList.remove("is-ready");
@@ -126,26 +128,64 @@ document.addEventListener("DOMContentLoaded", () => {
     const statusEl = document.getElementById("login-status");
     const btn = e.target.querySelector('button[type="submit"]');
     btn.disabled = true;
+    btn.classList.add("is-loading");
+    btn.setAttribute("aria-busy", "true");
 
-    const { error } = await client.auth.signInWithPassword({
-      email: e.target.elements.email.value.trim(),
-      password: e.target.elements.password.value,
-    });
-
-    btn.disabled = false;
-
-    if (error) {
+    const login = window.normalizeLogin
+      ? window.normalizeLogin({
+          email: e.target.elements.email.value,
+          password: e.target.elements.password.value,
+        })
+      : {
+          email: e.target.elements.email.value.trim().toLowerCase(),
+          password: String(e.target.elements.password.value || "").replace(/^\s+|\s+$/g, ""),
+        };
+    if (!login.password) {
+      btn.disabled = false;
+      btn.classList.remove("is-loading");
+      btn.removeAttribute("aria-busy");
       statusEl.className = "form-status error";
-      statusEl.textContent = error.message;
+      statusEl.textContent = "Enter your password, or use the email sign-in link.";
       return;
     }
+    let email = login.email;
+    try {
+      if (window.signInWithIdentifier) {
+        await window.signInWithIdentifier(login);
+      } else {
+        if (window.resolveLoginEmail) email = await window.resolveLoginEmail(login.email);
+        const { error } = await client.auth.signInWithPassword({
+          email,
+          password: login.password,
+        });
+        if (error) throw error;
+      }
+    } catch (err) {
+      btn.disabled = false;
+      btn.classList.remove("is-loading");
+      btn.removeAttribute("aria-busy");
+      statusEl.className = "form-status error";
+      statusEl.textContent = (window.friendlyLoginError && window.friendlyLoginError(err)) || err.message;
+      return;
+    }
+
+    btn.disabled = false;
+    btn.classList.remove("is-loading");
+    btn.removeAttribute("aria-busy");
+
+    if (typeof window.clearStaffPassword === "function") window.clearStaffPassword();
+    if (typeof window.markStaffWelcome === "function") window.markStaffWelcome();
     statusEl.className = "form-status";
     statusEl.textContent = "";
     showSignedIn();
   });
 
+  document.getElementById("admin-welcome-dismiss")?.addEventListener("click", hideStaffWelcome);
+
   signOutBtn.addEventListener("click", async () => {
     closeAdminMenu();
+    if (window.clearStaffPassword) window.clearStaffPassword();
+    hideStaffWelcome();
     await client.auth.signOut();
     showSignedOut();
   });
@@ -200,10 +240,13 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("admin-nav-scrim")?.addEventListener("click", closeAdminMenu);
 
   document.getElementById("product-form").addEventListener("submit", (e) => handleProductSubmit(e, client));
+  document.getElementById("product-cancel")?.addEventListener("click", resetProductForm);
   document.getElementById("review-admin-form").addEventListener("submit", (e) => handleReviewAdminSubmit(e, client));
   document.getElementById("settings-form").addEventListener("submit", (e) => handleSettingsSubmit(e, client));
   document.getElementById("staff-email-form")?.addEventListener("submit", (e) => handleStaffEmailSubmit(e, client));
   document.getElementById("staff-password-form")?.addEventListener("submit", (e) => handleStaffPasswordSubmit(e, client));
+  document.getElementById("staff-phone-form")?.addEventListener("submit", (e) => handleStaffPhoneSubmit(e, client));
+  document.getElementById("transfer-adminship-form")?.addEventListener("submit", handleTransferAdminshipSubmit);
   document.getElementById("sms-settings-form").addEventListener("submit", (e) => handleSmsSettingsSubmit(e, client));
   document.getElementById("sms-send-form").addEventListener("submit", (e) => handleSmsSend(e, client));
   document.getElementById("sms-broadcast-form")?.addEventListener("submit", (e) => handleSmsBroadcast(e, client));
@@ -710,10 +753,17 @@ function escapeAttr(value) {
 }
 
 async function uploadMedia(client, file, folder) {
-  const safeName = file.name.replace(/[^\w.\-]+/g, "-");
-  const path = `${folder}/${Date.now()}-${safeName}`;
+  const allowed = ["image/jpeg", "image/png", "image/webp"];
+  if (!allowed.includes(file.type)) {
+    throw new Error("Use a JPG, PNG, or WebP image.");
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    throw new Error("Keep images under 5 MB.");
+  }
+  const ext = (file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg");
+  const path = `${folder}/${Date.now()}-${(crypto.randomUUID && crypto.randomUUID()) || "img"}.${ext}`;
   const { error } = await client.storage.from("media").upload(path, file, {
-    contentType: file.type || undefined,
+    contentType: file.type,
     upsert: false,
   });
   if (error) throw error;
@@ -725,22 +775,22 @@ async function loadCustomers(client) {
   const body = document.getElementById("customers-body");
   const note = document.getElementById("customers-note");
   if (!body) return;
-  body.innerHTML = `<tr><td colspan="5" class="admin-empty">Loading customers...</td></tr>`;
+  body.innerHTML = `<tr><td colspan="6" class="admin-empty">Loading customers...</td></tr>`;
 
   const { data, error } = await client
     .from("profiles")
-    .select("id, full_name, phone, is_staff, created_at")
+    .select("id, full_name, phone, email, is_staff, created_at")
     .eq("is_staff", false)
     .order("created_at", { ascending: false });
 
   if (error) {
-    body.innerHTML = `<tr><td colspan="5" class="admin-empty">Couldn't load customers: ${escapeHtml(error.message)}</td></tr>`;
+    body.innerHTML = `<tr><td colspan="6" class="admin-empty">Couldn't load customers: ${escapeHtml(error.message)}</td></tr>`;
     return;
   }
 
   allCustomers = data || [];
   if (!allCustomers.length) {
-    body.innerHTML = `<tr><td colspan="5"><div class="admin-empty"><span class="code">MW · NO CUSTOMERS</span>No customer accounts yet. Guests can still send orders without signing up.</div></td></tr>`;
+    body.innerHTML = `<tr><td colspan="6"><div class="admin-empty"><span class="code">MW · NO CUSTOMERS</span>No customer accounts yet. Guests can still send orders without signing up.</div></td></tr>`;
     if (note) note.textContent = "";
     fillSmsRecipients();
     renderOverview();
@@ -755,6 +805,7 @@ async function loadCustomers(client) {
   body.innerHTML = allCustomers.map((c) => `<tr>
     <td class="cell-when">${formatDate(c.created_at)}</td>
     <td><strong>${escapeHtml(c.full_name) || '<span class="muted">—</span>'}</strong></td>
+    <td>${escapeHtml(c.email) || '<span class="muted">—</span>'}</td>
     <td>${escapeHtml(c.phone) || '<span class="muted">—</span>'}</td>
     <td>${counts[c.id] || 0}</td>
     <td>
@@ -800,10 +851,18 @@ async function loadProducts(client) {
     <td>${p.price ? "GH₵" + escapeHtml(p.price) : '<span class="muted">—</span>'}</td>
     <td>
       <div class="row-actions">
+        <button type="button" class="chip" data-edit-product="${escapeAttr(p.id)}">Edit</button>
         <button type="button" class="chip" data-delete-product="${escapeAttr(p.id)}">Delete</button>
       </div>
     </td>
   </tr>`).join("");
+
+  body.querySelectorAll("[data-edit-product]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const product = allProducts.find((row) => row.id === btn.dataset.editProduct);
+      if (product) fillProductForm(product);
+    });
+  });
 
   body.querySelectorAll("[data-delete-product]").forEach((btn) => {
     btn.addEventListener("click", async () => {
@@ -816,6 +875,52 @@ async function loadProducts(client) {
       await loadProducts(client);
     });
   });
+}
+
+function resetProductForm() {
+  const form = document.getElementById("product-form");
+  if (!form) return;
+  form.reset();
+  const idField = document.getElementById("product-id");
+  if (idField) idField.value = "";
+  const eyebrow = document.getElementById("product-form-eyebrow");
+  const title = document.getElementById("product-form-title");
+  const submit = document.getElementById("product-submit");
+  const cancel = document.getElementById("product-cancel");
+  const note = document.getElementById("product-image-note");
+  const statusEl = document.getElementById("product-status");
+  if (eyebrow) eyebrow.textContent = "New product";
+  if (title) title.textContent = "Add a product";
+  if (submit) submit.textContent = "Save product";
+  if (cancel) cancel.hidden = true;
+  if (note) note.textContent = "";
+  if (statusEl) {
+    statusEl.className = "form-status";
+    statusEl.textContent = "";
+  }
+}
+
+function fillProductForm(product) {
+  const form = document.getElementById("product-form");
+  if (!form || !product) return;
+  document.getElementById("product-id").value = product.id || "";
+  form.elements.name.value = product.name || "";
+  form.elements.price.value = product.price || "";
+  form.elements.category.value = product.category || "";
+  form.elements.description.value = product.description || "";
+  const imageInput = document.getElementById("product-image");
+  if (imageInput) imageInput.value = "";
+  const eyebrow = document.getElementById("product-form-eyebrow");
+  const title = document.getElementById("product-form-title");
+  const submit = document.getElementById("product-submit");
+  const cancel = document.getElementById("product-cancel");
+  const note = document.getElementById("product-image-note");
+  if (eyebrow) eyebrow.textContent = "Edit product";
+  if (title) title.textContent = "Update price and description";
+  if (submit) submit.textContent = "Save changes";
+  if (cancel) cancel.hidden = false;
+  if (note) note.textContent = product.image_url ? "Leave the photo empty to keep the current picture." : "";
+  form.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 async function handleProductSubmit(e, client) {
@@ -838,22 +943,27 @@ async function handleProductSubmit(e, client) {
 
   btn.disabled = true;
   try {
-    let imageUrl = null;
+    let imageUrl;
     const file = form.elements.image.files[0];
     if (file) imageUrl = await uploadMedia(client, file, "products");
 
-    const { error } = await client.from("products").insert([{
+    const payload = {
       name,
       description: form.elements.description.value.trim() || null,
       price: form.elements.price.value.trim() || null,
       category,
-      image_url: imageUrl,
-    }]);
+    };
+    if (imageUrl) payload.image_url = imageUrl;
+
+    const existingId = (document.getElementById("product-id")?.value || "").trim();
+    const { error } = existingId
+      ? await client.from("products").update(payload).eq("id", existingId)
+      : await client.from("products").insert([{ ...payload, image_url: imageUrl || null }]);
     if (error) throw error;
 
-    form.reset();
+    resetProductForm();
     statusEl.className = "form-status success";
-    statusEl.textContent = "Product saved.";
+    statusEl.textContent = existingId ? "Saved. The public GH₵ price now matches what you typed." : "Product saved.";
     await loadProducts(client);
   } catch (err) {
     statusEl.className = "form-status error";
@@ -965,14 +1075,94 @@ async function loadSettings(client) {
   const { data, error } = await client.from("site_settings").select("*").eq("id", 1).maybeSingle();
   if (error || !data) return;
   const form = document.getElementById("settings-form");
-  ["whatsapp_channel_url", "whatsapp_url", "facebook_url", "instagram_url", "tiktok_url", "advert_video_url"].forEach((key) => {
+  ["support_phone", "support_email", "whatsapp_channel_url", "whatsapp_url", "facebook_url", "instagram_url", "tiktok_url"].forEach((key) => {
     if (form.elements[key]) form.elements[key].value = data[key] || "";
   });
 }
 
+function hideStaffWelcome() {
+  const banner = document.getElementById("admin-welcome");
+  if (banner) banner.hidden = true;
+}
+
+function showStaffWelcome(profile) {
+  const banner = document.getElementById("admin-welcome");
+  const text = document.getElementById("admin-welcome-text");
+  if (!banner || !banner.hidden) return;
+  const shouldShow = typeof window.consumeStaffWelcome === "function" && window.consumeStaffWelcome();
+  if (!shouldShow) return;
+  if (text) {
+    text.textContent = window.staffWelcomeMessage
+      ? window.staffWelcomeMessage(profile)
+      : "Welcome to the Mwinbarka desk.";
+  }
+  banner.hidden = false;
+}
+
 function fillStaffLogin(profile) {
-  const emailEl = document.getElementById("staff-current-email");
-  if (emailEl) emailEl.value = (profile && profile.email) || "";
+  const email = (profile && profile.email) || "";
+  const phone = (profile && profile.phone) || "";
+  const emailEls = [
+    document.getElementById("staff-detail-email"),
+    document.getElementById("staff-current-email"),
+  ];
+  emailEls.forEach((el) => {
+    if (el) el.value = email;
+  });
+  const phoneEl = document.getElementById("staff-detail-phone");
+  if (phoneEl && !phoneEl.matches(":focus")) phoneEl.value = phone;
+  const pwEl = document.getElementById("staff-detail-password");
+  const hint = document.getElementById("staff-password-hint");
+  if (pwEl) {
+    pwEl.value = "";
+    pwEl.placeholder = "Passwords are never shown here";
+  }
+  if (hint) {
+    hint.textContent = "For security, this desk never stores or displays your password. Use Change password below.";
+  }
+  const management = document.getElementById("admin-management-card");
+  if (management) {
+    const isOwner = !!(profile && profile.is_staff && profile.staff_role === "owner");
+    management.hidden = !isOwner;
+  }
+}
+
+async function handleTransferAdminshipSubmit(e) {
+  e.preventDefault();
+  const form = e.target;
+  const statusEl = document.getElementById("transfer-adminship-status");
+  const btn = form.querySelector('button[type="submit"]');
+  const email = String(form.elements.new_owner_email.value || "").trim().toLowerCase();
+  const confirmText = String(form.elements.confirm_text.value || "").trim();
+  if (!email || !email.includes("@")) {
+    statusEl.className = "form-status error";
+    statusEl.textContent = "Enter the registered email of the new owner.";
+    return;
+  }
+  if (confirmText !== "TRANSFER") {
+    statusEl.className = "form-status error";
+    statusEl.textContent = "Type TRANSFER in capitals to confirm.";
+    return;
+  }
+  const sure = window.confirm(
+    "Transfer adminship to " + email + "?\n\nYou will lose owner privileges. This cannot be undone from this screen."
+  );
+  if (!sure) return;
+  btn.disabled = true;
+  statusEl.className = "form-status loading";
+  statusEl.textContent = "Transferring ownership…";
+  try {
+    if (!window.transferAdminship) throw new Error("Account service is not connected yet.");
+    const result = await window.transferAdminship(email);
+    statusEl.className = "form-status success";
+    statusEl.textContent = "Ownership moved to " + ((result && result.new_owner_email) || email) + ". Reloading…";
+    form.reset();
+    window.setTimeout(() => window.location.reload(), 1200);
+  } catch (err) {
+    statusEl.className = "form-status error";
+    statusEl.textContent = friendlyAuthError(err);
+  }
+  btn.disabled = false;
 }
 
 function friendlyAuthError(err) {
@@ -1068,11 +1258,53 @@ async function handleStaffPasswordSubmit(e, client) {
     if (!window.updateMyPassword) throw new Error("Account service is not connected yet.");
     await window.updateMyPassword({ currentPassword, newPassword });
     form.reset();
+    const profile = window.getMyProfile ? await window.getMyProfile() : null;
+    fillStaffLogin(profile);
     statusEl.className = "form-status success";
     statusEl.textContent = "Password saved. Use the new password the next time you sign in.";
   } catch (err) {
     statusEl.className = "form-status error";
     statusEl.textContent = friendlyAuthError(err);
+  }
+  btn.disabled = false;
+}
+
+async function handleStaffPhoneSubmit(e, client) {
+  e.preventDefault();
+  const form = e.target;
+  const statusEl = document.getElementById("staff-phone-status");
+  const btn = form.querySelector('button[type="submit"]');
+  const phone = form.elements.phone.value.trim();
+  if (!phone) {
+    statusEl.className = "form-status error";
+    statusEl.textContent = "Enter a Ghana phone number.";
+    return;
+  }
+  btn.disabled = true;
+  statusEl.className = "form-status";
+  statusEl.textContent = "Saving…";
+  try {
+    const profile = window.getMyProfile ? await window.getMyProfile() : null;
+    if (!window.updateMyProfile) throw new Error("Account service is not connected yet.");
+    await window.updateMyProfile({
+      full_name: (profile && profile.full_name) || "Staff",
+      phone,
+      company_name: (profile && profile.company_name) || "",
+      whatsapp: phone,
+      region: (profile && profile.region) || "",
+      city: (profile && profile.city) || "",
+      address: (profile && profile.address) || "",
+      landmark: (profile && profile.landmark) || "",
+    });
+    const next = window.getMyProfile ? await window.getMyProfile() : profile;
+    fillStaffLogin(next);
+    const staffLine = document.getElementById("admin-staff-email");
+    if (staffLine && next) staffLine.textContent = next.email || "Staff";
+    statusEl.className = "form-status success";
+    statusEl.textContent = "Phone saved. You can open Settings anytime to see it.";
+  } catch (err) {
+    statusEl.className = "form-status error";
+    statusEl.textContent = err.message || "Couldn't save the phone number.";
   }
   btn.disabled = false;
 }
@@ -1084,26 +1316,35 @@ async function handleSettingsSubmit(e, client) {
   const btn = form.querySelector('button[type="submit"]');
   btn.disabled = true;
 
-  try {
-    let videoUrl = form.elements.advert_video_url.value.trim() || null;
-    const file = form.elements.advert_video_file.files[0];
-    if (file) videoUrl = await uploadMedia(client, file, "adverts");
+  const httpsOrEmpty = (value, label) => {
+    const raw = String(value || "").trim();
+    if (!raw) return null;
+    try {
+      const u = new URL(raw);
+      if (u.protocol !== "https:") throw new Error(label + " must start with https://");
+      return u.toString();
+    } catch (err) {
+      if (String(err.message || "").includes("must start")) throw err;
+      throw new Error(label + " must be a valid https:// link");
+    }
+  };
 
+  try {
     const { error } = await client.from("site_settings").update({
-      whatsapp_channel_url: form.elements.whatsapp_channel_url.value.trim() || null,
-      whatsapp_url: form.elements.whatsapp_url.value.trim() || null,
-      facebook_url: form.elements.facebook_url.value.trim() || null,
-      instagram_url: form.elements.instagram_url.value.trim() || null,
-      tiktok_url: form.elements.tiktok_url.value.trim() || null,
-      advert_video_url: videoUrl,
+      support_phone: form.elements.support_phone.value.trim() || null,
+      support_email: form.elements.support_email.value.trim().toLowerCase() || null,
+      whatsapp_channel_url: httpsOrEmpty(form.elements.whatsapp_channel_url.value, "Group invite"),
+      whatsapp_url: httpsOrEmpty(form.elements.whatsapp_url.value, "WhatsApp link"),
+      facebook_url: httpsOrEmpty(form.elements.facebook_url.value, "Facebook link"),
+      instagram_url: httpsOrEmpty(form.elements.instagram_url.value, "Instagram link"),
+      tiktok_url: httpsOrEmpty(form.elements.tiktok_url.value, "TikTok link"),
+      advert_video_url: null,
       updated_at: new Date().toISOString(),
     }).eq("id", 1);
     if (error) throw error;
 
-    if (videoUrl) form.elements.advert_video_url.value = videoUrl;
-    form.elements.advert_video_file.value = "";
     statusEl.className = "form-status success";
-    statusEl.textContent = "Settings saved. The website will use these links and this video.";
+    statusEl.textContent = "Settings saved. The website will use this phone, email, and these links.";
   } catch (err) {
     statusEl.className = "form-status error";
     statusEl.textContent = err.message || "Couldn't save settings.";

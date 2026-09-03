@@ -23,7 +23,10 @@
 // ============================================================
 
 const SUPABASE_URL = "https://kajtwabmwbncfgvehqmm.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_OthsZo5O7gJ_w23GJVdmuQ_EBsh6gsn";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImthanR3YWJtd2JuY2ZndmVocW1tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxODAxMzQsImV4cCI6MjEwMjc1NjEzNH0.U7KYHYne3umDVLMyR6qcdS_7RobiiOrCESdGT1ng1p8";
+
+/** Official production site — used for auth/email redirects. */
+const SITE_ORIGIN = "https://www.mwinbarakaimports.shop";
 
 let supabaseClient = null;
 
@@ -34,7 +37,14 @@ if (
   !SUPABASE_URL.includes("YOUR_SUPABASE") &&
   !SUPABASE_ANON_KEY.includes("YOUR_SUPABASE")
 ) {
-  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      flowType: "pkce",
+    },
+  });
 }
 
 window.getSessionUser = async function () {
@@ -48,12 +58,12 @@ window.getMyProfile = async function () {
   if (!user || !supabaseClient) return null;
   const { data } = await supabaseClient
     .from("profiles")
-    .select("id, full_name, phone, company_name, whatsapp, region, city, address, landmark, notify_sms, notify_whatsapp, notify_email, is_staff, staff_role, created_at")
+    .select("id, full_name, phone, email, company_name, whatsapp, region, city, address, landmark, notify_sms, notify_whatsapp, notify_email, is_staff, staff_role, created_at")
     .eq("id", user.id)
     .maybeSingle();
   return {
     id: user.id,
-    email: user.email || "",
+    email: user.email || (data && data.email) || "",
     full_name: (data && data.full_name) || user.user_metadata?.full_name || "",
     phone: (data && data.phone) || user.user_metadata?.phone || "",
     company_name: (data && data.company_name) || "",
@@ -77,80 +87,322 @@ window.isStaffSession = async function () {
   return !!(profile && profile.is_staff);
 };
 
-window.signInCustomer = async function ({ email, password }) {
-  if (!supabaseClient) throw new Error("Account service is not connected yet.");
+window.rememberStaffPassword = function () {
+  // Passwords must never be kept in browser storage.
+  try { sessionStorage.removeItem("mwinbarka_staff_pw"); } catch (_) {}
+};
+
+window.markStaffWelcome = function () {
+  try { sessionStorage.setItem("mwinbarka_staff_welcome", "1"); } catch (_) {}
+};
+
+window.consumeStaffWelcome = function () {
   try {
-    const { data, error } = await supabaseClient.auth.signInWithPassword({ 
-      email, 
-      password 
+    const show = sessionStorage.getItem("mwinbarka_staff_welcome") === "1";
+    if (show) sessionStorage.removeItem("mwinbarka_staff_welcome");
+    return show;
+  } catch (_) {
+    return false;
+  }
+};
+
+window.normalizeLogin = function ({ email, password }) {
+  return {
+    email: String(email || "").trim().toLowerCase(),
+    password: String(password == null ? "" : password).replace(/^\s+|\s+$/g, ""),
+  };
+};
+
+window.authRedirectUrl = function (page) {
+  const file = String(page || "account.html").replace(/^\/+/, "").split(/[?#]/)[0];
+  const allowed = {
+    "account.html": true,
+    "auth-callback.html": true,
+    "reset-password.html": true,
+    "admin.html": true,
+  };
+  const safe = allowed[file] ? file : "account.html";
+  return SITE_ORIGIN + "/" + safe;
+};
+
+const AUTH_NEXT_KEY = "mwinbarka_after_auth";
+const AUTH_NEXT_PAGES = {
+  "request.html": true,
+  "quote-list.html": true,
+  "item.html": true,
+  "categories.html": true,
+  "index.html": true,
+  "account.html": true,
+};
+
+window.safeNextPath = function (raw) {
+  let value = String(raw || "").trim();
+  if (!value) return "";
+  try { value = decodeURIComponent(value); } catch (_) {}
+  value = value.replace(/^\/+/, "");
+  if (!value || /^[a-z]+:/i.test(value) || value.startsWith("//") || value.includes("\\")) return "";
+  const file = value.split(/[?#]/)[0];
+  if (!AUTH_NEXT_PAGES[file]) return "";
+  return value;
+};
+
+window.saveAuthNext = function (url) {
+  const next = window.safeNextPath(url);
+  try {
+    if (next) sessionStorage.setItem(AUTH_NEXT_KEY, next);
+  } catch (_) {}
+  return next;
+};
+
+window.peekAuthNext = function () {
+  try {
+    return window.safeNextPath(sessionStorage.getItem(AUTH_NEXT_KEY) || "");
+  } catch (_) {
+    return "";
+  }
+};
+
+window.consumeAuthNext = function () {
+  const next = window.peekAuthNext();
+  try { sessionStorage.removeItem(AUTH_NEXT_KEY); } catch (_) {}
+  return next;
+};
+
+window.continueAfterCustomerAuth = function () {
+  const next = window.consumeAuthNext();
+  if (!next) return false;
+  window.location.replace(next);
+  return true;
+};
+
+window.resolveLoginEmail = async function (identifier) {
+  const raw = String(identifier || "").trim();
+  if (!raw) throw new Error("Enter your email or phone.");
+  if (raw.includes("@")) return raw.toLowerCase();
+  // Phone numbers are resolved server-side so browsers cannot harvest emails.
+  throw new Error("PHONE_NEEDS_SERVER");
+};
+
+window.signInWithIdentifier = async function ({ email, password }) {
+  if (!supabaseClient) throw new Error("Account service is not connected yet.");
+  const login = window.normalizeLogin({ email, password });
+  if (!login.password) throw new Error("Enter your password.");
+  if (login.email.includes("@")) {
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
+      email: login.email,
+      password: login.password,
     });
     if (error) throw error;
-    if (!data.session) throw new Error("No session returned from sign in.");
-    if (window.markAdvertSkippedForAccount) window.markAdvertSkippedForAccount();
-    return true;
-  } catch (err) {
-    throw new Error(err.message || "Sign in failed. Please check your email and password.");
+    return data;
   }
+  const { data, error } = await supabaseClient.functions.invoke("auth-with-identifier", {
+    body: { action: "password", identifier: login.email, password: login.password },
+  });
+  if (error) throw new Error("Could not log in.");
+  if (!data || !data.ok || !data.session) {
+    throw new Error((data && data.error) || "Email or password is wrong.");
+  }
+  const { error: setError } = await supabaseClient.auth.setSession({
+    access_token: data.session.access_token,
+    refresh_token: data.session.refresh_token,
+  });
+  if (setError) throw setError;
+  return data;
+};
+
+window.requestLoginLink = async function (identifier) {
+  if (!supabaseClient) throw new Error("Account service is not connected yet.");
+  const raw = String(identifier || "").trim();
+  if (!raw) throw new Error("Enter your email or phone.");
+  if (raw.includes("@")) {
+    const { error } = await supabaseClient.auth.signInWithOtp({
+      email: raw.toLowerCase(),
+      options: {
+        shouldCreateUser: false,
+        emailRedirectTo: window.authRedirectUrl("auth-callback.html"),
+      },
+    });
+    if (error) throw error;
+    return raw.toLowerCase();
+  }
+  const { data, error } = await supabaseClient.functions.invoke("auth-with-identifier", {
+    body: {
+      action: "otp",
+      identifier: raw,
+      redirectTo: window.authRedirectUrl("auth-callback.html"),
+    },
+  });
+  if (error) throw new Error("Could not send the sign-in link.");
+  if (!data || !data.ok) throw new Error((data && data.error) || "Could not send the sign-in link.");
+  return "";
+};
+
+window.requestPasswordReset = async function (identifier) {
+  if (!supabaseClient) throw new Error("Account service is not connected yet.");
+  const raw = String(identifier || "").trim();
+  if (!raw) throw new Error("Enter your email or phone.");
+  if (raw.includes("@")) {
+    const { error } = await supabaseClient.auth.resetPasswordForEmail(raw.toLowerCase(), {
+      redirectTo: window.authRedirectUrl("reset-password.html"),
+    });
+    if (error) throw error;
+    return raw.toLowerCase();
+  }
+  const { data, error } = await supabaseClient.functions.invoke("auth-with-identifier", {
+    body: {
+      action: "reset",
+      identifier: raw,
+      redirectTo: window.authRedirectUrl("reset-password.html"),
+    },
+  });
+  if (error) throw new Error("Could not send the reset link.");
+  if (!data || !data.ok) throw new Error((data && data.error) || "Could not send the reset link.");
+  return "";
+};
+
+window.routeSignedInUser = async function () {
+  const staff = await window.isStaffSession();
+  if (staff) {
+    if (typeof window.markStaffWelcome === "function") window.markStaffWelcome();
+    window.location.replace("admin.html");
+    return { isStaff: true };
+  }
+  if (window.continueAfterCustomerAuth && window.continueAfterCustomerAuth()) {
+    return { isStaff: false };
+  }
+  window.location.replace("account.html");
+  return { isStaff: false };
+};
+
+window.staffWelcomeMessage = function (profile) {
+  const name = String((profile && profile.full_name) || "").trim();
+  const first = name.split(/\s+/)[0] || "there";
+  let hour = new Date().getHours();
+  try {
+    hour = Number(
+      new Intl.DateTimeFormat("en-GB", {
+        timeZone: "Africa/Accra",
+        hour: "numeric",
+        hourCycle: "h23",
+      }).format(new Date())
+    );
+  } catch (_) {}
+  const hello = hour < 12 ? "Good morning" : hour < 16 ? "Good afternoon" : "Good evening";
+  return hello + ", " + first + ". Welcome to the Mwinbarka desk.";
+};
+
+window.friendlyLoginError = function (err) {
+  const raw = String((err && err.message) || err || "");
+  const text = raw.toLowerCase();
+  if (text.includes("invalid login") || text.includes("invalid credentials") || text.includes("invalid_credentials")) {
+    return "Email or password is wrong. Chrome may be filling an old password — tap the eye and type it again.";
+  }
+  if (text.includes("email not confirmed")) {
+    return "Confirm this email first, then sign in.";
+  }
+  if (text.includes("user already registered") || text.includes("already been registered")) {
+    return "That email already has an account. Log in instead.";
+  }
+  if (text.includes("rate") || text.includes("too many")) {
+    return "Too many tries. Wait a minute, then try again.";
+  }
+  if (text.includes("not connected")) {
+    return "Account service is not connected yet.";
+  }
+  return raw || "Could not log in.";
+};
+
+window.readStaffPassword = function () {
+  return "";
+};
+
+window.clearStaffPassword = function () {
+  try {
+    sessionStorage.removeItem("mwinbarka_staff_pw");
+  } catch (_) {}
+};
+
+window.signInCustomer = async function ({ email, password }) {
+  if (!supabaseClient) throw new Error("Account service is not connected yet.");
+  const login = window.normalizeLogin({ email, password });
+  if (!login.email) throw new Error("Enter your email or phone.");
+  if (!login.password) throw new Error("Enter your password.");
+  await window.signInWithIdentifier(login);
+  const staff = await window.isStaffSession();
+  if (staff) window.markStaffWelcome();
+  return { isStaff: staff };
 };
 
 window.signUpCustomer = async function ({ email, password, fullName, phone }) {
   if (!supabaseClient) throw new Error("Account service is not connected yet.");
-  try {
-    const { data, error } = await supabaseClient.auth.signUp({
-      email,
-      password,
-      options: { 
-        data: { 
-          full_name: fullName || "", 
-          phone: phone || "" 
-        } 
+  const cleanEmail = String(email || "").trim().toLowerCase();
+  const cleanPassword = String(password == null ? "" : password);
+  const cleanName = String(fullName || "").trim();
+  const cleanPhone = String(phone || "").trim();
+  if (!cleanEmail || !cleanEmail.includes("@")) throw new Error("Enter a valid email address.");
+  if (!cleanPassword) throw new Error("Enter your password.");
+  const { data, error } = await supabaseClient.auth.signUp({
+    email: cleanEmail,
+    password: cleanPassword,
+    options: {
+      data: {
+        full_name: cleanName,
+        phone: cleanPhone,
       },
-    });
-    if (error) throw error;
-    if (data.user) {
-      const forms = window.MwinbarkaForms;
-      await supabaseClient.from("profiles").upsert({
-        id: data.user.id,
-        full_name: forms ? forms.sanitize(fullName || "").slice(0, 100) : (fullName || ""),
-        phone: forms ? forms.sanitizePhone(phone || "").slice(0, 20) : (phone || ""),
-        created_at: new Date().toISOString(),
-      }, { onConflict: "id" });
-      
-      if (data.session) {
-        if (window.markAdvertSkippedForAccount) window.markAdvertSkippedForAccount();
-      }
+      emailRedirectTo: window.authRedirectUrl("account.html"),
+    },
+  });
+  if (error) throw error;
+  // Profile row is created by on_auth_user_created. Optionally fill name/phone
+  // with UPDATE (never upsert — upsert needs table UPDATE privilege and 403s).
+  if (data.session && data.user) {
+    try {
+      await supabaseClient
+        .from("profiles")
+        .update({
+          full_name: cleanName.slice(0, 100),
+          phone: cleanPhone.slice(0, 20),
+          email: data.user.email || cleanEmail,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", data.user.id);
+    } catch (_err) {
+      // Auth already succeeded; desk can still open.
     }
-    return { needsConfirm: !!(data.user && !data.session) };
-  } catch (err) {
-    throw new Error(err.message || "Sign up failed. Please try again.");
   }
+  return { needsConfirm: !!(data.user && !data.session), session: data.session || null };
 };
 
 window.signOutCustomer = async function (everywhere) {
+  if (window.clearStaffPassword) window.clearStaffPassword();
   if (!supabaseClient) return;
-  try {
-    await supabaseClient.auth.signOut({ scope: everywhere ? "global" : "local" });
-  } catch (err) {
-    console.error("Sign out error:", err);
-  }
+  await supabaseClient.auth.signOut({ scope: everywhere ? "global" : "local" });
+};
+
+window.transferAdminship = async function (newOwnerEmail) {
+  if (!supabaseClient) throw new Error("Account service is not connected yet.");
+  const email = String(newOwnerEmail || "").trim().toLowerCase();
+  if (!email || !email.includes("@")) throw new Error("Enter the new owner's registered email.");
+  const { data, error } = await supabaseClient.rpc("transfer_adminship", {
+    new_owner_email: email,
+  });
+  if (error) throw new Error(error.message || "Could not transfer adminship.");
+  return data;
 };
 
 window.updateMyPassword = async function ({ currentPassword, newPassword }) {
   if (!supabaseClient) throw new Error("Account service is not connected yet.");
   const user = await window.getSessionUser();
   if (!user || !user.email) throw new Error("Please log in first.");
-  try {
-    const { error: checkError } = await supabaseClient.auth.signInWithPassword({
-      email: user.email,
-      password: currentPassword,
-    });
-    if (checkError) throw new Error("Current password is wrong.");
-    const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
-    if (error) throw error;
-    return true;
-  } catch (err) {
-    throw new Error(err.message || "Could not update password.");
-  }
+  const { error: checkError } = await supabaseClient.auth.signInWithPassword({
+    email: user.email,
+    password: currentPassword,
+  });
+  if (checkError) throw new Error("Current password is wrong.");
+  const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
+  if (error) throw error;
+  if (window.clearStaffPassword) window.clearStaffPassword();
+  return true;
 };
 
 window.updateMyEmail = async function ({ currentPassword, newEmail, emailRedirectTo }) {
@@ -162,21 +414,21 @@ window.updateMyEmail = async function ({ currentPassword, newEmail, emailRedirec
   if (next === String(user.email).toLowerCase()) {
     throw new Error("That is already the login email.");
   }
-  try {
-    const { error: checkError } = await supabaseClient.auth.signInWithPassword({
-      email: user.email,
-      password: currentPassword,
-    });
-    if (checkError) throw new Error("Current password is wrong.");
-    const { error } = await supabaseClient.auth.updateUser(
-      { email: next },
-      { emailRedirectTo: emailRedirectTo || window.location.href.split("#")[0] },
-    );
-    if (error) throw error;
-    return true;
-  } catch (err) {
-    throw new Error(err.message || "Could not update email.");
-  }
+  const { error: checkError } = await supabaseClient.auth.signInWithPassword({
+    email: user.email,
+    password: currentPassword,
+  });
+  if (checkError) throw new Error("Current password is wrong.");
+  const { error } = await supabaseClient.auth.updateUser(
+    { email: next },
+    { emailRedirectTo: emailRedirectTo || window.authRedirectUrl("account.html") },
+  );
+  if (error) throw error;
+  await supabaseClient.from("profiles").update({
+    email: next,
+    updated_at: new Date().toISOString(),
+  }).eq("id", user.id);
+  return true;
 };
 
 window.updateMyProfile = async function (fields) {
@@ -199,53 +451,40 @@ window.updateMyProfile = async function (fields) {
   if (typeof fields.notify_sms === "boolean") payload.notify_sms = fields.notify_sms;
   if (typeof fields.notify_whatsapp === "boolean") payload.notify_whatsapp = fields.notify_whatsapp;
   if (typeof fields.notify_email === "boolean") payload.notify_email = fields.notify_email;
-  try {
-    const { error } = await supabaseClient
-      .from("profiles")
-      .update(payload)
-      .eq("id", user.id);
-    if (error) throw error;
-    return true;
-  } catch (err) {
-    throw new Error(err.message || "Could not save profile.");
-  }
+  const { error } = await supabaseClient
+    .from("profiles")
+    .update(payload)
+    .eq("id", user.id);
+  if (error) throw error;
+  return true;
 };
 
 window.updateMyAlerts = async function ({ notify_sms, notify_whatsapp, notify_email }) {
   const user = await window.getSessionUser();
   if (!user || !supabaseClient) throw new Error("Please log in first.");
-  try {
-    const { error } = await supabaseClient
-      .from("profiles")
-      .update({
-        notify_sms: !!notify_sms,
-        notify_whatsapp: !!notify_whatsapp,
-        notify_email: !!notify_email,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", user.id);
-    if (error) throw error;
-    return true;
-  } catch (err) {
-    throw new Error(err.message || "Could not update alerts.");
-  }
+  const { error } = await supabaseClient
+    .from("profiles")
+    .update({
+      notify_sms: !!notify_sms,
+      notify_whatsapp: !!notify_whatsapp,
+      notify_email: !!notify_email,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", user.id);
+  if (error) throw error;
+  return true;
 };
 
 window.fetchMyOrders = async function () {
   const user = await window.getSessionUser();
   if (!user || !supabaseClient) return [];
-  try {
-    const { data, error } = await supabaseClient
-      .from("requests")
-      .select("id, request_details, category, quantity, status, shipment_status, created_at, location")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
-    if (error) throw error;
-    return data || [];
-  } catch (err) {
-    console.error("Error fetching orders:", err);
-    return [];
-  }
+  const { data, error } = await supabaseClient
+    .from("requests")
+    .select("id, request_details, category, quantity, status, shipment_status, created_at, location")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data || [];
 };
 
 window.saveRequestToSupabase = async function (data) {
@@ -277,18 +516,16 @@ window.saveRequestToSupabase = async function (data) {
     user_id: user ? user.id : null,
   };
   if (requestId) row.id = requestId;
-  try {
-    const { error } = await supabaseClient.from("requests").insert([row]);
-    if (error) throw error;
-    if (requestId) {
-      supabaseClient.functions.invoke("notify-new-request", {
-        body: { request_id: requestId },
-      }).catch(() => {});
-    }
-    return requestId || null;
-  } catch (err) {
-    throw new Error(err.message || "Could not save request.");
+  const { error } = await supabaseClient.from("requests").insert([row]);
+  if (error) throw error;
+  // Auto-SMS is triggered only for signed-in customers (JWT-gated edge function).
+  // Guests still get the chat confirmation; staff see the lead in admin.
+  if (requestId && user) {
+    supabaseClient.functions.invoke("notify-new-request", {
+      body: { request_id: requestId },
+    }).catch(() => {});
   }
+  return requestId || null;
 };
 
 // The admin dashboard needs the client itself (for login and for

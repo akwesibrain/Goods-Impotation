@@ -12,3 +12,9 @@ Thumbs.db
 # stray env files out of the repo anyway.
 .env
 .env.*
+
+# Supabase CLI cache
+supabase/.temp/
+
+# Local tooling (site is static HTML — no build step)
+node_modules/

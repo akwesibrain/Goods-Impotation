@@ -45,6 +45,7 @@ create table if not exists public.profiles (
   id         uuid primary key references auth.users(id) on delete cascade,
   full_name  text,
   phone      text,
+  email      text not null default '',
   is_staff   boolean not null default false,
   created_at timestamptz not null default now()
 );
@@ -81,7 +82,11 @@ drop policy if exists "Users can update own profile" on public.profiles;
 create policy "Users can update own profile"
   on public.profiles for update to authenticated
   using (id = auth.uid())
-  with check (id = auth.uid());
+  with check (
+    id = auth.uid()
+    and is_staff is not distinct from (select p.is_staff from public.profiles p where p.id = auth.uid())
+    and staff_role is not distinct from (select p.staff_role from public.profiles p where p.id = auth.uid())
+  );
 
 revoke update on table public.profiles from anon, authenticated;
 grant select, insert on table public.profiles to authenticated;
@@ -94,14 +99,17 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.profiles (id, full_name, phone, is_staff)
+  insert into public.profiles (id, full_name, phone, email, is_staff)
   values (
     new.id,
     coalesce(new.raw_user_meta_data->>'full_name', ''),
     coalesce(new.raw_user_meta_data->>'phone', ''),
+    coalesce(new.email, ''),
     false
   )
-  on conflict (id) do nothing;
+  on conflict (id) do update
+    set email = excluded.email
+    where public.profiles.email = '';
   return new;
 end;
 $$;
@@ -192,9 +200,10 @@ create policy "Staff can delete products"
   using (private.is_staff());
 
 -- ============================================================
--- Site settings — one row. Channel link, social URLs, advert video.
--- The public site reads this so the floating button and video gate
+-- Site settings — one row. Channel link and social URLs.
+-- The public site reads this so the floating group button and video gate
 -- pick up whatever the admin pasted in.
+-- whatsapp_channel_url holds the WhatsApp group invite (chat.whatsapp.com/...).
 -- ============================================================
 
 create table if not exists public.site_settings (
@@ -205,12 +214,24 @@ create table if not exists public.site_settings (
   instagram_url         text,
   tiktok_url            text,
   advert_video_url      text,
+  support_phone         text,
+  support_email         text,
   updated_at            timestamptz not null default now()
 );
 
 insert into public.site_settings (id)
 values (1)
 on conflict (id) do nothing;
+
+alter table public.site_settings
+  add column if not exists support_phone text,
+  add column if not exists support_email text;
+
+update public.site_settings
+set
+  support_phone = coalesce(nullif(btrim(support_phone), ''), '054 030 9637'),
+  support_email = coalesce(nullif(btrim(support_email), ''), 'amponsahbrain2007@gmail.com')
+where id = 1;
 
 alter table public.site_settings enable row level security;
 
@@ -282,13 +303,16 @@ create policy "Staff can delete reviews"
   using (private.is_staff());
 
 -- ============================================================
--- Storage — product photos and the advert video.
+-- Storage — product photos.
 -- Public can read; only a signed-in admin can upload.
 -- ============================================================
 
-insert into storage.buckets (id, name, public)
-values ('media', 'media', true)
-on conflict (id) do update set public = true;
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('media', 'media', true, 5242880, array['image/jpeg', 'image/png', 'image/webp'])
+on conflict (id) do update
+  set public = true,
+      file_size_limit = 5242880,
+      allowed_mime_types = array['image/jpeg', 'image/png', 'image/webp'];
 
 drop policy if exists "Public can read media" on storage.objects;
 create policy "Public can read media"
@@ -327,6 +351,7 @@ create policy "Anyone can upload request photos"
   with check (
     bucket_id = 'media'
     and name like 'requests/%'
+    and coalesce(storage.extension(name), '') in ('jpg', 'jpeg', 'png', 'webp')
   );
 
 -- ============================================================
@@ -531,9 +556,38 @@ $$;
 revoke all on function private.is_owner() from public;
 grant execute on function private.is_owner() to anon, authenticated;
 
-grant update (is_staff, staff_role) on table public.profiles to authenticated;
+-- Privilege columns are never updatable by browser roles. Owners use set_staff_role().
+revoke update (is_staff, staff_role) on table public.profiles from authenticated, anon, public;
+
+create or replace function public.set_staff_role(target_id uuid, make_staff boolean, new_role text default 'assistant')
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not private.is_owner() then
+    raise exception 'Only owners can change staff roles';
+  end if;
+  if target_id is null then
+    raise exception 'Missing profile';
+  end if;
+  if new_role is null or new_role not in ('owner', 'assistant') then
+    raise exception 'Invalid staff role';
+  end if;
+  update public.profiles
+  set is_staff = make_staff,
+      staff_role = case when make_staff then new_role else 'assistant' end,
+      updated_at = now()
+  where id = target_id;
+end;
+$$;
+
+revoke all on function public.set_staff_role(uuid, boolean, text) from public;
+grant execute on function public.set_staff_role(uuid, boolean, text) to authenticated;
 
 alter table public.profiles
+  add column if not exists email text not null default '',
   add column if not exists company_name text not null default '',
   add column if not exists whatsapp text not null default '',
   add column if not exists region text not null default '',
@@ -552,8 +606,8 @@ alter table public.profiles add constraint profiles_preferred_origin_check
   check (preferred_origin in ('china', 'turkey', 'either'));
 
 grant update (
-  full_name, phone, company_name, whatsapp, region, city, address, landmark,
-  preferred_origin, desk_notes, notify_sms, notify_whatsapp, notify_email, updated_at
+  full_name, phone, email, company_name, whatsapp, region, city, address, landmark,
+  preferred_origin, notify_sms, notify_whatsapp, notify_email, updated_at
 ) on table public.profiles to authenticated;
 
 drop policy if exists "Owners can manage staff profiles" on public.profiles;
@@ -900,18 +954,26 @@ create trigger reviews_sanitize
 create or replace function private.sanitize_profile_row()
 returns trigger
 language plpgsql
+security definer
+set search_path = public, private
 as $$
 begin
-  new.full_name := left(private.strip_tags(new.full_name), 100);
+  new.full_name := left(private.strip_tags(coalesce(new.full_name, '')), 100);
   new.phone := left(regexp_replace(coalesce(new.phone, ''), '[^\d\s+\-]', '', 'g'), 24);
-  new.company_name := left(private.strip_tags(new.company_name), 120);
+  new.email := left(lower(trim(coalesce(new.email, ''))), 254);
+  new.company_name := left(private.strip_tags(coalesce(new.company_name, '')), 120);
   new.whatsapp := left(regexp_replace(coalesce(new.whatsapp, ''), '[^\d\s+\-]', '', 'g'), 24);
-  new.city := left(private.strip_tags(new.city), 80);
-  new.address := left(private.strip_tags(new.address), 200);
-  new.landmark := left(private.strip_tags(new.landmark), 120);
+  new.region := left(private.strip_tags(coalesce(new.region, '')), 80);
+  new.city := left(private.strip_tags(coalesce(new.city, '')), 80);
+  new.address := left(private.strip_tags(coalesce(new.address, '')), 200);
+  new.landmark := left(private.strip_tags(coalesce(new.landmark, '')), 120);
   return new;
 end;
 $$;
+
+revoke all on function private.sanitize_profile_row() from public;
+grant execute on function private.sanitize_profile_row() to anon, authenticated, service_role;
+grant usage on schema private to anon, authenticated;
 
 drop trigger if exists profiles_sanitize on public.profiles;
 create trigger profiles_sanitize
@@ -934,3 +996,178 @@ alter table public.reviews add constraint reviews_author_len
 alter table public.reviews drop constraint if exists reviews_quote_len;
 alter table public.reviews add constraint reviews_quote_len
   check (char_length(quote) between 1 and 2000);
+
+-- Login may use a Ghana number. Anon can resolve it to the account email
+-- so the browser can call signInWithPassword without reading profiles.
+create or replace function public.login_email_for_identifier(p_id text)
+returns text
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+declare
+  raw text := lower(btrim(coalesce(p_id, '')));
+  digits text;
+  found_email text;
+begin
+  if raw = '' then
+    return null;
+  end if;
+
+  if position('@' in raw) > 0 then
+    select p.email into found_email
+    from public.profiles p
+    where lower(p.email) = raw and coalesce(p.email, '') <> ''
+    limit 1;
+    return coalesce(found_email, raw);
+  end if;
+
+  digits := regexp_replace(raw, '\D', '', 'g');
+  if left(digits, 2) = '00' then
+    digits := substr(digits, 3);
+  end if;
+  if left(digits, 3) = '233' and length(digits) = 12 then
+    digits := '0' || substr(digits, 4);
+  elsif length(digits) = 9 then
+    digits := '0' || digits;
+  end if;
+  if length(digits) <> 10 then
+    return null;
+  end if;
+
+  select p.email into found_email
+  from public.profiles p
+  where regexp_replace(coalesce(p.phone, ''), '\D', '', 'g') in (
+      digits,
+      '233' || substr(digits, 2)
+    )
+    and coalesce(p.email, '') <> ''
+  order by p.is_staff desc, p.created_at asc
+  limit 1;
+
+  return found_email;
+end;
+$$;
+
+revoke all on function public.login_email_for_identifier(text) from public;
+-- Browser roles must not resolve phone → email (account oracle).
+-- Edge Function auth-with-identifier uses service_role instead.
+revoke all on function public.login_email_for_identifier(text) from anon, authenticated;
+grant execute on function public.login_email_for_identifier(text) to service_role;
+-- ============================================================
+-- Adminship transfer (owner-only, audited)
+-- ============================================================
+
+create table if not exists public.adminship_transfers (
+  id                   uuid primary key default gen_random_uuid(),
+  previous_owner_id    uuid not null references public.profiles(id),
+  previous_owner_email text not null,
+  new_owner_id         uuid not null references public.profiles(id),
+  new_owner_email      text not null,
+  status               text not null default 'completed'
+                       check (status in ('completed', 'failed')),
+  created_at           timestamptz not null default now()
+);
+
+alter table public.adminship_transfers enable row level security;
+
+drop policy if exists "Owners can read adminship transfers" on public.adminship_transfers;
+create policy "Owners can read adminship transfers"
+  on public.adminship_transfers for select to authenticated
+  using (private.is_owner());
+
+revoke all on table public.adminship_transfers from anon, public;
+grant select on table public.adminship_transfers to authenticated;
+
+create or replace function public.transfer_adminship(new_owner_email text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  actor_id uuid := auth.uid();
+  actor_email text;
+  target_email text := lower(trim(coalesce(new_owner_email, '')));
+  target_id uuid;
+  target_row public.profiles%rowtype;
+  transfer_id uuid;
+begin
+  if actor_id is null then
+    raise exception 'Not signed in';
+  end if;
+  if not private.is_owner() then
+    raise exception 'Only the current owner can transfer adminship';
+  end if;
+  if target_email = '' or position('@' in target_email) = 0 then
+    raise exception 'Enter a valid registered email';
+  end if;
+
+  select coalesce(nullif(p.email, ''), u.email)
+    into actor_email
+  from public.profiles p
+  left join auth.users u on u.id = p.id
+  where p.id = actor_id;
+
+  select p.* into target_row
+  from public.profiles p
+  where lower(trim(p.email)) = target_email
+  limit 1;
+
+  if target_row.id is null then
+    select p.* into target_row
+    from public.profiles p
+    join auth.users u on u.id = p.id
+    where lower(trim(u.email)) = target_email
+    limit 1;
+  end if;
+
+  if target_row.id is null then
+    raise exception 'No registered account found for that email';
+  end if;
+
+  target_id := target_row.id;
+  if target_id = actor_id then
+    raise exception 'You already own this desk';
+  end if;
+
+  -- Promote the selected user to owner/admin.
+  update public.profiles
+  set is_staff = true,
+      staff_role = 'owner',
+      email = case when coalesce(email, '') = '' then target_email else email end,
+      updated_at = now()
+  where id = target_id;
+
+  -- Demote the previous owner (keeps staff access as assistant).
+  update public.profiles
+  set staff_role = 'assistant',
+      is_staff = true,
+      updated_at = now()
+  where id = actor_id;
+
+  insert into public.adminship_transfers (
+    previous_owner_id, previous_owner_email,
+    new_owner_id, new_owner_email, status
+  ) values (
+    actor_id, coalesce(actor_email, ''),
+    target_id, target_email, 'completed'
+  )
+  returning id into transfer_id;
+
+  return jsonb_build_object(
+    'ok', true,
+    'transfer_id', transfer_id,
+    'previous_owner_id', actor_id,
+    'previous_owner_email', coalesce(actor_email, ''),
+    'new_owner_id', target_id,
+    'new_owner_email', target_email,
+    'status', 'completed',
+    'transferred_at', now()
+  );
+end;
+$$;
+
+revoke all on function public.transfer_adminship(text) from public;
+grant execute on function public.transfer_adminship(text) to authenticated;

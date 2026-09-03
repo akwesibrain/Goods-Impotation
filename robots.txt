@@ -2,7 +2,5 @@ User-agent: *
 Allow: /
 Disallow: /admin
 Disallow: /admin.html
-Disallow: /watch
-Disallow: /watch.html
 
-Sitemap: https://goods-impotation.vercel.app/sitemap.xml
+Sitemap: https://www.mwinbarakaimports.shop/sitemap.xml

@@ -6,14 +6,15 @@
 <title>Order Now — Mwinbarka Imports</title>
 <meta name="description" content="Tell Mwinbarka Imports what you'd like sourced from China or Turkey — we'll follow up with a quote.">
 <meta name="theme-color" content="#0A1F44">
+<link rel="icon" href="assets/logo.png" type="image/png">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Mwinbarka Imports">
 <meta property="og:title" content="Order Now — Mwinbarka Imports">
 <meta property="og:description" content="Tell Mwinbarka Imports what you'd like sourced from China or Turkey — we'll follow up with a quote.">
-<meta property="og:url" content="https://goods-impotation.vercel.app/request">
-<meta property="og:image" content="https://goods-impotation.vercel.app/assets/logo.png">
+<meta property="og:url" content="https://www.mwinbarakaimports.shop/request">
+<meta property="og:image" content="https://www.mwinbarakaimports.shop/assets/logo.png">
 <meta name="twitter:card" content="summary">
-<link rel="canonical" href="https://goods-impotation.vercel.app/request">
+<link rel="canonical" href="https://www.mwinbarakaimports.shop/request">
 <style>
 header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-header .tf-nav, .site-header .announce-bar {
   position: relative !important;
@@ -23,53 +24,65 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
   bottom: auto !important;
 }
 </style>
-<link rel="stylesheet" href="styles.css?v=brand44">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="styles.css?v=brand86">
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script defer src="validation.js?v=brand7"></script>
+<script defer src="supabase-client.js?v=brand38"></script>
+<script defer src="script.js?v=brand62"></script>
 </head>
-<body>
+<body class="desk-home has-tabbar">
 
 <a class="skip-link" href="#main">Skip to content</a>
-<header class="site-header" style="position:relative;top:auto">
-  <div class="announce-bar">Accra desk · Landed quotes in GH₵ · Official line 054 030 9637 only</div>
+<header class="site-header desk-head" style="position:relative;top:auto">
   <div class="header-main container">
     <a href="index.html" class="nav-logo">
-      <img src="assets/logo.png" alt="Mwinbarka Imports logo">
+      <img src="assets/logo.png" alt="Mwinbarka Imports logo" width="36" height="36">
       <span class="logo-lockup">Mwinbarka <em>Imports</em><small>China · Turkey → Ghana</small></span>
     </a>
     <form class="site-search" action="request.html" method="get" role="search">
       <input type="search" name="q" placeholder="What do you want imported?" aria-label="Search what to import">
-      <button type="submit" class="btn btn-gold">Look up</button>
+      <button type="submit" class="btn desk-search-btn" aria-label="Search">Search</button>
     </form>
-    <a href="request.html" class="btn btn-gold nav-cta">Order Now</a>
+    <div class="desk-utils">
+      <a href="quote-list.html" class="quote-link">Cart <span class="quote-count" data-quote-count>0</span></a>
+      <button type="button" class="header-account" data-open-account aria-label="Account">
+        <span aria-hidden="true">👤</span>
+        <span class="header-account-label">Account</span>
+      </button>
+    </div>
     <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">☰</button>
   </div>
-  <nav class="nav container">
-          <ul class="nav-links">
+  <nav class="nav desk-nav">
+    <div class="container">
+      <ul class="nav-links">
         <li><a href="index.html">Home</a></li>
         <li><a href="about.html">About</a></li>
-        <li><a href="how-it-works.html">Process</a></li>
+        <li><a href="how-it-works.html">How it works</a></li>
         <li><a href="categories.html">Products</a></li>
         <li><a href="reviews.html">Reviews</a></li>
         <li><a href="faq.html">FAQ</a></li>
         <li><a href="contact.html">Contact</a></li>
-        <li class="nav-request"><a href="request.html">Order Now</a></li>
+        <li class="nav-request"><a href="request.html" class="active">Order Now</a></li>
       </ul>
+    </div>
   </nav>
 </header>
 
 <section class="page-hero" id="main">
   <div class="container">
-    <span class="eyebrow">MW–01 · New file</span>
-    <h1>Start an import request. We’ll price the lane.</h1>
-    <p>Name the product, quantity, and where in Ghana it should land. You’ll see a confirmation first — then the official chat opens so our agent can confirm the GH₵ quote and payment.</p>
+    <h1>Tell us what to source. We’ll quote in GH₵.</h1>
+    <p>Name the product, quantity, and where in Ghana it should land. Our agent will confirm the GH₵ quote and payment on chat.</p>
   </div>
 </section>
 
 <section class="section section-alt" style="padding-bottom: 0;">
   <div class="container" style="max-width: 760px;">
     <ol class="process-list">
-      <li>Tell us the product — name, category, photo, and quantity.</li>
-      <li>You’ll see “Order received” first. Then the official chat opens.</li>
-      <li>Our agent confirms the GH₵ price and payment details on the official line.</li>
+      <li>Tell us the product — name, category, and quantity.</li>
+      <li>Our agent confirms the GH₵ price and payment details on chat.</li>
     </ol>
   </div>
 </section>
@@ -77,7 +90,8 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
 <section class="section">
   <div class="container desk-form">
     <form id="request-form" class="form-card" novalidate>
-
+      <fieldset class="form-block">
+        <legend>You</legend>
       <div class="field">
         <label for="name">Name</label>
         <input type="text" id="name" name="name" required autocomplete="name" placeholder="Your full name" maxlength="100">
@@ -85,17 +99,21 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
       </div>
 
       <div class="field">
-        <label for="phone">Phone number</label>
+        <label for="phone">Phone / chat number</label>
         <input type="tel" id="phone" name="phone" required autocomplete="tel" inputmode="tel" placeholder="0XX XXX XXXX" maxlength="20">
+        <div class="hint">Ghana number. We’ll reply on chat.</div>
         <div class="field-error" id="phone-error" hidden></div>
       </div>
 
       <div class="field">
-        <label for="email">Email address</label>
-        <input type="email" id="email" name="email" required autocomplete="email" placeholder="you@email.com" maxlength="254">
+        <label for="email">Email or phone</label>
+        <input type="text" id="email" name="email" autocomplete="email" inputmode="email" spellcheck="false" maxlength="254">
         <div class="field-error" id="email-error" hidden></div>
       </div>
+      </fieldset>
 
+      <fieldset class="form-block">
+        <legend>The goods</legend>
       <div class="field">
         <label for="product">What do you want imported?</label>
         <textarea id="product" name="product" rows="3" required placeholder="e.g. Men’s leather jacket, size L, black" maxlength="2000"></textarea>
@@ -103,46 +121,19 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
       </div>
 
       <div class="field">
-        <label for="reference_url">Listing URL <span class="optional">(optional)</span></label>
-        <input type="url" id="reference_url" name="reference_url" inputmode="url" placeholder="https://… wholesale or Alibaba listing" autocomplete="url" maxlength="2048">
-        <div class="hint">Paste a factory listing if you have one. We’ll open it and quote the landed GH₵.</div>
-        <div class="field-error" id="reference_url-error" hidden></div>
-      </div>
-
-      <div class="field-row">
-        <div class="field">
-          <label for="category">Category</label>
-          <select id="category" name="category" required>
-            <option value="">Select a category</option>
-            <option>Kitchen & Home</option>
-            <option>Clothing & Fashion</option>
-            <option>Electronics</option>
-            <option>Shoes & Bags</option>
-            <option>Beauty & Cosmetics</option>
-            <option>Auto Parts</option>
-            <option>Baby & Kids</option>
-            <option>Other</option>
-          </select>
-          <div class="field-error" id="category-error" hidden></div>
-        </div>
-        <div class="field">
-          <label for="origin">Preferred origin <span class="optional">(optional)</span></label>
-          <select id="origin" name="origin">
-            <option value="">Either — you decide</option>
-            <option value="China">China</option>
-            <option value="Turkey">Turkey</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="field">
-        <label for="photo">Photo of the product</label>
-        <label class="photo-drop" for="photo">
-          <input type="file" id="photo" name="photo" accept="image/*">
-          <span class="photo-drop-copy">Tap to add a photo from your gallery or camera</span>
-        </label>
-        <div class="hint">JPG or PNG, under 5 MB. This helps us quote the exact item.</div>
-        <div id="photo-preview" class="photo-preview"></div>
+        <label for="category">Category</label>
+        <select id="category" name="category" required>
+          <option value="">Select a category</option>
+          <option>Kitchen & Home</option>
+          <option>Clothing & Fashion</option>
+          <option>Electronics</option>
+          <option>Shoes & Bags</option>
+          <option>Beauty & Cosmetics</option>
+          <option>Auto Parts</option>
+          <option>Baby & Kids</option>
+          <option>Other</option>
+        </select>
+        <div class="field-error" id="category-error" hidden></div>
       </div>
 
       <div class="field-row">
@@ -153,23 +144,20 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
         </div>
         <div class="field">
           <label for="location">Delivery location in Ghana</label>
-          <input type="text" id="location" name="location" required placeholder="e.g. Accra, East Legon" autocomplete="address-level2" maxlength="200">
+          <input type="text" id="location" name="location" required placeholder="e.g. East Legon, Kumasi" autocomplete="address-level2" maxlength="200">
           <div class="field-error" id="location-error" hidden></div>
         </div>
       </div>
 
-      <button type="submit" class="btn btn-gold">Start an Import Request</button>
+      <div class="field">
+        <label for="notes">Additional requirements <span class="optional">(optional)</span></label>
+        <textarea id="notes" name="notes" rows="3" placeholder="Sizes, colours, voltage, brand, or anything else we should match" maxlength="800"></textarea>
+      </div>
+      </fieldset>
+
+      <button type="submit" class="btn btn-gold">Start Your Order</button>
       <div id="form-status" class="form-status"></div>
     </form>
-    <aside class="desk-aside">
-      <h3>This is not checkout.</h3>
-      <ol>
-        <li>You see “Order received”, then the official chat opens with your order written.</li>
-        <li>We check China or Turkey pricing.</li>
-        <li>You get one GH₵ landed quote — goods, pickup, sea shipping, clearing.</li>
-        <li>Nothing is paid on this website. Terms are agreed on the official line only: 054 030 9637.</li>
-      </ol>
-    </aside>
   </div>
 </section>
 
@@ -177,14 +165,13 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
   <div class="container">
     <div class="footer-grid">
       <div>
-        <div class="footer-brand">Mwinbarka Imports</div>
-        <p>Accra import desk. We source from China and Turkey, clear through Ghana, and deliver nationwide.</p>
-        <p class="bill-meta">MANIFEST MW–DESK–ACC</p>
+        <h4>About us</h4>
+        <p>We source goods on your behalf from China and Turkey, then deliver to your door in Ghana.</p>
       </div>
       <div>
         <h4>The desk</h4>
         <ul>
-          <li><a href="how-it-works.html">Process</a></li>
+          <li><a href="how-it-works.html">How it works</a></li>
           <li><a href="categories.html">Products</a></li>
           <li><a href="about.html">About</a></li>
           <li><a href="reviews.html">Reviews</a></li>
@@ -193,39 +180,34 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
         </ul>
       </div>
       <div>
-        <h4>Official line</h4>
+        <h4>Get support</h4>
         <ul>
-          <li><a href="https://wa.me/233540309637" target="_blank" rel="noopener">054 030 9637</a></li>
-          <li><a href="request.html">Order Now</a></li>
-          <li><a href="contact.html">Contact</a></li>
+          <li><a href="https://wa.me/233540309637" target="_blank" rel="noopener" data-support-phone>054 030 9637</a></li>
+          <li><a href="mailto:amponsahbrain2007@gmail.com" data-support-email>amponsahbrain2007@gmail.com</a></li>
         </ul>
       </div>
     </div>
     <div class="footer-bottom">
       <span>© 2026 Mwinbarka Imports. All rights reserved.</span>
-      <span>Accra, Ghana · No cart · No on-site payment</span>
+      <span>Ghana</span>
     </div>
   </div>
 </footer>
 
 <div class="sticky-cta request-sticky">
-  <a class="sticky-chat" href="https://wa.me/233540309637" target="_blank" rel="noopener" aria-label="Chat with the desk">💬</a>
-  <button type="submit" form="request-form" class="btn btn-gold">Start an Import Request</button>
+  <a class="sticky-chat" href="https://wa.me/233540309637" target="_blank" rel="noopener" aria-label="Chat with the desk"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.05 4.91A9.82 9.82 0 0 0 12.04 2C6.55 2 2.09 6.45 2.09 11.94c0 1.76.46 3.48 1.34 5L2 22l5.2-1.37a9.9 9.9 0 0 0 4.84 1.23h.01c5.49 0 9.95-4.45 9.95-9.94 0-2.65-1.03-5.14-2.95-7.01Zm-7.01 15.27h-.01a8.23 8.23 0 0 1-4.19-1.15l-.3-.18-3.08.81.82-3-.2-.31a8.2 8.2 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.25-8.24 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 0 1 2.42 5.83c0 4.55-3.7 8.24-8.27 8.24Zm4.52-6.16c-.25-.12-1.47-.72-1.7-.81-.23-.08-.39-.12-.56.12-.17.25-.64.8-.79.97-.15.17-.29.19-.54.06-.25-.12-1.05-.39-2-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.15.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.35-.76-1.84-.2-.48-.4-.42-.56-.42h-.48c-.17 0-.43.06-.66.31-.23.25-.87.85-.87 2.07 0 1.22.89 2.4 1.01 2.56.12.17 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.67-1.18.21-.58.21-1.07.15-1.18-.06-.1-.23-.17-.48-.29Z"/></svg></a>
+  <button type="submit" form="request-form" class="btn btn-gold">Start Your Order</button>
 </div>
 
-<a href="https://wa.me/233540309637" class="wa-float" target="_blank" rel="noopener" aria-label="Chat with the desk on 054 030 9637">💬</a>
+<a href="https://wa.me/233540309637" class="wa-float" target="_blank" rel="noopener" aria-label="Join the group" title="Join the group"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.05 4.91A9.82 9.82 0 0 0 12.04 2C6.55 2 2.09 6.45 2.09 11.94c0 1.76.46 3.48 1.34 5L2 22l5.2-1.37a9.9 9.9 0 0 0 4.84 1.23h.01c5.49 0 9.95-4.45 9.95-9.94 0-2.65-1.03-5.14-2.95-7.01Zm-7.01 15.27h-.01a8.23 8.23 0 0 1-4.19-1.15l-.3-.18-3.08.81.82-3-.2-.31a8.2 8.2 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.25-8.24 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 0 1 2.42 5.83c0 4.55-3.7 8.24-8.27 8.24Zm4.52-6.16c-.25-.12-1.47-.72-1.7-.81-.23-.08-.39-.12-.56.12-.17.25-.64.8-.79.97-.15.17-.29.19-.54.06-.25-.12-1.05-.39-2-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.15.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.35-.76-1.84-.2-.48-.4-.42-.56-.42h-.48c-.17 0-.43.06-.66.31-.23.25-.87.85-.87 2.07 0 1.22.89 2.4 1.01 2.56.12.17 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.67-1.18.21-.58.21-1.07.15-1.18-.06-.1-.23-.17-.48-.29Z"/></svg></a>
 
 <div id="order-received" class="order-modal" hidden>
   <div class="order-modal-card" role="dialog" aria-labelledby="order-received-title" aria-modal="true">
     <h2 id="order-received-title">Order received</h2>
-    <p>Your import request is with the Accra desk. Continue to the official line so we can confirm the GH₵ quote and payment details. Nothing is charged on this website.</p>
+    <p>Your import request is with the desk. Continue to chat so we can confirm the GH₵ quote and payment details. Nothing is charged on this website.</p>
     <button type="button" class="btn btn-gold" id="order-received-continue">Continue to chat</button>
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="validation.js?v=brand1"></script>
-<script src="supabase-client.js?v=brand29"></script>
-<script src="script.js?v=brand23"></script>
 </body>
 </html>

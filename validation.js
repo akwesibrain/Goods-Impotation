@@ -84,25 +84,24 @@
       category: sanitize(raw.category),
       quantity: sanitize(raw.quantity).slice(0, 80),
       location: sanitize(raw.location).slice(0, 200),
-      reference_url: raw.reference_url ? sanitizeUrl(raw.reference_url) : "",
-      origin: sanitize(raw.origin),
+      reference_url: "",
+      origin: "",
       photo_url: sanitize(raw.photo_url || "").slice(0, 2048),
     };
     const errors = {};
     if (data.name.length < 2) errors.name = "Name must be at least 2 characters.";
     else if (!isPersonName(data.name)) errors.name = "Use letters, spaces, hyphens, or apostrophes only.";
     if (!data.phone) errors.phone = "Enter a Ghana phone number.";
-    else if (!isGhanaPhone(data.phone)) errors.phone = "Enter a Ghana number (e.g. 054 030 9637 or +233 54 030 9637).";
-    if (!data.email) errors.email = "Enter your email address.";
-    else if (!isEmail(data.email)) errors.email = "Enter a valid email address.";
+    else if (!isGhanaPhone(data.phone)) errors.phone = "Enter a Ghana number (e.g. 024 123 4567 or +233 24 123 4567).";
+    const emailOrPhone = asString(raw.email).trim();
+    if (!emailOrPhone) errors.email = "Enter your email or phone.";
+    else if (isEmail(emailOrPhone)) data.email = sanitizeEmail(emailOrPhone).slice(0, 254);
+    else if (isGhanaPhone(emailOrPhone)) data.email = "";
+    else errors.email = "Enter your email or phone.";
     if (data.request_details.length < 10) errors.product = "Describe what you want imported (at least 10 characters).";
     if (!CATEGORIES.includes(data.category)) errors.category = "Select a category.";
     if (!data.quantity) errors.quantity = "Enter a quantity.";
     if (data.location.length < 2) errors.location = "Enter a delivery location in Ghana.";
-    if (raw.reference_url && String(raw.reference_url).trim() && !data.reference_url) {
-      errors.reference_url = "Paste a wholesale http(s) link, or leave this blank.";
-    }
-    if (data.origin && !ORIGINS.includes(data.origin)) errors.origin = "Pick China, Turkey, or leave blank.";
     return { ok: Object.keys(errors).length === 0, data, errors };
   }
 
@@ -140,12 +139,15 @@
   }
 
   function parseLogin(raw) {
+    const identifier = asString(raw.email || raw.identifier).trim();
     const data = {
-      email: sanitizeEmail(raw.email).slice(0, 254),
-      password: asString(raw.password),
+      email: identifier.includes("@") ? sanitizeEmail(identifier).slice(0, 254) : identifier,
+      password: asString(raw.password).replace(/^\s+|\s+$/g, ""),
     };
     const errors = {};
-    if (!isEmail(data.email)) errors.email = "Enter a valid email address.";
+    if (!isEmail(data.email) && !isGhanaPhone(data.email)) {
+      errors.email = "Enter your email or phone.";
+    }
     if (!data.password) errors.password = "Enter your password.";
     return { ok: Object.keys(errors).length === 0, data, errors };
   }
@@ -165,7 +167,7 @@
     if (data.full_name.length < 2) errors.full_name = "Name must be at least 2 characters.";
     else if (!isPersonName(data.full_name)) errors.full_name = "Use letters, spaces, hyphens, or apostrophes only.";
     if (data.phone && !isGhanaPhone(data.phone)) errors.phone = "Enter a Ghana phone number.";
-    if (data.whatsapp && !isGhanaPhone(data.whatsapp)) errors.whatsapp = "Enter a Ghana number for the official line.";
+    if (data.whatsapp && !isGhanaPhone(data.whatsapp)) errors.whatsapp = "Enter a Ghana number we can reach you on.";
     return { ok: Object.keys(errors).length === 0, data, errors };
   }
 

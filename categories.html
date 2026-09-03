@@ -6,14 +6,15 @@
 <title>Categories — Mwinbarka Imports</title>
 <meta name="description" content="Browse Kitchen & Home, fashion, electronics and more from Mwinbarka Imports. Order in GH₵.">
 <meta name="theme-color" content="#0A1F44">
+<link rel="icon" href="assets/logo.png" type="image/png">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Mwinbarka Imports">
 <meta property="og:title" content="Categories — Mwinbarka Imports">
 <meta property="og:description" content="Browse Kitchen & Home, fashion, electronics and more from Mwinbarka Imports. Order in GH₵.">
-<meta property="og:url" content="https://goods-impotation.vercel.app/categories">
-<meta property="og:image" content="https://goods-impotation.vercel.app/assets/logo.png">
+<meta property="og:url" content="https://www.mwinbarakaimports.shop/categories">
+<meta property="og:image" content="https://www.mwinbarakaimports.shop/assets/logo.png">
 <meta name="twitter:card" content="summary">
-<link rel="canonical" href="https://goods-impotation.vercel.app/categories">
+<link rel="canonical" href="https://www.mwinbarakaimports.shop/categories">
 <style>
 header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-header .tf-nav, .site-header .announce-bar {
   position: relative !important;
@@ -23,42 +24,55 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
   bottom: auto !important;
 }
 </style>
-<link rel="stylesheet" href="styles.css?v=brand44">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="styles.css?v=brand86">
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script defer src="validation.js?v=brand7"></script>
+<script defer src="supabase-client.js?v=brand38"></script>
+<script defer src="script.js?v=brand62"></script>
 </head>
-<body>
+<body class="desk-home has-tabbar">
 
 <a class="skip-link" href="#main">Skip to content</a>
-<header class="site-header" style="position:relative;top:auto">
-  <div class="announce-bar">Accra desk · Landed quotes in GH₵ · Official line 054 030 9637 only</div>
+<header class="site-header desk-head" style="position:relative;top:auto">
   <div class="header-main container">
     <a href="index.html" class="nav-logo">
-      <img src="assets/logo.png" alt="Mwinbarka Imports logo">
+      <img src="assets/logo.png" alt="Mwinbarka Imports logo" width="36" height="36">
       <span class="logo-lockup">Mwinbarka <em>Imports</em><small>China · Turkey → Ghana</small></span>
     </a>
     <form class="site-search" action="request.html" method="get" role="search">
       <input type="search" name="q" placeholder="What do you want imported?" aria-label="Search what to import">
-      <button type="submit" class="btn btn-gold">Look up</button>
+      <button type="submit" class="btn desk-search-btn" aria-label="Search">Search</button>
     </form>
-    <a href="request.html" class="btn btn-gold nav-cta">Order Now</a>
+    <div class="desk-utils">
+      <a href="quote-list.html" class="quote-link">Cart <span class="quote-count" data-quote-count>0</span></a>
+      <button type="button" class="header-account" data-open-account aria-label="Account">
+        <span aria-hidden="true">👤</span>
+        <span class="header-account-label">Account</span>
+      </button>
+    </div>
     <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">☰</button>
   </div>
-  <nav class="nav container">
-          <ul class="nav-links">
+  <nav class="nav desk-nav">
+    <div class="container">
+      <ul class="nav-links">
         <li><a href="index.html">Home</a></li>
         <li><a href="about.html">About</a></li>
-        <li><a href="how-it-works.html">Process</a></li>
+        <li><a href="how-it-works.html">How it works</a></li>
         <li><a href="categories.html" class="active">Products</a></li>
         <li><a href="reviews.html">Reviews</a></li>
         <li><a href="faq.html">FAQ</a></li>
         <li><a href="contact.html">Contact</a></li>
         <li class="nav-request"><a href="request.html">Order Now</a></li>
       </ul>
+    </div>
   </nav>
 </header>
 
 <section class="page-hero" id="main">
   <div class="container">
-    <span class="eyebrow">MW–LANE · What we bring</span>
     <h1>Order from a category.</h1>
     <p>Kitchen &amp; Home, fashion, electronics, and more. Products the desk adds in admin show here. Tap a card, then Order Now — or describe something that is not listed.</p>
   </div>
@@ -88,7 +102,7 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
   <div class="container">
     <h2>Don't see your item listed?</h2>
     <p>That's fine — most requests don't fit neatly into a category. Just describe it.</p>
-    <a href="request.html" class="btn btn-gold">Order Now →</a>
+    <a href="request.html" class="btn btn-gold">Order Now</a>
   </div>
 </section>
 
@@ -96,14 +110,13 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
   <div class="container">
     <div class="footer-grid">
       <div>
-        <div class="footer-brand">Mwinbarka Imports</div>
-        <p>Accra import desk. We source from China and Turkey, clear through Ghana, and deliver nationwide.</p>
-        <p class="bill-meta">MANIFEST MW–DESK–ACC</p>
+        <h4>About us</h4>
+        <p>We source goods on your behalf from China and Turkey, then deliver to your door in Ghana.</p>
       </div>
       <div>
         <h4>The desk</h4>
         <ul>
-          <li><a href="how-it-works.html">Process</a></li>
+          <li><a href="how-it-works.html">How it works</a></li>
           <li><a href="categories.html">Products</a></li>
           <li><a href="about.html">About</a></li>
           <li><a href="reviews.html">Reviews</a></li>
@@ -112,25 +125,20 @@ header.site-header, header.site-header.tf-head, .site-header .tf-top, .site-head
         </ul>
       </div>
       <div>
-        <h4>Official line</h4>
+        <h4>Get support</h4>
         <ul>
-          <li><a href="https://wa.me/233540309637" target="_blank" rel="noopener">054 030 9637</a></li>
-          <li><a href="request.html">Order Now</a></li>
-          <li><a href="contact.html">Contact</a></li>
+          <li><a href="https://wa.me/233540309637" target="_blank" rel="noopener" data-support-phone>054 030 9637</a></li>
+          <li><a href="mailto:amponsahbrain2007@gmail.com" data-support-email>amponsahbrain2007@gmail.com</a></li>
         </ul>
       </div>
     </div>
     <div class="footer-bottom">
       <span>© 2026 Mwinbarka Imports. All rights reserved.</span>
-      <span>Accra, Ghana · No cart · No on-site payment</span>
+      <span>Ghana</span>
     </div>
   </div>
 </footer>
 
-<a href="https://wa.me/233540309637" class="wa-float" target="_blank" rel="noopener" aria-label="Chat with the desk on 054 030 9637">💬</a>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="validation.js?v=brand1"></script>
-<script src="supabase-client.js?v=brand29"></script>
-<script src="script.js?v=brand23"></script>
+<a href="https://wa.me/233540309637" class="wa-float" target="_blank" rel="noopener" aria-label="Join the group" title="Join the group"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.05 4.91A9.82 9.82 0 0 0 12.04 2C6.55 2 2.09 6.45 2.09 11.94c0 1.76.46 3.48 1.34 5L2 22l5.2-1.37a9.9 9.9 0 0 0 4.84 1.23h.01c5.49 0 9.95-4.45 9.95-9.94 0-2.65-1.03-5.14-2.95-7.01Zm-7.01 15.27h-.01a8.23 8.23 0 0 1-4.19-1.15l-.3-.18-3.08.81.82-3-.2-.31a8.2 8.2 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.25-8.24 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 0 1 2.42 5.83c0 4.55-3.7 8.24-8.27 8.24Zm4.52-6.16c-.25-.12-1.47-.72-1.7-.81-.23-.08-.39-.12-.56.12-.17.25-.64.8-.79.97-.15.17-.29.19-.54.06-.25-.12-1.05-.39-2-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.15.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.35-.76-1.84-.2-.48-.4-.42-.56-.42h-.48c-.17 0-.43.06-.66.31-.23.25-.87.85-.87 2.07 0 1.22.89 2.4 1.01 2.56.12.17 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.67-1.18.21-.58.21-1.07.15-1.18-.06-.1-.23-.17-.48-.29Z"/></svg></a>
 </body>
 </html>

@@ -89,8 +89,8 @@ document.addEventListener("DOMContentLoaded", () => {
     fillCategorySelects();
   }
 
-  applyPublicSite();
-  mountAnnounceBar();
+  applyPublicSite().then(() => observeReveals(document));
+
   mountSiteSearch();
   mountFeatureNav();
   enhanceSearch();
@@ -104,10 +104,12 @@ document.addEventListener("DOMContentLoaded", () => {
   restoreSearchPhoto();
   prefillRequestFromAccount();
   mountAccountPage();
-  guardAdvertClicks();
+  mountPasswordToggles();
   mountCatalogSearch();
   polishPublicChrome();
   unstickPublicHeader();
+  mountMotion();
+  mountDeskSlider();
 });
 
 function fillCategorySelects() {
@@ -157,16 +159,11 @@ function prefillCategoryFromQuery(form) {
     productField.value = `Please quote sea shipping to Ghana for about ${kg} kg.`;
   }
 
-  if (q) {
+  if (q && productField && !productField.value) {
     if (looksLikeUrl(q)) {
       const url = q.startsWith("http") ? q : `https://${q}`;
-      if (form.elements.reference_url && !form.elements.reference_url.value) {
-        form.elements.reference_url.value = url;
-      }
-      if (productField && !productField.value) {
-        productField.value = "Please quote this listing.";
-      }
-    } else if (productField && !productField.value) {
+      productField.value = `Please quote this listing: ${url}`;
+    } else {
       productField.value = q;
     }
   }
@@ -193,7 +190,7 @@ function setFieldError(form, name, message) {
 }
 
 function clearFieldErrors(form) {
-  ["name", "phone", "email", "product", "category", "location", "quantity", "reference_url", "origin"].forEach((name) => {
+  ["name", "phone", "email", "product", "category", "location", "quantity"].forEach((name) => {
     setFieldError(form, name, "");
   });
 }
@@ -201,22 +198,25 @@ function clearFieldErrors(form) {
 function readRequestForm(form) {
   const fields = form.elements;
   const product = (fields.product || fields.request_details);
+  const notes = fields.notes && fields.notes.value ? String(fields.notes.value).trim() : "";
+  let details = product ? product.value : "";
+  if (notes) details = (details + "\n\nAdditional requirements: " + notes).slice(0, 2000);
   return {
     name: fields.name.value,
     phone: fields.phone.value,
     email: fields.email ? fields.email.value : "",
     location: fields.location ? fields.location.value : "",
     category: fields.category ? fields.category.value : "",
-    request_details: product ? product.value : "",
-    product: product ? product.value : "",
+    request_details: details,
+    product: details,
     quantity: fields.quantity ? fields.quantity.value : "",
-    reference_url: fields.reference_url ? fields.reference_url.value : "",
-    origin: fields.origin ? fields.origin.value : "",
+    reference_url: "",
+    origin: "",
   };
 }
 
 function bindRequestLiveValidation(form) {
-  const names = ["name", "phone", "email", "product", "category", "quantity", "location", "reference_url", "origin"];
+  const names = ["name", "phone", "email", "product", "category", "quantity", "location"];
   names.forEach((name) => {
     const el = form.elements[name];
     if (!el) return;
@@ -261,19 +261,15 @@ async function handleRequestSubmit(e) {
   }
   const data = Object.assign({ photo_url: "" }, parsed.data);
 
-  if (cachedAdvertUrl && !hasWatchedAdvert()) {
-    showStatus(statusEl, "error", "Watch the full advert first — then place your order.");
-    showAdvertGate({ advert_video_url: cachedAdvertUrl });
-    return;
-  }
-
   const originalLabel = submitBtn ? submitBtn.textContent : "";
   if (submitBtn) {
     submitBtn.disabled = true;
+    submitBtn.classList.add("is-loading");
     submitBtn.textContent = "Sending…";
   }
   if (stickyBtn) {
     stickyBtn.disabled = true;
+    stickyBtn.classList.add("is-loading");
     stickyBtn.textContent = "Sending…";
   }
   showStatus(statusEl, "loading", "Saving your request…");
@@ -315,8 +311,6 @@ async function handleRequestSubmit(e) {
     data.email ? `Email: ${data.email}` : null,
     `Product: ${data.request_details}`,
     data.category ? `Category: ${data.category}` : null,
-    data.origin ? `Origin: ${data.origin}` : null,
-    data.reference_url ? `Listing: ${data.reference_url}` : null,
     data.location ? `Location: ${data.location}` : null,
     data.quantity ? `Quantity: ${data.quantity}` : null,
     data.photo_url ? `Photo: ${data.photo_url}` : null,
@@ -332,15 +326,179 @@ async function handleRequestSubmit(e) {
   if (new URLSearchParams(window.location.search).get("from") === "list") saveQuoteList([]);
   if (submitBtn) {
     submitBtn.disabled = false;
-    submitBtn.textContent = originalLabel || "Start an Import Request";
+    submitBtn.classList.remove("is-loading");
+    submitBtn.textContent = originalLabel || "Start Your Order";
   }
   if (stickyBtn) {
     stickyBtn.disabled = false;
-    stickyBtn.textContent = originalLabel || "Start an Import Request";
+    stickyBtn.classList.remove("is-loading");
+    stickyBtn.textContent = originalLabel || "Start Your Order";
   }
   if (statusEl) statusEl.className = "form-status";
 
   showOrderReceived(waUrl);
+}
+
+function prefersReducedMotion() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function motionMs(ms) {
+  return prefersReducedMotion() ? 0 : ms;
+}
+
+function mountDeskSlider() {
+  const root = document.querySelector("[data-desk-slider]");
+  if (!root) return;
+  const slides = Array.from(root.querySelectorAll(".desk-slide"));
+  const dots = Array.from(root.querySelectorAll(".desk-dot"));
+  if (slides.length < 2) return;
+
+  let index = Math.max(0, slides.findIndex((slide) => slide.classList.contains("is-on")));
+  let timer = 0;
+
+  const show = (next) => {
+    index = (next + slides.length) % slides.length;
+    slides.forEach((slide, i) => slide.classList.toggle("is-on", i === index));
+    dots.forEach((dot, i) => {
+      const on = i === index;
+      dot.classList.toggle("is-on", on);
+      dot.setAttribute("aria-selected", on ? "true" : "false");
+    });
+  };
+
+  const stop = () => {
+    if (timer) {
+      window.clearInterval(timer);
+      timer = 0;
+    }
+  };
+
+  const start = () => {
+    stop();
+    if (prefersReducedMotion()) return;
+    timer = window.setInterval(() => show(index + 1), 6500);
+  };
+
+  dots.forEach((dot, i) => {
+    dot.addEventListener("click", () => {
+      show(i);
+      start();
+    });
+  });
+
+  root.addEventListener("mouseenter", stop);
+  root.addEventListener("mouseleave", start);
+  root.addEventListener("focusin", stop);
+  root.addEventListener("focusout", (event) => {
+    if (!root.contains(event.relatedTarget)) start();
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) stop();
+    else start();
+  });
+
+  show(index);
+  start();
+}
+
+let revealObserver = null;
+
+function mountMotion() {
+  if (document.body && document.body.id === "admin-page") return;
+  if (prefersReducedMotion()) {
+    document.querySelectorAll(".reveal").forEach((el) => el.classList.add("is-in"));
+    return;
+  }
+  document.documentElement.classList.add("mw-motion");
+  if (!revealObserver) {
+    revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("is-in");
+        revealObserver.unobserve(entry.target);
+      });
+    }, { rootMargin: "0px 0px -6% 0px", threshold: 0.08 });
+  }
+  observeReveals(document);
+  window.setTimeout(() => observeReveals(document), 400);
+}
+
+function observeReveals(root) {
+  if (document.body && document.body.id === "admin-page") return;
+  if (prefersReducedMotion()) return;
+  if (!revealObserver) {
+    revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("is-in");
+        revealObserver.unobserve(entry.target);
+      });
+    }, { rootMargin: "0px 0px -8% 0px", threshold: 0.1 });
+  }
+  const scope = root && root.querySelectorAll ? root : document;
+  const nodes = scope.querySelectorAll([
+    ".section-head",
+    ".stamp-grid article",
+    ".why-card",
+    ".faq-item",
+    ".form-card",
+    ".review-card",
+    ".category-card",
+    ".ticket",
+    ".product-card",
+    ".cta-band",
+    ".trust-plate",
+    ".catalog-lane",
+    ".item-info",
+    ".item-block",
+    ".quote-rows li",
+    ".process-list li",
+    ".split > *",
+    ".udash-hero",
+    ".panel",
+    ".home-faq .faq-item",
+    ".step-cards article",
+    ".desk-cats",
+    ".desk-tiles a",
+    ".desk-banner",
+    ".desk-cat-chips a",
+    ".footer-grid > div",
+    ".page-hero-auth",
+    ".udash-auth",
+    ".tf-services .section-head",
+    ".section > .container > h2",
+    ".section > .container > .section-note",
+    ".contact-grid > *",
+    ".loc-facts li",
+    ".quote-summary",
+    ".empty-note",
+  ].join(","));
+  const fold = window.innerHeight * 0.92;
+  nodes.forEach((el) => {
+    if (el.closest(".site-header, .tabbar, .wa-float")) return;
+    if (el.classList.contains("skeleton-card")) return;
+    if (el.closest("[hidden]")) return;
+    if (el.classList.contains("is-in")) return;
+    if (el.classList.contains("reveal")) {
+      revealObserver.observe(el);
+      return;
+    }
+    const top = el.getBoundingClientRect().top;
+    if (top < fold && top > -40) {
+      el.classList.add("is-in");
+      return;
+    }
+    el.classList.add("reveal");
+    if (el.matches(".desk-cats, .desk-banner")) el.classList.add("reveal-soft");
+    if (el.matches(".desk-tiles a, .desk-cat-chips a, .stamp-grid article, .step-cards article, .product-card, .category-card, .footer-grid > div")) {
+      el.classList.add("reveal-stagger");
+    }
+    const parent = el.parentElement;
+    const idx = parent ? Math.max(0, [...parent.children].indexOf(el)) : 0;
+    el.style.setProperty("--stagger", `${Math.min(idx, 8) * 55}ms`);
+    revealObserver.observe(el);
+  });
 }
 
 function showOrderReceived(waUrl) {
@@ -352,11 +510,18 @@ function showOrderReceived(waUrl) {
   }
   modal.hidden = false;
   document.body.classList.add("order-modal-open");
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => modal.classList.add("is-open"));
+  });
   const openWhatsApp = () => {
-    modal.hidden = true;
-    document.body.classList.remove("order-modal-open");
-    const opened = window.open(waUrl, "_blank");
-    if (!opened) window.location.href = waUrl;
+    modal.classList.remove("is-open");
+    const finish = () => {
+      modal.hidden = true;
+      document.body.classList.remove("order-modal-open");
+      const opened = window.open(waUrl, "_blank");
+      if (!opened) window.location.href = waUrl;
+    };
+    setTimeout(finish, motionMs(200));
   };
   go.onclick = openWhatsApp;
   go.focus();
@@ -375,17 +540,6 @@ function showStatus(el, type, msg, waUrl) {
     el.appendChild(document.createElement("br"));
     el.appendChild(link);
   }
-}
-
-function mountAnnounceBar() {
-  if (document.body && document.body.id === "admin-page") return;
-  if (document.querySelector(".announce-bar")) return;
-  const bar = document.createElement("div");
-  bar.className = "announce-bar";
-  bar.textContent = "Quotes in GH₵ · Typical reply within 24 hours · China & Turkey → Ghana";
-  const header = document.querySelector(".site-header");
-  if (header) header.insertBefore(bar, header.firstChild);
-  else document.body.insertBefore(bar, document.body.firstChild);
 }
 
 function looksLikeUrl(value) {
@@ -449,13 +603,41 @@ function saveQuoteList(items) {
   updateQuoteBadge();
 }
 
+function cartItemFromEl(el) {
+  return {
+    id: el.dataset.id,
+    name: el.dataset.name,
+    category: el.dataset.category || "",
+    from: el.dataset.from || "",
+    image_url: el.dataset.image || "",
+    qty: Number(el.dataset.qty) || 1,
+  };
+}
+
 function addToQuoteList(item) {
   const items = getQuoteList();
-  const existing = items.find((row) => row.id === item.id);
-  if (existing) existing.qty = (Number(existing.qty) || 1) + (Number(item.qty) || 1);
-  else items.push({ id: item.id, name: item.name, category: item.category || "", from: item.from || "", qty: Number(item.qty) || 1 });
+  const existing = items.find((row) => String(row.id) === String(item.id));
+  if (existing) {
+    existing.qty = (Number(existing.qty) || 1) + (Number(item.qty) || 1);
+    if (item.image_url && !existing.image_url) existing.image_url = item.image_url;
+    if (item.from && !existing.from) existing.from = item.from;
+  } else {
+    items.push({
+      id: item.id,
+      name: item.name,
+      category: item.category || "",
+      from: item.from || "",
+      image_url: item.image_url || "",
+      qty: Number(item.qty) || 1,
+    });
+  }
   saveQuoteList(items);
-  showToast("Added to your quote list");
+  showToast("Added to cart");
+}
+
+function cartUnitGhs(item) {
+  const n = parseInt(String(item.from || "").replace(/[^\d]/g, ""), 10);
+  return Number.isFinite(n) ? n : 0;
 }
 
 function updateQuoteBadge() {
@@ -497,17 +679,13 @@ function mountCatalogSearch() {
 }
 
 function polishPublicChrome() {
-  document.querySelectorAll(".wa-float").forEach((el) => {
-    if (el.getAttribute("aria-label") === "Join our channel") {
-      el.setAttribute("aria-label", "Chat with the desk on 054 030 9637");
-    }
-  });
+  applyGroupButton(null);
 }
 
 function unstickPublicHeader() {
   const header = document.querySelector("header.site-header");
   if (!header) return;
-  const parts = [header, ...header.querySelectorAll(":scope > *, .tf-top, .tf-nav, .announce-bar, .header-main, .tf-nav-row")];
+  const parts = [header, ...header.querySelectorAll(":scope > *, .tf-top, .tf-nav, .desk-nav, .announce-bar, .header-main, .tf-nav-row")];
   parts.forEach((el) => {
     if (el.classList.contains("nav-links")) return;
     const pos = window.getComputedStyle(el).position;
@@ -529,7 +707,7 @@ function mountFeatureNav() {
     const link = document.createElement("a");
     link.href = "quote-list.html";
     link.className = "quote-link";
-    link.innerHTML = `Quote list <span class="quote-count" data-quote-count>0</span>`;
+    link.innerHTML = `Cart <span class="quote-count" data-quote-count>0</span>`;
     if (cta && cta.parentNode) cta.parentNode.insertBefore(link, cta);
     else if (document.querySelector(".header-main")) document.querySelector(".header-main").appendChild(link);
   }
@@ -554,20 +732,27 @@ function productCardHtml(p, opts = {}) {
     ? (String(priceRaw).includes("GH") ? priceRaw : `GH₵${priceRaw}`)
     : (p.from ? `from GH₵${p.from}` : "");
   const img = p.image_url
-    ? `<img src="${escapeAttr(p.image_url)}" alt="${escapeAttr(p.name)}">`
-    : `<img src="${tileDataUri((p.category || "MW").split(" ")[0])}" alt="">`;
+    ? `<img src="${escapeAttr(p.image_url)}" alt="${escapeAttr(p.name)}" width="240" height="240" loading="lazy" decoding="async">`
+    : `<img src="${tileDataUri((p.category || "MW").split(" ")[0])}" alt="" width="240" height="240" loading="lazy" decoding="async">`;
+  const blurb = cleanPublicBlurb(p.notes || p.description || "");
   const href = `item.html?id=${encodeURIComponent(id)}`;
   return `
-    <a class="product-card" href="${href}">
+    <article class="product-card" data-quote-item data-id="${escapeAttr(id)}" data-name="${escapeAttr(p.name)}" data-category="${escapeAttr(p.category || "")}" data-from="${escapeAttr(priceRaw || p.from || "")}" data-image="${escapeAttr(p.image_url || "")}">
+      <a class="product-card-link" href="${href}">
       ${img}
       <div class="product-body">
         <span class="code">${escapeHtml(p.category || "Product")}</span>
         <h3>${escapeHtml(p.name)}</h3>
+        ${blurb ? `<p class="product-tagline">${escapeHtml(blurb)}</p>` : ""}
         <span class="product-status">Available to source</span>
-        ${price ? `<div class="product-price">${escapeHtml(price)}${opts.indicative ? " <small>indicative</small>" : ""}</div>` : `<div class="product-price"><small>Request quote</small></div>`}
-        <span class="product-order">Request quote</span>
+        ${price ? `<div class="product-price">${escapeHtml(price)}${opts.indicative ? " <small>indicative</small>" : ""}</div>` : `<div class="product-price"><small>Starting GH₵ on request</small></div>`}
       </div>
-    </a>
+      </a>
+      <div class="product-actions">
+        <button type="button" class="btn btn-outline-dark add-cart">Add to cart</button>
+        <button type="button" class="product-order buy-now">Buy now</button>
+      </div>
+    </article>
   `;
 }
 
@@ -575,21 +760,100 @@ function renderPopularSourcing() {
   const grid = document.getElementById("popular-grid");
   if (!grid) return;
   grid.innerHTML = POPULAR_SOURCING.map((p) => productCardHtml(p, { indicative: true })).join("");
+  observeReveals(grid);
+}
+
+function buyNowHrefFromEl(el) {
+  if (!el) return "request.html";
+  const name = el.dataset.name || "";
+  const category = el.dataset.category || "";
+  const qty = el.dataset.qty || "";
+  const params = new URLSearchParams();
+  if (name) params.set("q", name);
+  if (category) params.set("category", category);
+  if (qty) params.set("qty", qty);
+  const qs = params.toString();
+  return qs ? `request.html?${qs}` : "request.html";
+}
+
+function closeAuthGate() {
+  const modal = document.getElementById("auth-gate");
+  if (!modal) return;
+  modal.classList.remove("is-open");
+  modal.hidden = true;
+  document.body.classList.remove("order-modal-open");
+}
+
+function showAuthGate(nextUrl) {
+  const dest = (window.saveAuthNext && window.saveAuthNext(nextUrl)) || nextUrl || "request.html";
+  let modal = document.getElementById("auth-gate");
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "auth-gate";
+    modal.className = "order-modal";
+    modal.hidden = true;
+    modal.innerHTML = `
+      <div class="order-modal-card" role="dialog" aria-modal="true" aria-labelledby="auth-gate-title">
+        <h2 id="auth-gate-title">Sign in to buy</h2>
+        <p>You need an account to send this order. Log in, or sign up if you are new — then we open the order form. Nothing is billed on this site.</p>
+        <a class="btn btn-gold" data-auth-login href="account.html#login">Log in</a>
+        <a class="btn btn-outline-dark" data-auth-signup href="account.html#signup">Sign up</a>
+        <button type="button" class="login-alt-btn" data-auth-cancel>Not now</button>
+      </div>
+    `;
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal || e.target.closest("[data-auth-cancel]")) {
+        e.preventDefault();
+        if (window.consumeAuthNext) window.consumeAuthNext();
+        closeAuthGate();
+      }
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && modal.classList.contains("is-open")) {
+        if (window.consumeAuthNext) window.consumeAuthNext();
+        closeAuthGate();
+      }
+    });
+    document.body.appendChild(modal);
+  }
+  const login = modal.querySelector("[data-auth-login]");
+  const signup = modal.querySelector("[data-auth-signup]");
+  const next = encodeURIComponent(dest);
+  if (login) login.href = `account.html?next=${next}#login`;
+  if (signup) signup.href = `account.html?next=${next}#signup`;
+  modal.hidden = false;
+  modal.classList.add("is-open");
+  document.body.classList.add("order-modal-open");
+  const first = modal.querySelector("[data-auth-login]");
+  if (first) first.focus();
+}
+
+async function startBuyNow(nextUrl) {
+  const dest = (window.safeNextPath && window.safeNextPath(nextUrl)) || nextUrl || "request.html";
+  const user = window.getSessionUser ? await window.getSessionUser() : null;
+  if (user) {
+    window.location.href = dest;
+    return;
+  }
+  showAuthGate(dest);
 }
 
 function bindQuoteButtons() {
   document.addEventListener("click", (e) => {
-    const btn = e.target.closest(".add-quote");
-    if (!btn) return;
-    const card = btn.closest("[data-quote-item]");
-    if (!card) return;
-    addToQuoteList({
-      id: card.dataset.id,
-      name: card.dataset.name,
-      category: card.dataset.category,
-      from: card.dataset.from,
-      qty: 1,
-    });
+    const add = e.target.closest(".add-cart, .add-quote");
+    const buy = e.target.closest(".buy-now");
+    if (!add && !buy) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (add) {
+      const card = add.closest("[data-quote-item]");
+      if (!card || !card.dataset.id) return;
+      addToQuoteList(cartItemFromEl(card));
+      return;
+    }
+    const card = buy.closest("[data-quote-item]");
+    const href = buy.getAttribute("href") || (card ? buyNowHrefFromEl(card) : "request.html");
+    startBuyNow(href);
   });
 }
 
@@ -598,31 +862,34 @@ function renderQuoteListPage() {
   if (!wrap) return;
   const items = getQuoteList();
   if (!items.length) {
-    wrap.innerHTML = `<p class="empty-note">Your quote list is empty. Add items from Home, then send them all in one request.</p>
-      <a class="btn btn-gold" href="index.html">Browse popular sourcing</a>`;
+    wrap.innerHTML = `<p class="empty-note">Your cart is empty. Use Add to cart on Products, then send the list — we confirm the landed GH₵ on chat.</p>
+      <a class="btn btn-gold" href="categories.html">Browse products</a>`;
     return;
   }
 
+  const total = items.reduce((sum, item) => sum + cartUnitGhs(item) * (Number(item.qty) || 1), 0);
   wrap.innerHTML = `
     <ul class="quote-rows">
       ${items.map((item, i) => `
         <li data-id="${escapeAttr(item.id)}">
-          <div>
+          ${item.image_url ? `<img src="${escapeAttr(item.image_url)}" alt="" width="64" height="64">` : ""}
+          <div class="quote-row-main">
             <strong>${escapeHtml(item.name)}</strong>
-            <span>${escapeHtml(item.category || "")}</span>
+            <span>${escapeHtml(item.category || "")}${cartUnitGhs(item) ? ` · GH₵${cartUnitGhs(item)} indicative` : ""}</span>
           </div>
           <div class="qty-controls">
-            <button type="button" data-qty="${i}" data-dir="-1">−</button>
+            <button type="button" data-qty="${i}" data-dir="-1" aria-label="Fewer">−</button>
             <span>${escapeHtml(item.qty || 1)}</span>
-            <button type="button" data-qty="${i}" data-dir="1">+</button>
+            <button type="button" data-qty="${i}" data-dir="1" aria-label="More">+</button>
             <button type="button" class="linkish" data-remove="${i}">Remove</button>
           </div>
         </li>
       `).join("")}
     </ul>
+    ${total ? `<p class="cart-total">Indicative total <strong>GH₵${total}</strong> <small>— official quote is final</small></p>` : ""}
     <div class="hero-actions" style="margin-top: 1.5rem;">
-      <a class="btn btn-gold" href="request.html?from=list">Send all as one order</a>
-      <button type="button" class="btn btn-outline-dark" id="clear-quote-list">Clear list</button>
+      <a class="btn btn-gold buy-now" href="request.html?from=list">Buy now</a>
+      <button type="button" class="btn btn-outline-dark" id="clear-quote-list">Clear cart</button>
     </div>
   `;
 
@@ -652,6 +919,7 @@ function renderQuoteListPage() {
       renderQuoteListPage();
     });
   }
+  observeReveals(wrap);
 }
 
 function setupPhotoPreview(form) {
@@ -667,6 +935,11 @@ function setupPhotoPreview(form) {
       input.value = "";
       return;
     }
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      showToast("Use a JPG, PNG, or WebP photo.");
+      input.value = "";
+      return;
+    }
     const img = document.createElement("img");
     img.src = URL.createObjectURL(file);
     img.alt = "Photo preview";
@@ -677,10 +950,13 @@ function setupPhotoPreview(form) {
 async function uploadRequestPhoto(file) {
   const client = window.getSupabaseClient && window.getSupabaseClient();
   if (!client) return "";
-  const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+  const allowed = ["image/jpeg", "image/png", "image/webp"];
+  if (!allowed.includes(file.type)) throw new Error("Use a JPG, PNG, or WebP photo.");
+  if (file.size > 5 * 1024 * 1024) throw new Error("Please choose a photo under 5 MB");
+  const ext = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
   const path = `requests/${(crypto.randomUUID && crypto.randomUUID()) || Date.now()}.${ext}`;
   const { error } = await client.storage.from("media").upload(path, file, {
-    contentType: file.type || "image/jpeg",
+    contentType: file.type,
     upsert: false,
   });
   if (error) throw error;
@@ -749,7 +1025,7 @@ function mountMobileChrome() {
   nav.innerHTML = `
     ${tab("index.html", "Home")}
     ${tab("categories.html", "Categories")}
-    ${tab("quote-list.html", "Quote", ` <span data-quote-count>0</span>`)}
+    ${tab("quote-list.html", "Cart", ` <span data-quote-count>0</span>`)}
     ${tab("request.html", "Order")}
     <button type="button" class="tab-account${here === "account.html" ? " active" : ""}" data-open-account>Account</button>
   `;
@@ -837,8 +1113,8 @@ async function renderItemPage(client) {
     ? (String(item.price).includes("GH") ? item.price : `GH₵${item.price}`)
     : (item.from ? `from GH₵${item.from}` : "");
   const img = item.image_url
-    ? `<img src="${escapeAttr(item.image_url)}" alt="${escapeAttr(item.name)}">`
-    : `<img src="${tileDataUri((item.category || "MW").split(" ")[0])}" alt="">`;
+    ? `<img src="${escapeAttr(item.image_url)}" alt="${escapeAttr(item.name)}" width="800" height="800" fetchpriority="high" decoding="async">`
+    : `<img src="${tileDataUri((item.category || "MW").split(" ")[0])}" alt="" width="800" height="800" decoding="async">`;
   const requestHref = `request.html?q=${encodeURIComponent(item.name)}${item.category ? `&category=${encodeURIComponent(item.category)}` : ""}`;
   const wa = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent("Hi Mwinbarka Imports, I'd like a GH₵ quote for: " + item.name)}`;
 
@@ -850,12 +1126,12 @@ async function renderItemPage(client) {
     <div class="item-hero">${img}</div>
     <div class="item-info">
       <h1>${escapeHtml(item.name)}</h1>
-      ${price ? `<div class="product-price">${escapeHtml(price)} <small>indicative landed start — official quote is final</small></div>` : ""}
+      ${price ? `<div class="product-price">${escapeHtml(price)}</div>` : ""}
     </div>
     <section class="item-block">
       <h2>How to request this</h2>
       <ol class="process-list">
-        <li>Order now — or add it to your quote list.</li>
+        <li>Add to cart to keep it, or tap Buy now to send this item. Buy now asks you to log in or sign up.</li>
         <li>We quote the goods in GH₵ (supplier price + China pickup).</li>
         <li>We ship by sea to Ghana. Typical transit is 4–8 weeks after the supplier ships.</li>
       </ol>
@@ -863,8 +1139,8 @@ async function renderItemPage(client) {
     </section>
     <section class="item-block">
       <h2>Sourcing agent</h2>
-      <p><strong>Mwinbarka Imports</strong> — Accra, Ghana</p>
-      <p class="muted">Direct source from China and Turkey. Quotes and payment terms stay on the official line.</p>
+      <p><strong>Mwinbarka Imports</strong> — Ghana</p>
+      <p class="muted">Direct source from China and Turkey. Quotes and payment terms stay on chat.</p>
       <a class="btn btn-outline-dark" href="https://wa.me/${WA_NUMBER}" target="_blank" rel="noopener">Open official chat</a>
     </section>
     <section class="item-block">
@@ -875,7 +1151,7 @@ async function renderItemPage(client) {
         <div><dt>Material</dt><dd>${escapeHtml(item.material || "—")}</dd></div>
         <div><dt>Origin</dt><dd>${escapeHtml(item.origin || "China or Turkey")}</dd></div>
       </dl>
-      ${item.notes ? `<p class="muted">${escapeHtml(item.notes)}</p>` : ""}
+      ${cleanPublicBlurb(item.notes) ? `<p class="muted">${escapeHtml(cleanPublicBlurb(item.notes))}</p>` : ""}
     </section>
   `;
 
@@ -886,30 +1162,83 @@ async function renderItemPage(client) {
     bar.dataset.name = item.name;
     bar.dataset.category = item.category || "";
     bar.dataset.from = item.from || item.price || "";
+    bar.dataset.image = item.image_url || "";
     const chat = bar.querySelector("[data-chat]");
     const request = bar.querySelector("[data-request]");
     if (chat) chat.href = wa;
     if (request) request.href = requestHref;
   }
+  observeReveals(root);
 }
 
-function applyChannelButton(settings) {
-  const btn = document.querySelector(".wa-float");
-  if (!btn) return;
-  const channel = (settings.whatsapp_channel_url || "").trim();
-  if (!channel) return;
-  btn.href = channel;
-  btn.setAttribute("aria-label", "Join our channel");
-  btn.title = "Join our channel";
+function ghanaWaDigits(phone) {
+  let digits = String(phone || "").replace(/\D/g, "");
+  if (digits.startsWith("00")) digits = digits.slice(2);
+  if (digits.startsWith("0") && digits.length === 10) digits = "233" + digits.slice(1);
+  else if (digits.length === 9) digits = "233" + digits;
+  return digits || WA_NUMBER;
+}
+
+function formatSupportPhone(raw) {
+  const trimmed = String(raw || "").trim() || "054 030 9637";
+  const intl = ghanaWaDigits(trimmed);
+  let local = intl;
+  if (local.startsWith("233") && local.length >= 12) local = "0" + local.slice(3);
+  const display = /^0\d{9}$/.test(local)
+    ? `${local.slice(0, 3)} ${local.slice(3, 6)} ${local.slice(6)}`
+    : trimmed;
+  return { display, wa: intl };
+}
+
+function applySupportFooter(settings) {
+  const phone = formatSupportPhone(settings && settings.support_phone);
+  const email = String((settings && settings.support_email) || "").trim();
+  document.querySelectorAll("[data-support-phone]").forEach((el) => {
+    el.textContent = phone.display;
+    if (el.tagName === "A") el.href = `https://wa.me/${phone.wa}`;
+  });
+  document.querySelectorAll("[data-support-email]").forEach((el) => {
+    const row = el.closest("li") || el;
+    if (!email) {
+      row.hidden = true;
+      return;
+    }
+    row.hidden = false;
+    el.textContent = email;
+    if (el.tagName === "A") el.href = `mailto:${email}`;
+  });
+}
+
+function safeHttpsUrl(raw) {
+  const url = String(raw || "").trim();
+  if (!url) return "";
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "https:") return "";
+    return parsed.toString();
+  } catch (_) {
+    return "";
+  }
+}
+
+function applyGroupButton(settings) {
+  const url = safeHttpsUrl((settings && (settings.whatsapp_channel_url || settings.whatsapp_group_url)) || "");
+  document.querySelectorAll(".wa-float, [data-group-join]").forEach((btn) => {
+    if (btn.classList.contains("wa-float")) {
+      btn.setAttribute("aria-label", "Join the group");
+      btn.title = "Join the group";
+    }
+    if (url) btn.href = url;
+  });
 }
 
 function applySocialLinks(settings) {
   const items = [
-    ["Facebook", settings.facebook_url],
-    ["Instagram", settings.instagram_url],
-    ["Chat", settings.whatsapp_url || settings.whatsapp_channel_url],
-    ["TikTok", settings.tiktok_url],
-  ].filter(([, url]) => url && String(url).trim());
+    ["Facebook", safeHttpsUrl(settings.facebook_url)],
+    ["Instagram", safeHttpsUrl(settings.instagram_url)],
+    ["Chat", safeHttpsUrl(settings.whatsapp_url || settings.whatsapp_channel_url)],
+    ["TikTok", safeHttpsUrl(settings.tiktok_url)],
+  ].filter(([, url]) => url);
 
   if (!items.length) return;
 
@@ -934,436 +1263,12 @@ function applySocialLinks(settings) {
   });
 }
 
-let cachedAdvertUrl = "";
-
-// GitHack / GitHub raw cannot serve this MP4 (403 or octet-stream).
-// Always play from public HTTPS hosts that return video/mp4.
-const HOSTED_ADVERT_MP4 =
-  "https://kajtwabmwbncfgvehqmm.supabase.co/storage/v1/object/public/media/adverts/advert.mp4?v=phone1";
-const FALLBACK_ADVERT_MP4 =
-  "https://cdn.jsdelivr.net/gh/akwesibrain/Goods-Impotation@cursor/mwinbarka-imports-site-5d47/assets/advert.mp4";
-const ADVERT_SESSION_KEY = "mwinbarka_advert_session_v3";
-const ADVERT_ACCOUNT_KEY = "mwinbarka_advert_account_v1";
-
-let pendingAdvertHref = "";
-
-function markAdvertSkippedForAccount() {
-  try { localStorage.setItem(ADVERT_ACCOUNT_KEY, "1"); } catch (e) { /* private mode */ }
-  try { sessionStorage.setItem(ADVERT_SESSION_KEY, "1"); } catch (e) { /* private mode */ }
-  const stale = document.getElementById("advert-gate");
-  if (stale) {
-    stale.remove();
-    document.body.classList.remove("advert-locked");
-  }
-}
-
-function shouldSkipAdvertForAccount() {
-  try {
-    if (localStorage.getItem(ADVERT_ACCOUNT_KEY) === "1") return true;
-  } catch (e) { /* private mode */ }
-  return false;
-}
-
-function hasWatchedAdvert() {
-  if (shouldSkipAdvertForAccount()) return true;
-  try {
-    return sessionStorage.getItem(ADVERT_SESSION_KEY) === "1";
-  } catch (e) {
-    return false;
-  }
-}
-
-function markAdvertWatched() {
-  try { sessionStorage.setItem(ADVERT_SESSION_KEY, "1"); } catch (e) { /* private mode */ }
-}
-
-window.markAdvertSkippedForAccount = markAdvertSkippedForAccount;
-
-function youtubeIdFromUrl(url) {
-  try {
-    const u = new URL(url);
-    if (u.hostname.includes("youtu.be")) return u.pathname.replace(/^\//, "").split("/")[0] || null;
-    if (u.searchParams.get("v")) return u.searchParams.get("v");
-    const parts = u.pathname.split("/").filter(Boolean);
-    const idx = parts.findIndex((p) => p === "embed" || p === "shorts");
-    if (idx >= 0 && parts[idx + 1]) return parts[idx + 1];
-  } catch {
-    return null;
-  }
-  return null;
-}
-
-function tiktokIdFromUrl(url) {
-  const text = String(url || "");
-  const match = text.match(/\/(?:video|photo|v)\/(\d{10,})/) || text.match(/\/player\/v1\/(\d{10,})/) || text.match(/data-video-id="(\d{10,})"/);
-  return match ? match[1] : null;
-}
-
-async function resolveTikTokId(url) {
-  const direct = tiktokIdFromUrl(url);
-  if (direct) return direct;
-  if (!/tiktok\.com/i.test(url)) return null;
-  try {
-    const res = await fetch("https://www.tiktok.com/oembed?url=" + encodeURIComponent(url));
-    if (!res.ok) return null;
-    const json = await res.json();
-    return tiktokIdFromUrl(json.html) || tiktokIdFromUrl(json.cite) || null;
-  } catch {
-    return null;
-  }
-}
-
-function isDirectVideoUrl(url) {
-  return /\.(mp4|webm|ogg|mov|m4v)(\?|$)/i.test(url) || /\/storage\/v1\/object\/public\//i.test(url);
-}
-
-function isPlayableHostedUrl(url) {
-  return (
-    /^https?:\/\//i.test(url) &&
-    isDirectVideoUrl(url) &&
-    !/raw\.githack|githubusercontent\.com/i.test(url)
-  );
-}
-
-function advertCandidates(remote) {
-  const urls = [];
-  const value = String(remote || "").trim();
-  if (isPlayableHostedUrl(value)) urls.push(value);
-  urls.push(HOSTED_ADVERT_MP4, FALLBACK_ADVERT_MP4);
-  return [...new Set(urls)];
-}
-
-function advertPlayerHtml(kind, src) {
-  if (kind === "file") {
-    return `
-      <video id="advert-video" playsinline webkit-playsinline preload="auto" controls controlslist="nodownload noplaybackrate noremoteplayback" disablepictureinpicture>
-        <source type="video/mp4">
-      </video>
-      <button type="button" class="advert-play" id="advert-play" aria-label="Play advert">▶</button>
-      <button type="button" class="advert-unmute" id="advert-unmute" hidden>Unmute</button>
-    `;
-  }
-  if (kind === "youtube") {
-    return `<div id="advert-yt"></div>`;
-  }
-  return `<iframe id="advert-tiktok" title="Mwinbarka Imports advert" allow="autoplay; fullscreen; encrypted-media" allowfullscreen src="${escapeAttr(src)}"></iframe>`;
-}
-
-function removeAdvertGate() {
-  const stale = document.getElementById("advert-gate");
-  if (stale) stale.remove();
-  document.body.classList.remove("advert-locked");
-}
-
-function followPendingAdvertLink() {
-  const href = pendingAdvertHref;
-  pendingAdvertHref = "";
-  if (href && href !== location.href) window.location.href = href;
-}
-
-async function showAdvertGate(settings) {
-  if (document.body && document.body.id === "admin-page") return;
-  const remote = ((settings && settings.advert_video_url) || "").trim();
-  const sources = advertCandidates(remote);
-  const videoUrl = sources[0];
-  cachedAdvertUrl = videoUrl;
-
-  const user = window.getSessionUser ? await window.getSessionUser() : null;
-  if (user) {
-    markAdvertSkippedForAccount();
-    return;
-  }
-  if (hasWatchedAdvert()) {
-    removeAdvertGate();
-    followPendingAdvertLink();
-    return;
-  }
-
-  let overlay = document.getElementById("advert-gate");
-  if (overlay && overlay.dataset.mounted === "1") return;
-
-  if (!overlay) {
-    overlay = document.createElement("div");
-    overlay.id = "advert-gate";
-    overlay.innerHTML = `
-    <div class="advert-stage">
-      <div class="advert-player" id="advert-player"></div>
-      <div class="advert-hud">
-        <div class="advert-progress" id="advert-progress">Tap Play to watch the advert.</div>
-        <button type="button" class="btn btn-gold" id="advert-continue" disabled>Watch the full video to continue</button>
-      </div>
-    </div>
-  `;
-    document.body.appendChild(overlay);
-  }
-  overlay.dataset.mounted = "1";
-  document.body.classList.add("advert-locked");
-
-  const playerBox = overlay.querySelector("#advert-player");
-  const continueBtn = overlay.querySelector("#advert-continue");
-  const progressEl = overlay.querySelector("#advert-progress");
-  let unlocked = false;
-  let maxSeen = 0;
-
-  const unlock = () => {
-    if (unlocked) return;
-    unlocked = true;
-    markAdvertWatched();
-    if (continueBtn) {
-      continueBtn.disabled = false;
-      continueBtn.textContent = "Continue";
-    }
-    if (progressEl) progressEl.textContent = "Advert complete.";
-  };
-
-  const updateProgress = (current, duration) => {
-    if (!duration || duration <= 0) return;
-    if (current > maxSeen) maxSeen = current;
-    const pct = Math.min(100, Math.floor((maxSeen / duration) * 100));
-    progressEl.textContent = `Keep watching… ${pct}%`;
-    if (maxSeen / duration >= 0.92) unlock();
-  };
-
-  if (continueBtn) {
-    continueBtn.addEventListener("click", () => {
-      if (!unlocked) return;
-      removeAdvertGate();
-      followPendingAdvertLink();
-    });
-  }
-
-  playerBox.innerHTML = advertPlayerHtml("file");
-  const video = overlay.querySelector("video");
-  mountFileAdvert(video, sources, unlock, updateProgress, progressEl);
-}
-
-function addPlayOverlay(box, onPlay) {
-  let btn = box.querySelector("#advert-play") || box.querySelector(".advert-play");
-  if (!btn) {
-    btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "advert-play";
-    btn.id = "advert-play";
-    btn.textContent = "▶";
-    box.appendChild(btn);
-  }
-  btn.hidden = false;
-  btn.onclick = () => onPlay();
-}
-
-function loadAdvertSources(video, sources, progressEl) {
-  let index = 0;
-  const sourceEl = video.querySelector("source");
-
-  const apply = (url) => {
-    video.dataset.activeSrc = url;
-    if (sourceEl) {
-      sourceEl.src = url;
-      sourceEl.type = "video/mp4";
-    }
-    video.src = url;
-    video.load();
-  };
-
-  video.onerror = () => {
-    index += 1;
-    if (index < sources.length) {
-      if (progressEl) progressEl.textContent = "Trying another video host…";
-      apply(sources[index]);
-      video.play().catch(() => {});
-      return;
-    }
-    if (progressEl) {
-      progressEl.textContent = "Video could not load. Check your connection, then tap Play.";
-    }
-  };
-
-  apply(sources[0]);
-}
-
-function mountFileAdvert(video, sources, unlock, updateProgress, progressEl) {
-  let maxTime = 0;
-  const box = video.parentElement;
-  const playBtn = box.querySelector("#advert-play");
-  const unmuteBtn = box.querySelector("#advert-unmute");
-
-  const tryPlay = (withSound) => {
-    video.muted = !withSound;
-    const start = video.play();
-    if (start && typeof start.catch === "function") {
-      start.catch(() => {
-        video.muted = true;
-        video.play().catch(() => {
-          if (progressEl) progressEl.textContent = "Tap Play to watch the advert.";
-          if (playBtn) playBtn.hidden = false;
-        });
-      });
-    }
-  };
-
-  video.setAttribute("playsinline", "");
-  video.setAttribute("webkit-playsinline", "");
-  video.removeAttribute("autoplay");
-  loadAdvertSources(video, sources, progressEl);
-  if (playBtn) playBtn.hidden = false;
-  if (progressEl) progressEl.textContent = "Tap Play to watch the advert.";
-
-  addPlayOverlay(box, () => tryPlay(true));
-  video.addEventListener("click", () => {
-    if (video.paused) tryPlay(true);
-  });
-
-  if (unmuteBtn) {
-    unmuteBtn.hidden = false;
-    unmuteBtn.addEventListener("click", () => {
-      video.muted = false;
-      unmuteBtn.hidden = true;
-      tryPlay(true);
-    });
-  }
-
-  video.addEventListener("playing", () => {
-    if (playBtn) playBtn.hidden = true;
-    if (progressEl && !progressEl.textContent.includes("%") && !progressEl.textContent.includes("complete")) {
-      progressEl.textContent = "Keep watching…";
-    }
-  });
-  video.addEventListener("pause", () => {
-    if (!video.ended && playBtn) playBtn.hidden = false;
-  });
-  video.addEventListener("volumechange", () => {
-    if (unmuteBtn) unmuteBtn.hidden = !video.muted;
-  });
-  video.addEventListener("timeupdate", () => {
-    if (video.currentTime > maxTime + 0.35 && video.seeking) return;
-    if (video.currentTime > maxTime) maxTime = video.currentTime;
-    updateProgress(maxTime, video.duration);
-  });
-  video.addEventListener("seeking", () => {
-    if (video.currentTime > maxTime + 0.4) video.currentTime = maxTime;
-  });
-  video.addEventListener("ended", unlock);
-}
-
-function mountTikTokAdvert(iframe, unlock, updateProgress, progressEl) {
-  addPlayOverlay(iframe.parentElement, () => {
-    const ping = () => iframe.contentWindow.postMessage({ type: "play", "x-tiktok-player": true }, "*");
-    ping();
-    setTimeout(ping, 350);
-    setTimeout(ping, 900);
-  });
-  window.addEventListener("message", (event) => {
-    if (!document.getElementById("advert-gate")) return;
-    const data = event.data;
-    if (!data || !data["x-tiktok-player"]) return;
-    if (data.type === "onStateChange" && Number(data.value) === 0) unlock();
-    if (data.type === "onCurrentTime") {
-      const value = data.value;
-      const current = value && typeof value === "object" ? Number(value.currentTime) : Number(value);
-      const duration = value && typeof value === "object" ? Number(value.duration) : Number(data.duration);
-      if (current >= 0 && duration > 0) updateProgress(current, duration);
-    }
-    if (data.type === "onPlayerReady") {
-      progressEl.textContent = "Press play, then watch to the end.";
-    }
-  });
-}
-
-function mountYouTubeAdvert(id, unlock, updateProgress, progressEl) {
-  const start = () => {
-    const player = new window.YT.Player("advert-yt", {
-      videoId: id,
-      playerVars: {
-        controls: 0,
-        rel: 0,
-        modestbranding: 1,
-        disablekb: 1,
-        fs: 0,
-        playsinline: 1,
-        origin: location.origin,
-      },
-      events: {
-        onReady(event) {
-          const box = document.getElementById("advert-player");
-          addPlayOverlay(box, () => event.target.playVideo());
-          progressEl.textContent = "Press play, then watch to the end.";
-        },
-        onStateChange(event) {
-          if (event.data === window.YT.PlayerState.ENDED) unlock();
-        },
-      },
-    });
-    const tick = () => {
-      if (!document.getElementById("advert-gate") || hasWatchedAdvert()) return;
-      try {
-        if (player && typeof player.getCurrentTime === "function") {
-          updateProgress(player.getCurrentTime(), player.getDuration());
-        }
-      } catch {
-        /* player not ready */
-      }
-      requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-  };
-
-  if (window.YT && window.YT.Player) {
-    start();
-    return;
-  }
-  const existing = document.querySelector("script[src*='youtube.com/iframe_api']");
-  const prev = window.onYouTubeIframeAPIReady;
-  window.onYouTubeIframeAPIReady = () => {
-    if (typeof prev === "function") prev();
-    start();
-  };
-  if (!existing) {
-    const tag = document.createElement("script");
-    tag.src = "https://www.youtube.com/iframe_api";
-    document.head.appendChild(tag);
-  }
-}
-
-function isInternalSiteLink(link) {
-  const href = link.getAttribute("href") || "";
-  if (!href || href.startsWith("#") || href.startsWith("mailto:") || href.startsWith("tel:")) return false;
-  if (/^https?:\/\//i.test(href)) {
-    try {
-      return new URL(href, location.href).origin === location.origin;
-    } catch {
-      return false;
-    }
-  }
-  return !href.startsWith("javascript:");
-}
-
-function guardAdvertClicks() {
-  document.addEventListener(
-    "click",
-    (e) => {
-      if (hasWatchedAdvert()) return;
-      if (document.getElementById("advert-gate")) return;
-      const link = e.target.closest("a[href]");
-      if (!link || !isInternalSiteLink(link)) return;
-      if (link.target === "_blank") return;
-      const dest = link.getAttribute("href") || "";
-      if (/account\.html|admin\.html/.test(dest)) return;
-      e.preventDefault();
-      pendingAdvertHref = link.href;
-      showAdvertGate({ advert_video_url: cachedAdvertUrl || HOSTED_ADVERT_MP4 });
-    },
-    true
-  );
-}
-
 async function applyPublicSite() {
   const client = window.getSupabaseClient && window.getSupabaseClient();
-  cachedAdvertUrl = cachedAdvertUrl || HOSTED_ADVERT_MP4;
   if (!client) {
     await renderPublicProducts(null);
     await renderReviews(null);
     bindReviewForm(null);
-    maybeShowLandingAdvert();
     return;
   }
 
@@ -1374,13 +1279,10 @@ async function applyPublicSite() {
     .maybeSingle();
 
   if (data) {
-    applyChannelButton(data);
+    applySupportFooter(data);
+    applyGroupButton(data);
     applySocialLinks(data);
-    cachedAdvertUrl = advertCandidates(data.advert_video_url)[0];
   }
-  const user = window.getSessionUser ? await window.getSessionUser() : null;
-  if (user) markAdvertSkippedForAccount();
-  maybeShowLandingAdvert();
 
   await renderPublicProducts(client);
   await renderItemPage(client);
@@ -1388,19 +1290,12 @@ async function applyPublicSite() {
   bindReviewForm(client);
 }
 
-function maybeShowLandingAdvert() {
-  const file = pageFile();
-  if (file !== "request.html" && file !== "quote-list.html") return;
-  if (hasWatchedAdvert()) return;
-  showAdvertGate({ advert_video_url: cachedAdvertUrl || HOSTED_ADVERT_MP4 });
-}
-
 const FALLBACK_REVIEWS = [
-  { author_name: "Ama", location: "Accra", rating: 5, quote: "Very good service. My things came exactly as I ordered. Will definitely order again." },
+  { author_name: "Ama", location: "Tema", rating: 5, quote: "Very good service. My things came exactly as I ordered. Will definitely order again." },
   { author_name: "Kofi", location: "Kumasi", rating: 5, quote: "I was a bit worried at first but everything went well. My items arrived safely." },
   { author_name: "Efua", location: "Takoradi", rating: 5, quote: "The communication was good and they kept me updated. Delivery was also smooth." },
   { author_name: "Yakubu", location: "Tamale", rating: 5, quote: "I got exactly what I ordered. The price was also reasonable." },
-  { author_name: "Adwoa", location: "Accra", rating: 5, quote: "Second time ordering from them and so far so good. No complaints." },
+  { author_name: "Adwoa", location: "Kumasi", rating: 5, quote: "Second time ordering from them and so far so good. No complaints." },
 ];
 
 function starText(rating) {
@@ -1408,13 +1303,27 @@ function starText(rating) {
   return "★".repeat(n) + "☆".repeat(5 - n);
 }
 
+function reviewInitials(name) {
+  return String(name || "M")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0))
+    .join("")
+    .toUpperCase() || "M";
+}
+
 function reviewCardHtml(review) {
+  const name = review.author_name || "Customer";
   return `<article class="review-card">
     <div class="review-stars" aria-label="${escapeAttr(String(review.rating || 5))} out of 5">${starText(review.rating)}</div>
     <p>${escapeHtml(review.quote)}</p>
     <footer>
-      <strong>${escapeHtml(review.author_name)}</strong>
-      <span>${escapeHtml(review.location || "Ghana")}</span>
+      <span class="review-avatar" aria-hidden="true">${escapeHtml(reviewInitials(name))}</span>
+      <div>
+        <strong>${escapeHtml(name)}</strong>
+        <span>${escapeHtml(review.location || "Ghana")}</span>
+      </div>
     </footer>
   </article>`;
 }
@@ -1462,6 +1371,7 @@ async function renderReviews(client) {
   const shown = onHome ? rows.slice(0, 4) : rows;
   const html = shown.map(reviewCardHtml).join("");
   grids.forEach((grid) => { grid.innerHTML = html; });
+  observeReveals(document);
 }
 
 async function bindReviewForm(client) {
@@ -1494,10 +1404,11 @@ async function bindReviewForm(client) {
     }
     const { author_name, quote, location, rating } = parsed.data;
     if (!client) {
-      showStatus(statusEl, "error", "Reviews are not connected yet. Write the desk on the official line.");
+      showStatus(statusEl, "error", "Reviews are not connected yet. Write the desk on chat.");
       return;
     }
     btn.disabled = true;
+    btn.classList.add("is-loading");
     try {
       const user = window.getSessionUser ? await window.getSessionUser() : null;
       const { error } = await client.from("reviews").insert([{
@@ -1516,6 +1427,7 @@ async function bindReviewForm(client) {
       showStatus(statusEl, "error", err.message || "Couldn't send the review.");
     }
     btn.disabled = false;
+    btn.classList.remove("is-loading");
   });
 }
 
@@ -1580,13 +1492,13 @@ async function renderPublicProducts(client) {
            <a class="btn btn-gold" href="request.html">Start an Import Request</a>`;
     } else catalog.innerHTML = names.map((name) => {
       const rows = groups.get(name) || [];
-      const cards = rows.length
-        ? `<div class="product-grid">${rows.map((p) => productCardHtml(p)).join("")}</div>`
+      const shown = onCategoriesPage ? rows : rows.slice(0, 4);
+      const cards = shown.length
+        ? `<div class="product-grid">${shown.map((p) => productCardHtml(p, { indicative: true })).join("")}</div>`
         : `<p class="empty-note">No products in this category yet. Describe what you want and we’ll source it.</p>
            <a class="btn btn-gold" href="request.html?category=${encodeURIComponent(name)}">Start an Import Request</a>`;
       return `<section class="catalog-lane">
         <div class="section-head rail-head">
-          <span class="eyebrow">${escapeHtml(name)}</span>
           <h2>${escapeHtml(name)}</h2>
           <a class="more-link" href="categories.html?cat=${encodeURIComponent(name)}">See all →</a>
         </div>
@@ -1603,7 +1515,7 @@ async function renderPublicProducts(client) {
     if (!visible.length) {
       document.querySelectorAll("#products-section").forEach((section) => { section.hidden = true; });
     } else {
-      const html = visible.map((p) => productCardHtml(p)).join("");
+      const html = visible.map((p) => productCardHtml(p, { indicative: true })).join("");
       grids.forEach((grid) => { grid.innerHTML = html; });
       document.querySelectorAll("#products-section").forEach((section) => { section.hidden = false; });
     }
@@ -1611,6 +1523,7 @@ async function renderPublicProducts(client) {
 
   const popular = document.getElementById("popular-section");
   if (popular && products.length) popular.hidden = true;
+  observeReveals(document);
 }
 
 function openAccountDrawer() {
@@ -1620,17 +1533,25 @@ function openAccountDrawer() {
     window.location.href = "account.html";
     return;
   }
+  clearTimeout(openAccountDrawer._hide);
   drawer.hidden = false;
   backdrop.hidden = false;
-  document.body.classList.add("account-drawer-open");
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      document.body.classList.add("account-drawer-open");
+    });
+  });
 }
 
 function closeAccountDrawer() {
   const drawer = document.getElementById("account-drawer");
   const backdrop = document.querySelector(".account-backdrop");
-  if (drawer) drawer.hidden = true;
-  if (backdrop) backdrop.hidden = true;
   document.body.classList.remove("account-drawer-open");
+  clearTimeout(openAccountDrawer._hide);
+  openAccountDrawer._hide = setTimeout(() => {
+    if (drawer) drawer.hidden = true;
+    if (backdrop) backdrop.hidden = true;
+  }, motionMs(320));
 }
 
 function mountAccountChrome() {
@@ -1718,7 +1639,6 @@ async function refreshAccountChrome() {
   const sub = document.querySelector("[data-account-head-sub]");
   const signOutBtn = document.getElementById("drawer-signout");
   if (profile) {
-    markAdvertSkippedForAccount();
     if (title) title.textContent = profile.full_name || "My Account";
     if (sub) sub.textContent = profile.email || "Signed in";
     if (signOutBtn) signOutBtn.hidden = false;
@@ -1744,7 +1664,8 @@ async function prefillRequestFromAccount() {
     form.elements.email.value = profile.email;
   }
   if (form.elements.location && !form.elements.location.value) {
-    const place = [profile.city, profile.region].filter(Boolean).join(", ");
+    const regionLabel = profile.region === "Greater Accra" ? "Capital region" : profile.region;
+    const place = [profile.city, regionLabel].filter(Boolean).join(", ");
     if (place) form.elements.location.value = place;
   }
 }
@@ -1780,6 +1701,26 @@ function showAccountTab(name) {
   signup.hidden = name !== "signup";
   document.querySelectorAll("[data-account-tab]").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.accountTab === name);
+  });
+}
+
+function mountPasswordToggles() {
+  document.querySelectorAll("[data-password-toggle]").forEach((btn) => {
+    if (btn.dataset.bound === "1") return;
+    btn.dataset.bound = "1";
+    btn.addEventListener("click", () => {
+      const id = btn.getAttribute("aria-controls");
+      const input = (id && document.getElementById(id)) || btn.parentElement?.querySelector("input");
+      if (!input) return;
+      const show = input.type === "password";
+      input.type = show ? "text" : "password";
+      btn.setAttribute("aria-pressed", show ? "true" : "false");
+      btn.setAttribute("aria-label", show ? "Hide password" : "Show password");
+      const eye = btn.querySelector(".icon-eye");
+      const off = btn.querySelector(".icon-eye-off");
+      if (eye) eye.hidden = show;
+      if (off) off.hidden = !show;
+    });
   });
 }
 
@@ -1858,10 +1799,10 @@ function paintAccountDashboard(rows) {
   setText("pill-confirmed", String(counts.Confirmed));
 
   const mix = [
-    ["New", counts.New, "#8ec5ff"],
-    ["Contacted", counts.Contacted, "#5aa6ff"],
-    ["Quoted", counts.Quoted, "#3b82f6"],
-    ["Confirmed", counts.Confirmed, "#1d4ed8"],
+    ["New", counts.New, "#DCC56A"],
+    ["Contacted", counts.Contacted, "#C9A227"],
+    ["Quoted", counts.Quoted, "#23487A"],
+    ["Confirmed", counts.Confirmed, "#0A1F44"],
   ];
   document.querySelectorAll(".udash-ring").forEach((ring, i) => {
     const count = mix[i] ? mix[i][1] : 0;
@@ -1968,8 +1909,11 @@ async function mountAccountPage() {
   const signedBox = document.getElementById("account-signed");
   if (!authBox || !signedBox) return;
 
+  const nextParam = new URLSearchParams(location.search).get("next");
+  if (nextParam && window.saveAuthNext) window.saveAuthNext(nextParam);
   const hash = (location.hash || "").replace("#", "");
   if (hash === "signup") showAccountTab("signup");
+  if (hash === "login") showAccountTab("login");
 
   document.querySelectorAll("[data-account-tab]").forEach((btn) => {
     btn.addEventListener("click", () => showAccountTab(btn.dataset.accountTab));
@@ -2030,6 +1974,7 @@ async function mountAccountPage() {
     if (!profile) {
       authBox.hidden = false;
       signedBox.hidden = true;
+      document.body.classList.add("account-guest");
       if (nameEl) nameEl.textContent = "Guest";
       if (roleEl) roleEl.textContent = "Log in to your desk file";
       if (avatar) {
@@ -2039,8 +1984,17 @@ async function mountAccountPage() {
       showAccountPanel("home");
       return;
     }
+    if (profile.is_staff) {
+      if (/type=(magiclink|signup|invite|recovery|email)/.test(location.hash + location.search) && window.markStaffWelcome) {
+        window.markStaffWelcome();
+      }
+      window.location.replace("admin.html");
+      return;
+    }
+    if (nextParam && window.continueAfterCustomerAuth && window.continueAfterCustomerAuth()) return;
     authBox.hidden = true;
     signedBox.hidden = false;
+    document.body.classList.remove("account-guest");
     const displayName = profile.full_name || "Customer";
     if (nameEl) nameEl.textContent = displayName;
     if (roleEl) roleEl.textContent = profile.company_name || "Mwinbarka customer";
@@ -2060,6 +2014,8 @@ async function mountAccountPage() {
       const status = document.getElementById("login-status");
       const btn = loginForm.querySelector('button[type="submit"]');
       btn.disabled = true;
+      btn.classList.add("is-loading");
+      btn.setAttribute("aria-busy", "true");
       try {
         if (!window.signInCustomer) throw new Error("Account service is not connected yet.");
         const parsed = window.MwinbarkaForms.parseLogin({
@@ -2067,18 +2023,32 @@ async function mountAccountPage() {
           password: loginForm.elements.password.value,
         });
         if (!parsed.ok) throw new Error(window.MwinbarkaForms.firstError(parsed.errors));
-        await window.signInCustomer({
+        const signedIn = await window.signInCustomer({
           email: parsed.data.email,
           password: parsed.data.password,
         });
-        await refreshAccountChrome();
-        await paint();
+        if (signedIn && signedIn.isStaff) {
+          window.location.replace("admin.html");
+          return;
+        }
+        if (window.continueAfterCustomerAuth && window.continueAfterCustomerAuth()) return;
+        try {
+          await refreshAccountChrome();
+          await paint();
+          showStatus(status, "success", "Signed in.");
+        } catch (paintErr) {
+          console.error("Account UI refresh failed after login:", paintErr);
+          showStatus(status, "success", "Signed in. Refresh the page if your desk does not open.");
+        }
       } catch (err) {
-        showStatus(status, "error", err.message || "Could not log in.");
+        showStatus(status, "error", (window.friendlyLoginError && window.friendlyLoginError(err)) || err.message || "Could not log in.");
       } finally {
         btn.disabled = false;
+        btn.classList.remove("is-loading");
+        btn.removeAttribute("aria-busy");
       }
     });
+
   }
 
   const signupForm = document.getElementById("account-signup-form");
@@ -2088,6 +2058,7 @@ async function mountAccountPage() {
       const status = document.getElementById("signup-status");
       const btn = signupForm.querySelector('button[type="submit"]');
       btn.disabled = true;
+      btn.classList.add("is-loading");
       try {
         if (!window.signUpCustomer) throw new Error("Account service is not connected yet.");
         const parsed = window.MwinbarkaForms.parseSignup({
@@ -2106,14 +2077,22 @@ async function mountAccountPage() {
         if (result && result.needsConfirm) {
           showStatus(status, "success", "Account created. Check your email to confirm, then log in.");
           showAccountTab("login");
+        } else if (window.continueAfterCustomerAuth && window.continueAfterCustomerAuth()) {
+          return;
         } else {
-          await refreshAccountChrome();
-          await paint();
+          try {
+            await refreshAccountChrome();
+            await paint();
+          } catch (paintErr) {
+            console.error("Account UI refresh failed after signup:", paintErr);
+            showStatus(status, "success", "Account created. You are signed in — refresh if the desk does not open.");
+          }
         }
       } catch (err) {
         showStatus(status, "error", err.message || "Could not create the account.");
       } finally {
         btn.disabled = false;
+        btn.classList.remove("is-loading");
       }
     });
   }
@@ -2252,6 +2231,21 @@ async function mountAccountPage() {
   }
 
   await paint();
+}
+
+function cleanPublicBlurb(text) {
+  return String(text || "")
+    .replace(/\s*Starting GH₵ is factory wholesale plus GH₵50(; Accra confirms the landed quote)?(\. Accra confirms the landed quote on the official line)?\.?/gi, "")
+    .replace(/\s*starting GH₵ \(factory wholesale \+ GH₵50\)[^.]*\.?/gi, "")
+    .replace(/Ask the Accra desk/gi, "Ask the desk")
+    .replace(/Ask Accra/gi, "Ask the desk")
+    .replace(/Accra quotes/gi, "The desk quotes")
+    .replace(/Accra types/gi, "Staff type")
+    .replace(/Accra confirms/gi, "The desk confirms")
+    .replace(/for Accra homes/gi, "for Ghana homes")
+    .replace(/\bAccra\b/gi, "the desk")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function escapeHtml(value) {
