@@ -2089,7 +2089,7 @@ async function mountAccountPage() {
           }
         }
       } catch (err) {
-        showStatus(status, "error", err.message || "Could not create the account.");
+        showStatus(status, "error", (window.friendlySignupError && window.friendlySignupError(err)) || err.message || "Could not create the account.");
       } finally {
         btn.disabled = false;
         btn.classList.remove("is-loading");

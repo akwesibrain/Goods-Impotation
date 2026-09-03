@@ -135,6 +135,9 @@
     if (!isEmail(data.email)) errors.email = "Enter a valid email address.";
     if (data.password.length < 6) errors.password = "Password must be at least 6 characters.";
     else if (data.password.length > 72) errors.password = "Password must be under 72 characters.";
+    else if (!/[a-z]/.test(data.password) || !/[A-Z]/.test(data.password) || !/[0-9]/.test(data.password) || !/[!@#$%^&*()_+\-=[\]{};':"\\|<>?,./`~]/.test(data.password)) {
+      errors.password = "Use upper + lower letters, a number, and a symbol (e.g. Brain@1234).";
+    }
     return { ok: Object.keys(errors).length === 0, data, errors };
   }
 

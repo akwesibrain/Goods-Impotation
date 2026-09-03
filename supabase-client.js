@@ -312,6 +312,22 @@ window.friendlyLoginError = function (err) {
   return raw || "Could not log in.";
 };
 
+window.friendlySignupError = function (err) {
+  const raw = String((err && err.message) || err || "");
+  const text = raw.toLowerCase();
+  if (text.includes("weak_password") || text.includes("password should contain") || text.includes("characters")) {
+    return "Password needs upper + lower letters, a number, and a symbol (example: Brain@1234).";
+  }
+  if (text.includes("user already registered") || text.includes("already been registered") || text.includes("already registered")) {
+    return "That email already has an account. Log in instead.";
+  }
+  if (text.includes("rate") || text.includes("too many")) {
+    return "Too many tries. Wait a minute, then try again.";
+  }
+  if (window.friendlyLoginError) return window.friendlyLoginError(err);
+  return raw || "Could not create the account.";
+};
+
 window.readStaffPassword = function () {
   return "";
 };
