@@ -337,6 +337,8 @@ window.signUpCustomer = async function ({ email, password, fullName, phone }) {
   if (!supabaseClient) throw new Error("Account service is not connected yet.");
   const cleanEmail = String(email || "").trim().toLowerCase();
   const cleanPassword = String(password == null ? "" : password);
+  const cleanName = String(fullName || "").trim();
+  const cleanPhone = String(phone || "").trim();
   if (!cleanEmail || !cleanEmail.includes("@")) throw new Error("Enter a valid email address.");
   if (!cleanPassword) throw new Error("Enter your password.");
   const { data, error } = await supabaseClient.auth.signUp({
@@ -344,15 +346,31 @@ window.signUpCustomer = async function ({ email, password, fullName, phone }) {
     password: cleanPassword,
     options: {
       data: {
-        full_name: String(fullName || "").trim(),
-        phone: String(phone || "").trim(),
+        full_name: cleanName,
+        phone: cleanPhone,
       },
       emailRedirectTo: window.authRedirectUrl("account.html"),
     },
   });
   if (error) throw error;
-  // Profile row is created by the on_auth_user_created database trigger.
-  return { needsConfirm: !!(data.user && !data.session) };
+  // Profile row is created by on_auth_user_created. Optionally fill name/phone
+  // with UPDATE (never upsert — upsert needs table UPDATE privilege and 403s).
+  if (data.session && data.user) {
+    try {
+      await supabaseClient
+        .from("profiles")
+        .update({
+          full_name: cleanName.slice(0, 100),
+          phone: cleanPhone.slice(0, 20),
+          email: data.user.email || cleanEmail,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", data.user.id);
+    } catch (_err) {
+      // Auth already succeeded; desk can still open.
+    }
+  }
+  return { needsConfirm: !!(data.user && !data.session), session: data.session || null };
 };
 
 window.signOutCustomer = async function (everywhere) {

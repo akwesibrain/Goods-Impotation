@@ -2032,8 +2032,14 @@ async function mountAccountPage() {
           return;
         }
         if (window.continueAfterCustomerAuth && window.continueAfterCustomerAuth()) return;
-        await refreshAccountChrome();
-        await paint();
+        try {
+          await refreshAccountChrome();
+          await paint();
+          showStatus(status, "success", "Signed in.");
+        } catch (paintErr) {
+          console.error("Account UI refresh failed after login:", paintErr);
+          showStatus(status, "success", "Signed in. Refresh the page if your desk does not open.");
+        }
       } catch (err) {
         showStatus(status, "error", (window.friendlyLoginError && window.friendlyLoginError(err)) || err.message || "Could not log in.");
       } finally {
@@ -2069,13 +2075,18 @@ async function mountAccountPage() {
           password: parsed.data.password,
         });
         if (result && result.needsConfirm) {
-          showStatus(status, "success", "Account created. Check your email to confirm, then log in to finish buying.");
+          showStatus(status, "success", "Account created. Check your email to confirm, then log in.");
           showAccountTab("login");
         } else if (window.continueAfterCustomerAuth && window.continueAfterCustomerAuth()) {
           return;
         } else {
-          await refreshAccountChrome();
-          await paint();
+          try {
+            await refreshAccountChrome();
+            await paint();
+          } catch (paintErr) {
+            console.error("Account UI refresh failed after signup:", paintErr);
+            showStatus(status, "success", "Account created. You are signed in — refresh if the desk does not open.");
+          }
         }
       } catch (err) {
         showStatus(status, "error", err.message || "Could not create the account.");

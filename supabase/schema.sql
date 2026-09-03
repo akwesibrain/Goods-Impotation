@@ -954,18 +954,26 @@ create trigger reviews_sanitize
 create or replace function private.sanitize_profile_row()
 returns trigger
 language plpgsql
+security definer
+set search_path = public, private
 as $$
 begin
-  new.full_name := left(private.strip_tags(new.full_name), 100);
+  new.full_name := left(private.strip_tags(coalesce(new.full_name, '')), 100);
   new.phone := left(regexp_replace(coalesce(new.phone, ''), '[^\d\s+\-]', '', 'g'), 24);
-  new.company_name := left(private.strip_tags(new.company_name), 120);
+  new.email := left(lower(trim(coalesce(new.email, ''))), 254);
+  new.company_name := left(private.strip_tags(coalesce(new.company_name, '')), 120);
   new.whatsapp := left(regexp_replace(coalesce(new.whatsapp, ''), '[^\d\s+\-]', '', 'g'), 24);
-  new.city := left(private.strip_tags(new.city), 80);
-  new.address := left(private.strip_tags(new.address), 200);
-  new.landmark := left(private.strip_tags(new.landmark), 120);
+  new.region := left(private.strip_tags(coalesce(new.region, '')), 80);
+  new.city := left(private.strip_tags(coalesce(new.city, '')), 80);
+  new.address := left(private.strip_tags(coalesce(new.address, '')), 200);
+  new.landmark := left(private.strip_tags(coalesce(new.landmark, '')), 120);
   return new;
 end;
 $$;
+
+revoke all on function private.sanitize_profile_row() from public;
+grant execute on function private.sanitize_profile_row() to anon, authenticated, service_role;
+grant usage on schema private to anon, authenticated;
 
 drop trigger if exists profiles_sanitize on public.profiles;
 create trigger profiles_sanitize
