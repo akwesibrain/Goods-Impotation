@@ -88,8 +88,11 @@ create policy "Users can update own profile"
     and staff_role is not distinct from (select p.staff_role from public.profiles p where p.id = auth.uid())
   );
 
-revoke update on table public.profiles from anon, authenticated;
-grant select, insert on table public.profiles to authenticated;
+-- Table-level UPDATE is required for PostgREST upsert (used by older client
+-- builds). Privilege columns stay locked via column REVOKE + sanitize trigger + RLS.
+revoke update on table public.profiles from anon;
+grant select, insert, update on table public.profiles to authenticated;
+revoke update (is_staff, staff_role) on table public.profiles from authenticated, anon, public;
 grant update (full_name, phone) on table public.profiles to authenticated;
 
 create or replace function private.handle_new_user()
